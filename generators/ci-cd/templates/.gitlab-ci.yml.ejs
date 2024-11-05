@@ -16,32 +16,38 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
+
+include:
+<%_ if (buildToolGradle && !skipServer) { _%>
+  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven@3.11.4
+    inputs:
+      image: registry.hub.docker.com/library/maven:3.9-eclipse-temurin-21
+      deploy-enabled: true
+<%_ } _%>
+<%_ if (buildToolMaven && !skipServer) { _%>
+  - component: $CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.8.0
+    inputs:
+      image: "registry.hub.docker.com/library/gradle:jdk11" 
+<%_ } _%>
+<%_ if (!skipServer) { _%>
+# See TBC "Generic pipeline stages" for more, https://to-be-continuous.gitlab.io/doc/understand/#generic-pipeline-stages
+stages:
+  - build
+  - test
+  - package-build
+  - package-test
+  - infra
+  - deploy
+  - acceptance
+  - publish
+  - infra-prod
+  - production
+<%_ } _%>
+
 <%_ if (insideDocker) { _%>
 image: jhipster/jhipster:v<%= jhipsterVersion %>
 <%_ } _%>
 
-<%_ if (buildToolGradle && !skipServer) { _%>
-cache:
-    key: "$CI_COMMIT_REF_NAME"
-    paths:
-        - .gradle/
-<%_ } _%>
-<%_ if (buildToolMaven && !skipServer) { _%>
-cache:
-    key: "$CI_COMMIT_REF_NAME"
-    paths:
-        - .maven/
-<%_ } _%>
-<%_ if (!skipServer) { _%>
-stages:
-    - check
-    - build
-    - test
-    - analyze
-    - package
-    - release
-    - deploy
-<%_ } _%>
 <%_ if (buildToolGradle) { _%>
 before_script:
     <%_ if (clientFrameworkAngular) { _%>
