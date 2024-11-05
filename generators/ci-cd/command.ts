@@ -50,7 +50,7 @@ const command: JHipsterCommandDefinition = {
       },
       choices: [
         // ['jenkins', 'gitlab']
-        { name: `Deploy your application to an ${chalk.yellow('*Artifactory*')}`, value: 'deploy' },
+        { name: `Deploy your application to a ${chalk.yellow('remote repository')}`, value: 'deploy' },
         // ['jenkins', 'gitlab', 'travis', 'github']
         { name: `Analyze your code with ${chalk.yellow('*Sonar*')}`, value: 'sonar' },
         // ['jenkins', 'github'].includes(this.pipeline)
