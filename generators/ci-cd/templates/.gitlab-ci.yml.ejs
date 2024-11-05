@@ -27,8 +27,13 @@ include:
 <%_ if (buildToolMaven && !skipServer) { _%>
   - component: $CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.8.0
     inputs:
-      image: "registry.hub.docker.com/library/gradle:jdk11" 
+      image: "registry.hub.docker.com/library/gradle:jdk21" 
 <%_ } _%>
+<%_ if (insideDocker && buildToolMaven) { _%>
+  # Jib is implemented as an extension to Maven, and uses supporting features of the TBC Maven template
+  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven-jib@3.11.4
+<%_ } _%>
+
 <%_ if (!skipServer) { _%>
 # See TBC "Generic pipeline stages" for more, https://to-be-continuous.gitlab.io/doc/understand/#generic-pipeline-stages
 stages:
@@ -42,10 +47,6 @@ stages:
   - publish
   - infra-prod
   - production
-<%_ } _%>
-
-<%_ if (insideDocker) { _%>
-image: jhipster/jhipster:v<%= jhipsterVersion %>
 <%_ } _%>
 
 <%_ if (buildToolGradle) { _%>
@@ -161,16 +162,6 @@ gradle-package:
             - build/classes
         expire_in: 1 day
 
-# Uncomment the following line to use gitlabs container registry. You need to adapt the REGISTRY_URL in case you are not using gitlab.com
-#docker-push:
-#    stage: release
-#    variables:
-#        REGISTRY_URL: registry.gitlab.com
-#        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA
-#    dependencies:
-#        - gradle-package
-#    script:
-#        - ./gradlew jib -Pprod -PnodeInstall -Djib.to.image=$IMAGE_TAG -Djib.to.auth.username="gitlab-ci-token"  -Djib.to.auth.password=$CI_BUILD_TOKEN
 
     <%_ if (ciCdIntegrationsHeroku) { _%>
 deploy-to-production:
@@ -289,17 +280,6 @@ maven-package:
             - target/*.jar
             - target/classes
         expire_in: 1 day
-
-# Uncomment the following line to use gitlabs container registry. You need to adapt the REGISTRY_URL in case you are not using gitlab.com
-#docker-push:
-#    stage: release
-#    variables:
-#        REGISTRY_URL: registry.gitlab.com
-#        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA
-#    dependencies:
-#        - maven-package
-#    script:
-#        - ./mvnw -ntp jib:build -Pprod -Djib.to.image=$IMAGE_TAG -Djib.to.auth.username=gitlab-ci-token  -Djib.to.auth.password=$CI_BUILD_TOKEN -Dmaven.repo.local=$MAVEN_USER_HOME
 
     <%_ if (ciCdIntegrationsHeroku) { _%>
 deploy-to-production:
