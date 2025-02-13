@@ -79,7 +79,6 @@ updates:
           - '@angular-devkit/*'
           - '@fortawesome/angular-fontawesome'
           - '@ng-bootstrap/*'
-          - 'jest-preset-angular'
           - 'ngx-cookie-service'
           - 'ngx-infinite-scroll'
           - 'typescript'
@@ -92,6 +91,9 @@ updates:
         patterns:
           - '@eslint/*'
           - 'eslint'
+      ngx-translate:
+        patterns:
+          - '@ngx-translate/*'
 
   - package-ecosystem: 'npm'
     directory: '/generators/common/resources/'
@@ -265,7 +267,7 @@ updates:
       - 'skip-changelog'
 
   - package-ecosystem: 'gradle'
-    directory: '/generators/spring-boot/generators/graalvm/resources/'
+    directory: '/generators/java/generators/graalvm/resources/'
     schedule:
       interval: 'daily'
       time: '08:30'

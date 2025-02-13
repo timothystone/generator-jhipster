@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -85,7 +85,7 @@ class <%= upperFirstCamelCaseBaseName %>KafkaResourceIT {
 
     @Test
     void producesPooledMessages() throws Exception {
-        assertThat(output.receive(1500, "kafkaProducer-out-0").getPayload()).isEqualTo("kakfa_producer".getBytes());
+        assertThat(output.receive(1500, "kafkaProducer-out-0").getPayload()).isEqualTo("kafka_producer".getBytes());
     }
 
     @Test

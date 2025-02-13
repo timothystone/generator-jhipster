@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -39,7 +39,7 @@
   <div class="table-responsive">
     <table class="table table-striped" aria-describedby="user-management-page-heading">
       <thead>
-        <tr<% if (!databaseTypeCassandra) { %> <%= jhiPrefix %>Sort [sortState]="sortState" (sortChange)="transition($event)"<% } %>>
+        <tr<% if (!databaseTypeCassandra) { %> <%= jhiPrefix %>Sort [(sortState)]="sortState" (sortChange)="transition($event)"<% } %>>
           <th scope="col"<% if (!databaseTypeCassandra) { %> <%= jhiPrefix %>SortBy="id"<% } %>>
             <span>__jhiTranslateTag__('global.field.id')</span><% if (databaseType !== 'cassandra') { %> <fa-icon icon="sort"></fa-icon><% } %>
           </th>

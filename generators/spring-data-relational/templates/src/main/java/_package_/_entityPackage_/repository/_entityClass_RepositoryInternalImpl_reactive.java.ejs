@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -267,8 +267,7 @@ fields.forEach((field) => {
             }
 <%_ } _%>
 <%_ }); _%>
-<%_ reactiveEagerRelations.forEach((relationship) => {
-  const metamodelFieldName = (relationship.relationshipManyToMany || relationship.relationshipOneToMany) ? relationship.relationshipFieldNamePlural : relationship.relationshipFieldName; _%>
+<%_ reactiveEagerRelations.forEach((relationship) => { _%>
             if (criteria.get<%= relationship.relationshipNameCapitalized %>Id() != null) {
                 builder.buildFilterConditionForField(criteria.get<%= relationship.relationshipNameCapitalized %>Id(), <%= relationship.relationshipName %>Table.column("<%= relationship.otherEntity.primaryKey.ownFields[0].columnName %>"));
             }

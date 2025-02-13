@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -33,11 +33,6 @@ export type MavenPom = {
     version: string;
     properties?: Record<string, string>;
   };
-};
-
-export type MavenPomAndVersions = {
-  pomContent: MavenPom;
-  versions: Record<string, string>;
 };
 
 /**

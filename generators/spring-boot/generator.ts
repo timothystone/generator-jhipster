@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -41,7 +41,6 @@ import { ADD_SPRING_MILESTONE_REPOSITORY } from '../generator-constants.js';
 import {
   addSpringFactory,
   getJavaValueGeneratorForType,
-  getPrimaryKeyValue,
   getSpecificationBuildForType,
   insertContentIntoApplicationProperties,
   javaBeanCase,
@@ -87,6 +86,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
       await this.dependsOnJHipster(GENERATOR_SERVER);
       await this.dependsOnJHipster('jhipster:java:domain');
       await this.dependsOnJHipster('jhipster:java:build-tool');
+      await this.dependsOnJHipster('jhipster:java:server');
     }
   }
 
@@ -227,7 +227,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
   get preparing() {
     return this.asPreparingTaskGroup({
       checksWebsocket({ application }) {
-        const { websocket } = application as any;
+        const { websocket } = application;
         if (websocket && websocket !== NO_WEBSOCKET) {
           if (application.reactive) {
             throw new Error('Spring Websocket is not supported with reactive applications.');
@@ -248,6 +248,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
           application.springBootDependencies = this.prepareDependencies(getPomVersionProperties(pom), 'java');
           application.javaDependencies!['spring-boot'] = application.springBootDependencies['spring-boot-dependencies'];
           Object.assign(application.javaManagedProperties!, pom.project.properties);
+          application.javaDependencies!.liquibase = application.javaManagedProperties!['liquibase.version']!;
         }
       },
       prepareForTemplates({ application }) {
@@ -315,6 +316,19 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
 `,
           });
       },
+      blockhound({ application, source }) {
+        source.addAllowBlockingCallsInside = ({ classPath, method }) => {
+          if (!application.reactive) throw new Error('Blockhound is only supported by reactive applications');
+
+          this.editFile(
+            `${application.javaPackageTestDir}config/JHipsterBlockHoundIntegration.java`,
+            createNeedleCallback({
+              needle: 'blockhound-integration',
+              contentToAdd: `builder.allowBlockingCallsInside("${classPath}", "${method}");`,
+            }),
+          );
+        };
+      },
     });
   }
 
@@ -368,6 +382,10 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
             field.fieldTypeBoolean
           ) {
             field.propertyJavaFilterType = `${fieldType}Filter`;
+          } else if (field.fieldTypeLocalTime) {
+            const filterType = `${fieldType}Filter`;
+            field.propertyJavaFilterType = filterType;
+            field.propertyJavaCustomFilter = { type: filterType, superType: `RangeFilter<${fieldType}>`, fieldType };
           } else {
             field.propertyJavaFilterType = `Filter<${fieldType}>`;
           }
@@ -429,14 +447,13 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
         }
       },
       prepareFilters({ application, entity }) {
-        (entity as any).entityJavaFilterableProperties = [
-          ...entity.fields.filter(field => field.filterableField),
-          ...entity.relationships.filter(rel => !application.reactive || (rel.persistableRelationship && !rel.collection)),
-        ];
-        (entity as any).entityJavaCustomFilters = sortedUniqBy(
-          entity.fields.map(field => field.propertyJavaCustomFilter).filter(Boolean),
-          'type',
-        );
+        mutateData(entity, {
+          entityJavaFilterableProperties: [
+            ...entity.fields.filter(field => field.filterableField),
+            ...entity.relationships.filter(rel => !application.reactive || (rel.persistableRelationship && !rel.collection)),
+          ],
+          entityJavaCustomFilters: sortedUniqBy(entity.fields.map(field => field.propertyJavaCustomFilter).filter(Boolean), 'type'),
+        });
       },
     });
   }
@@ -486,9 +503,14 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
   get postWriting() {
     return this.asPostWritingTaskGroup({
       addJHipsterBomDependencies({ application, source }) {
-        const { applicationTypeGateway, applicationTypeMicroservice, javaDependencies, jhipsterDependenciesVersion, messageBrokerAny } =
-          application;
-        const { serviceDiscoveryAny } = application as any;
+        const {
+          applicationTypeGateway,
+          applicationTypeMicroservice,
+          javaDependencies,
+          jhipsterDependenciesVersion,
+          messageBrokerAny,
+          serviceDiscoveryAny,
+        } = application;
 
         source.addJavaDefinitions?.(
           {
@@ -522,6 +544,11 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
         source.addJavaDependencies?.([
           { groupId: 'org.springdoc', artifactId: springdocDependency, version: application.javaDependencies!.springdoc },
         ]);
+        if (application.reactive) {
+          source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.OpenAPIService', method: 'build' });
+          source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.OpenAPIService', method: 'getWebhooks' });
+          source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.AbstractRequestService', method: 'build' });
+        }
       },
       addFeignReactor({ application, source }) {
         const { applicationTypeGateway, applicationTypeMicroservice, javaDependencies, reactive } = application;
@@ -573,6 +600,8 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
         }
       },
       addSpringBootCompose({ application, source }) {
+        if (!application.dockerServices?.length) return;
+
         source.addLogbackMainLog!({ name: 'org.springframework.boot.docker', level: 'WARN' });
 
         const dockerComposeArtifact = { groupId: 'org.springframework.boot', artifactId: 'spring-boot-docker-compose' };
@@ -603,36 +632,37 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
 
   get end() {
     return this.asEndTaskGroup({
-      end({ application }) {
+      end({ application, control }) {
+        const { buildToolExecutable } = application;
         this.log.ok('Spring Boot application generated successfully.');
 
-        let executable = 'mvnw';
-        if (application.buildToolGradle) {
-          executable = 'gradlew';
+        if (application.dockerServices?.length && !control.enviromentHasDockerCompose) {
+          const dockerComposeCommand = chalk.yellow.bold('docker compose');
+          this.log('');
+          this.log
+            .warn(`${dockerComposeCommand} command was not found in your environment. The generated Spring Boot application uses ${dockerComposeCommand} integration by default. You can disable it by setting
+${chalk.yellow.bold(`
+spring:
+  docker:
+    compose:
+      enabled: false
+`)}
+in your ${chalk.yellow.bold(`${application.srcMainResources}config/application.yml`)} file or removing 'spring-boot-docker-compose' dependency.
+`);
         }
+
         let logMsgComment = '';
         if (os.platform() === 'win32') {
-          logMsgComment = ` (${chalk.yellow.bold(executable)} if using Windows Command Prompt)`;
+          logMsgComment = ` (${chalk.yellow.bold(buildToolExecutable)} if using Windows Command Prompt)`;
         }
-        this.log.log(chalk.green(`  Run your Spring Boot application:\n  ${chalk.yellow.bold(`./${executable}`)}${logMsgComment}`));
+        this.log.log(
+          chalk.green(`  Run your Spring Boot application:\n  ${chalk.yellow.bold(`./${buildToolExecutable}`)}${logMsgComment}`),
+        );
       },
     });
   }
 
   get [BaseApplicationGenerator.END]() {
     return this.delegateTasksToBlueprint(() => this.end);
-  }
-
-  /**
-   * @private
-   * Returns the primary key value based on the primary key type, DB and default value
-   *
-   * @param {string} primaryKey - the primary key type
-   * @param {string} databaseType - the database type
-   * @param {string} defaultValue - default value
-   * @returns {string} java primary key value
-   */
-  getPrimaryKeyValue(primaryKey, databaseType = this.jhipsterConfig.databaseType, defaultValue = 1) {
-    return getPrimaryKeyValue(primaryKey, databaseType, defaultValue);
   }
 }

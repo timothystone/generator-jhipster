@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -47,7 +47,6 @@ const { SQL } = databaseTypes;
  * @param {String} applicationSettings.databaseType - the DB type.
  * @param {Array} applicationSettings.blueprints - the blueprints used.
  * @param {Object} [logger] - the logger to use, default to the console.
- * @param {Object} [options]
  */
 export default function createValidator(jdlObject: JDLObject, applicationSettings: any = {}, logger: any = console) {
   if (!jdlObject) {

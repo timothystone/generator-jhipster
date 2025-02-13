@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -55,13 +55,9 @@ export function languageToJavaLanguage(language) {
   return languageSnakeCase(languageUpperCaseCountry(language));
 }
 
-const languageToFakerjsLanguage = (languageTag: string): string => {
-  return languageUpperCaseCountry(languageTag);
-};
+const languageToFakerjsLanguage = (languageTag: string): string => languageUpperCaseCountry(languageTag);
 
-const languageToAngularLanguage = (languageTag: string): string => {
-  return languageUpperCaseCountry(languageTag);
-};
+const languageToAngularLanguage = (languageTag: string): string => languageUpperCaseCountry(languageTag);
 
 const languageToDayjsLanguage = (languageTag: string): string => {
   const split = splitLanguageTag(languageTag);

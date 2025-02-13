@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -65,11 +65,10 @@ export default class DockerComposeGenerator extends BaseWorkspacesGenerator {
         this.log.log(chalk.white(`Files will be generated in folder: ${chalk.yellow(this.destinationRoot())}`));
       },
       checkDocker,
-      async checkDockerCompose() {
+      async checkDockerCompose({ control }) {
         if (this.skipChecks) return;
 
-        const { exitCode } = await this.spawnCommand('docker compose version', { reject: false, stdio: 'pipe' });
-        if (exitCode !== 0) {
+        if (!control.enviromentHasDockerCompose) {
           throw new Error(`Docker Compose V2 is not installed on your computer.
          Read https://docs.docker.com/compose/install/
 `);
@@ -195,6 +194,9 @@ export default class DockerComposeGenerator extends BaseWorkspacesGenerator {
             deployment.keycloakRedirectUris += `"http://localhost:${appConfig.composePort}/*", "https://localhost:${appConfig.composePort}/*", `;
             if (appConfig.devServerPort !== undefined) {
               deployment.keycloakRedirectUris += `"http://localhost:${appConfig.devServerPort}/*", `;
+            }
+            if (appConfig.devServerPortProxy !== undefined) {
+              deployment.keycloakRedirectUris += `"http://localhost:${appConfig.devServerPortProxy}/*", `;
             }
             // Split ports by ":" and take last 2 elements to skip the hostname/IP if present
             const ports = yamlConfig.ports[0].split(':').slice(-2);

@@ -1,21 +1,28 @@
 import type { addIconImport, addItemToMenu, addRoute } from '../angular/support/needles.js';
-import type { AngularApplication } from '../angular/types.js';
 import type { ExportApplicationPropertiesFromCommand } from '../../lib/command/index.js';
 import type { CypressApplication } from '../cypress/types.js';
 import type { JavaScriptApplication, JavaScriptSourceType } from '../javascript/types.js';
 import type { PostWritingEntitiesTaskParam } from '../../lib/types/application/tasks.js';
+import type { PartialAngularApplication } from '../angular/types-partial.js';
+import type { Language } from '../languages/support/languages.ts';
 import type Command from './command.ts';
 
 type ApplicationClientProperties = ExportApplicationPropertiesFromCommand<typeof Command>;
 
-export type ClientApplication = ApplicationClientProperties &
+export type FrontendApplication = ApplicationClientProperties &
   JavaScriptApplication &
-  AngularApplication &
   CypressApplication & {
     webappLoginRegExp: string;
+    clientWebappDir?: string;
     webappEnumerationsDir?: string;
     clientFrameworkBuiltIn?: boolean;
+    frontendAppName?: string;
   };
+
+/**
+ * @deprecated in favor of frontend application.
+ */
+export type ClientApplication = JavaScriptApplication & PartialAngularApplication & FrontendApplication;
 
 export type ClientResources = {
   /**
@@ -41,4 +48,5 @@ export type ClientSourceType = JavaScriptSourceType & {
    * Add webpack config.
    */
   addWebpackConfig?(args: { config: string });
+  addLanguagesInFrontend?(args: { languagesDefinition: readonly Language[] });
 };

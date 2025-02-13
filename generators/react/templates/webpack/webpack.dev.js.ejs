@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -115,12 +115,12 @@ module.exports = async (options) => webpackMerge(await commonConfig({ env: ENV }
       {
         https: options.tls,
         host: 'localhost',
-        port: 9000,
+        port: <%- devServerPortProxy %>,
         proxy: {
           target: `http${options.tls ? 's' : ''}://localhost:${options.watch ? '<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>' : '<%= devServerPort %>'}`,
           ws: true,
           proxyOptions: {
-              changeOrigin: false  //pass the Host header to the backend unchanged  https://github.com/Browsersync/browser-sync/issues/430
+              changeOrigin: false  //pass the Host header to the backend unchanged https://github.com/Browsersync/browser-sync/issues/430
           }
       },
       socket: {

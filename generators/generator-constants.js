@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'url';
 
 export const BLUEPRINT_API_VERSION = 'jhipster-8';
 // jhipster-bom version
-export const JHIPSTER_DEPENDENCIES_VERSION = '8.7.2';
+export const JHIPSTER_DEPENDENCIES_VERSION = '8.9.0';
 // Version of Java
 export const JAVA_VERSION = '17';
 // Supported Java versions, https://www.oracle.com/java/technologies/java-se-support-roadmap.html
@@ -32,7 +32,6 @@ export const ADD_SPRING_MILESTONE_REPOSITORY = false;
 
 // Version of Node, NPM
 export const NODE_VERSION = readFileSync(join(fileURLToPath(import.meta.url), '../init/resources/.node-version'), 'utf-8').trim();
-export const OPENAPI_GENERATOR_CLI_VERSION = '2.13.1';
 
 // The version should be coherent with the one from spring-data-elasticsearch project
 export const ELASTICSEARCH_TAG = '8.13.4';

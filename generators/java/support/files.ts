@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -48,17 +48,8 @@ export const moveToJavaPackageSrcDir = (data: any, filePath: string) =>
 export const moveToJavaPackageTestDir = (data: any, filePath: string) =>
   `${data.javaPackageTestDir}${replaceEntityFilePathVariables(data, filePath) ?? ''}`;
 
-export const moveToJavaEntityPackageSrcDir = (data: any, filePath: string) =>
-  `${data.srcMainJava}${data.entityAbsoluteFolder}${replaceEntityFilePathVariables(data, filePath) ?? ''}`;
-
-export const moveToJavaEntityPackageTestDir = (data: any, filePath: string) =>
-  `${data.srcTestJava}${data.entityAbsoluteFolder}${replaceEntityFilePathVariables(data, filePath) ?? ''}`;
-
 export const moveToSrcMainResourcesDir = (data: any, filePath: string) =>
   `${data.srcMainResources}${replaceEntityFilePathVariables(data, filePath) ?? ''}`;
-
-export const moveToSrcTestResourcesDir = (data: any, filePath: string) =>
-  `${data.srcTestResources}${replaceEntityFilePathVariables(data, filePath) ?? ''}`;
 
 type RelativeWriteFileBlock = WriteFileBlock & { relativePath?: string };
 

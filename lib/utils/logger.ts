@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -31,21 +31,17 @@ const addPrefixToParameters = (prefix: string, ...args: Parameters<LoggerApi['wr
   return args;
 };
 
-const formatWarningMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> => {
-  return addPrefixToParameters(chalk.yellow.bold('WARNING!'), ...args);
-};
+const formatWarningMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> =>
+  addPrefixToParameters(chalk.yellow.bold('WARNING!'), ...args);
 
-const formatErrorMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> => {
-  return addPrefixToParameters(chalk.red.bold('ERROR!'), ...args);
-};
+const formatErrorMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> =>
+  addPrefixToParameters(chalk.red.bold('ERROR!'), ...args);
 
-const formatFatalMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> => {
-  return addPrefixToParameters(chalk.red.bold('FATAL!'), ...args);
-};
+const formatFatalMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> =>
+  addPrefixToParameters(chalk.red.bold('FATAL!'), ...args);
 
-const formatInfoMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> => {
-  return addPrefixToParameters(chalk.green('INFO!'), ...args);
-};
+const formatInfoMessageHeader = (...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> =>
+  addPrefixToParameters(chalk.green('INFO!'), ...args);
 
 export const CLI_LOGGER = 'jhipster:cli';
 

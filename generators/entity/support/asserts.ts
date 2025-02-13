@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -41,26 +41,20 @@ const filterNumber = (input: any, isSigned = false, isDecimal = false) => {
  * @param {any} input input
  * @returns {boolean} true if input is number; false otherwise
  */
-const isNumber = (input: any): input is number => {
-  return !isNaN(filterNumber(input));
-};
+const isNumber = (input: any): input is number => !isNaN(filterNumber(input));
 
 /**
  * @private
  * @param {any} input input
  * @returns {boolean} true if input is a signed number; false otherwise
  */
-const isSignedNumber = (input: any): boolean => {
-  return !isNaN(filterNumber(input, true));
-};
+const isSignedNumber = (input: any): boolean => !isNaN(filterNumber(input, true));
 
 /**
  * @private
  * @param {any} input input
  * @returns {boolean} true if input is a signed decimal number; false otherwise
  */
-const isSignedDecimalNumber = (input: any): boolean => {
-  return !isNaN(filterNumber(input, true, true));
-};
+const isSignedDecimalNumber = (input: any): boolean => !isNaN(filterNumber(input, true, true));
 
 export { isNumber, isSignedNumber, isSignedDecimalNumber };

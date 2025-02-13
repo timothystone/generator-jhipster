@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -41,17 +41,17 @@ _%>
     <%_ } else if (field.fieldTypeBinary && field.blobContentTypeImage) { _%>
         @if (<%= entityInstance %>Ref.<%= fieldName %>) {
           <div>
-            <a (click)="openFile(<%= entityInstance %>Ref.<%= fieldName %> ?? '', <%= entityInstance %>Ref.<%= fieldName %>ContentType)">
+            <a (click)="openFile(<%= entityInstance %>Ref.<%= fieldName %><% if (!field.fieldValidationRequired) { %> ?? ''<% } %>, <%= entityInstance %>Ref.<%= fieldName %>ContentType)">
               <img [src]="'data:' + <%= entityInstance %>Ref.<%= fieldName %>ContentType + ';base64,' + <%= entityInstance %>Ref.<%= fieldName %>" style="max-width: 100%;" alt="<%= entityInstance %>"/>
             </a>
-            {{ <%= entityInstance %>Ref.<%= fieldName %>ContentType }}, {{ byteSize(<%= entityInstance %>Ref.<%= fieldName %> ?? '') }}
+            {{ <%= entityInstance %>Ref.<%= fieldName %>ContentType }}, {{ byteSize(<%= entityInstance %>Ref.<%= fieldName %><% if (!field.fieldValidationRequired) { %> ?? ''<% } %>) }}
           </div>
         }
     <%_ } else if (field.fieldTypeBinary && field.blobContentTypeAny) { _%>
         @if (<%= entityInstance %>Ref.<%= fieldName %>) {
           <div>
-            <a (click)="openFile(<%= entityInstance %>Ref.<%= fieldName %> ?? '', <%= entityInstance %>Ref.<%= fieldName %>ContentType)">__jhiTranslateTag__('entity.action.open')</a>
-            {{ <%= entityInstance %>Ref.<%= fieldName %>ContentType }}, {{ byteSize(<%= entityInstance %>Ref.<%= fieldName %> ?? '') }}
+            <a (click)="openFile(<%= entityInstance %>Ref.<%= fieldName %><% if (!field.fieldValidationRequired) { %> ?? ''<% } %>, <%= entityInstance %>Ref.<%= fieldName %>ContentType)">__jhiTranslateTag__('entity.action.open')</a>
+            {{ <%= entityInstance %>Ref.<%= fieldName %>ContentType }}, {{ byteSize(<%= entityInstance %>Ref.<%= fieldName %><% if (!field.fieldValidationRequired) { %> ?? ''<% } %>) }}
           </div>
         }
     <%_ } else if (field.fieldTypeDuration) { _%>
@@ -71,7 +71,6 @@ for (const relationship of relationships.filter(rel => !rel.otherEntityIsEmbedde
     const relationshipName = relationship.relationshipName;
     const relationshipFieldName = relationship.relationshipFieldName;
     const relationshipFieldNamePlural = relationship.relationshipFieldNamePlural;
-    const relationshipNameHumanized = relationship.relationshipNameHumanized;
     const otherEntityField = relationship.otherEntityField;
     if (persistableRelationship) {
 _%>

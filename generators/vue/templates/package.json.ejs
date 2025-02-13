@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -102,8 +102,6 @@
     "clean-www": "rimraf <%= this.relativeDir(clientRootDir, clientDistDir) %>",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "prettier:check": "prettier --check \"{,src/**/,.blueprint/**/}*.{<%= prettierExtensions %>}\"",
-    "prettier:format": "prettier --write \"{,src/**/,.blueprint/**/}*.{<%= prettierExtensions %>}\"",
     "serve": "<%= clientPackageManager %> run start --",
     "start": "<%= clientPackageManager %> run webapp:dev --",
     "start-tls": "<%= clientPackageManager %> run webapp:dev -- --env.tls",

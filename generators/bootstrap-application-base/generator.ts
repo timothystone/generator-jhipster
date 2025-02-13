@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -43,6 +43,7 @@ import { loadCommandConfigsIntoApplication, loadCommandConfigsKeysIntoTemplatesC
 import { getConfigWithDefaults } from '../../lib/jhipster/default-application-options.js';
 import { removeFieldsWithNullishValues } from '../base/support/index.js';
 import { convertFieldBlobType, getBlobContentType, isFieldBinaryType, isFieldBlobType } from '../../lib/application/field-types.js';
+import type { Entity } from '../../lib/types/application/entity.js';
 import { createAuthorityEntity, createUserEntity, createUserManagementEntity } from './utils.js';
 import { exportJDLTransform, importJDLTransform } from './support/index.js';
 
@@ -127,6 +128,7 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
           backendType: this.jhipsterConfig.backendType ?? 'Java',
           syncUserWithIdp: this.jhipsterConfig.syncUserWithIdp,
           packageJsonScripts: {},
+          clientPackageJsonScripts: {},
         });
       },
       loadNodeDependencies({ application }) {
@@ -140,6 +142,9 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
           application.nodeDependencies,
           this.fetchFromInstalledJHipster(GENERATOR_COMMON, 'resources', 'package.json'),
         );
+      },
+      loadPackageJson({ application }) {
+        application.jhipsterPackageJson = packageJson;
       },
     });
   }
@@ -186,7 +191,7 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
 
           backendTypeSpringBoot: ({ backendType }) => backendType === 'Java',
           backendTypeJavaAny: ({ backendTypeSpringBoot }) => backendTypeSpringBoot,
-          clientFrameworkBuiltIn: ({ clientFramework }) => ['angular', 'vue', 'react'].includes(clientFramework),
+          clientFrameworkBuiltIn: ({ clientFramework }) => ['angular', 'vue', 'react'].includes(clientFramework!),
         });
       },
       userRelationship({ applicationDefaults }) {
@@ -214,7 +219,7 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
         applicationDefaults({
           generateBuiltInUserEntity: ({ generateUserManagement, syncUserWithIdp }) => generateUserManagement || syncUserWithIdp,
           generateBuiltInAuthorityEntity: ({ generateBuiltInUserEntity, databaseType }) =>
-            generateBuiltInUserEntity && databaseType !== 'cassandra',
+            generateBuiltInUserEntity! && databaseType !== 'cassandra',
         });
       },
     });
@@ -235,11 +240,11 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
         }
 
         if (entityConfig.changelogDate) {
-          entityConfig.annotations.changelogDate = entityConfig.changelogDate;
+          entityConfig.annotations!.changelogDate = entityConfig.changelogDate;
           delete entityConfig.changelogDate;
         }
-        if (!entityConfig.annotations.changelogDate) {
-          entityConfig.annotations.changelogDate = this.dateFormatForLiquibase();
+        if (!entityConfig.annotations!.changelogDate) {
+          entityConfig.annotations!.changelogDate = this.dateFormatForLiquibase();
           entityStorage.save();
         }
       },
@@ -355,6 +360,17 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
         this.validateResult(loadEntitiesOtherSide(entities, { application }));
 
         for (const entity of entities) {
+          if (!entity.builtIn) {
+            const invalidRelationship = entity.relationships.find(
+              ({ otherEntity }) => !otherEntity.builtIn && entity.microserviceName !== otherEntity.microserviceName,
+            );
+            if (invalidRelationship) {
+              throw new Error(
+                `Microservice entities cannot have relationships with entities from other microservice: '${entity.name}.${invalidRelationship.relationshipName}'`,
+              );
+            }
+          }
+
           for (const field of entity.fields) {
             if (isFieldBinaryType(field)) {
               if (isFieldBlobType(field)) {
@@ -428,7 +444,7 @@ export default class BootstrapApplicationBase extends BaseApplicationGenerator {
         entity.anyRelationshipIsRequired = entity.relationships.some(rel => rel.relationshipRequired || rel.id);
       },
       checkForCircularRelationships({ entity }) {
-        const detectCyclicRequiredRelationship = (entity, relatedEntities) => {
+        const detectCyclicRequiredRelationship = (entity: Entity, relatedEntities: Set<Entity>) => {
           if (relatedEntities.has(entity)) return true;
           relatedEntities.add(entity);
           return entity.relationships

@@ -1,5 +1,5 @@
 <%_
-const tsKeyId = this.generateTestEntityId(user.primaryKey.type);
+const tsKeyId = user.primaryKey.tsSampleValues[0];
 _%>
 import { vitest } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
@@ -10,8 +10,6 @@ import { type RouteLocation, type Router } from 'vue-router';
 import AlertService from '@/shared/alert/alert.service';
 import UserManagementView from './user-management-view.vue';
 import { Authority } from '@/shared/security/authority';
-
-type UserManagementViewComponentType = InstanceType<typeof UserManagementView>;
 
 let route: Partial<RouteLocation>;
 let router: Router;

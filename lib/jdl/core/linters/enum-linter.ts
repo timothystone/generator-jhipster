@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -71,14 +71,8 @@ function checkForDuplicatedEnums(enumDeclarations: EnumDeclaration[]) {
 }
 
 function checkForUnusedEnums(enumDeclarations: EnumDeclaration[], fieldDeclarations: FieldDeclaration[]) {
-  const fieldTypes = fieldDeclarations.map(fieldDeclaration => {
-    return fieldDeclaration.children.type[0].children.NAME[0].image;
-  });
-  const declaredEnums = new Set(
-    enumDeclarations.map(enumDeclaration => {
-      return enumDeclaration.children.NAME[0].image;
-    }),
-  );
+  const fieldTypes = fieldDeclarations.map(fieldDeclaration => fieldDeclaration.children.type[0].children.NAME[0].image);
+  const declaredEnums = new Set(enumDeclarations.map(enumDeclaration => enumDeclaration.children.NAME[0].image));
   fieldTypes.forEach(usedEnum => {
     declaredEnums.delete(usedEnum);
   });

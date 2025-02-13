@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -107,18 +107,28 @@ export default class PrettierGenerator extends BaseApplicationGenerator {
   get postWriting() {
     return this.asPostWritingTaskGroup({
       addPrettierDependencies({ application }) {
+        const { clientBundlerWebpack, clientFrameworkBuiltIn, clientFrameworkNo, monorepository, nodeDependencies, prettierExtensions } =
+          application;
         this.packageJson.merge({
           devDependencies: {
-            prettier: application.nodeDependencies.prettier,
+            prettier: nodeDependencies.prettier,
           },
         });
-        if (application.monorepository && !this.monorepositoryRoot) return;
+        if (monorepository && !this.monorepositoryRoot) return;
 
         if (this.fromInit) {
           this.packageJson.merge({
             scripts: {
               'prettier-check': 'prettier --check "{,**/}*.{md,json,yml,html,cjs,mjs,js,cts,mts,ts,tsx,css,scss,vue,java}"',
               'prettier-format': 'prettier --write "{,**/}*.{md,json,yml,html,cjs,mjs,js,cts,mts,ts,tsx,css,scss,vue,java}"',
+            },
+          });
+        } else if (clientFrameworkBuiltIn || clientFrameworkNo) {
+          const folders = ['', 'src/**/', ...(clientBundlerWebpack ? ['webpack/'] : []), '.blueprint/**/'];
+          this.packageJson.merge({
+            scripts: {
+              'prettier:check': `prettier --check "{${folders.join(',')}}*.{${prettierExtensions}}"`,
+              'prettier:format': `prettier --write "{${folders.join(',')}}*.{${prettierExtensions}}"`,
             },
           });
         }

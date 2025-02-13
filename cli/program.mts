@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -401,7 +401,13 @@ export const buildJHipster = async ({
   ...buildOptions
 }: BuildJHipsterOptions = {}) => {
   createEnvBuilder =
-    createEnvBuilder ?? (async options => EnvironmentBuilder.create(options).prepare({ blueprints, lookups, devBlueprintPath }));
+    createEnvBuilder ??
+    (async options =>
+      EnvironmentBuilder.create(options).prepare({ blueprints, lookups, devBlueprintPath } as {
+        blueprints?: Record<string, string>;
+        lookups?: any[];
+        devBlueprintPath?: string;
+      }));
   if (!env) {
     envBuilder = envBuilder ?? (await createEnvBuilder());
     env = env ?? envBuilder.getEnvironment();

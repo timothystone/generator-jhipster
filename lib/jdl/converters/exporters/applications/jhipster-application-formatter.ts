@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -37,9 +37,7 @@ export function formatApplicationsToExport(applications: Record<string, JDLAppli
   if (!applications) {
     throw new Error('Applications have to be passed to be exported.');
   }
-  return Object.values(applications).map(application => {
-    return setUpApplicationStructure(application);
-  });
+  return Object.values(applications).map(application => setUpApplicationStructure(application));
 }
 
 /**

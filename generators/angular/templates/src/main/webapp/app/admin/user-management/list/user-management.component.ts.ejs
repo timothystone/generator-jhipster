@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -38,13 +38,11 @@ import { User } from '../user-management.model';
 import UserManagementDeleteDialogComponent from '../delete/user-management-delete-dialog.component';
 
 @Component({
-  standalone: true,
   selector: '<%= jhiPrefixDashed %>-user-mgmt',
   templateUrl: './user-management.component.html',
   imports: [
     RouterModule,
     SharedModule,
-    UserManagementDeleteDialogComponent,
 <%_ if (!databaseTypeCassandra) { _%>
     SortDirective,
     SortByDirective,
@@ -83,7 +81,7 @@ export default class UserManagementComponent implements OnInit {
     this.userService.update({ ...user, activated: isActivated }).subscribe(() => this.loadAll());
   }
 
-  trackIdentity(item: User): <%= this.getTypescriptKeyType(user.primaryKey.type) %> {
+  trackIdentity(item: User): <%= user.primaryKey.tsType %> {
     return item.id!;
   }
 

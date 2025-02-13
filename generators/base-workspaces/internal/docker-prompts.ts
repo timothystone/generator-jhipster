@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -368,7 +368,7 @@ async function askForDockerPushCommand() {
 
 /**
  * Get App Folders
- * @param input path to join to destination path
+ * @param directory path to join to destination path
  * @param deploymentApplicationType type of application being composed
  * @returns {Array} array of string representing app folders
  */

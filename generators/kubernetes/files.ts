@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -120,6 +120,9 @@ export function writeFiles() {
 
           if (appConfig.devServerPort !== undefined) {
             this.keycloakRedirectUris += `"http://localhost:${appConfig.devServerPort}/*", `;
+          }
+          if (appConfig.devServerPortProxy !== undefined) {
+            this.keycloakRedirectUris += `"http://localhost:${appConfig.devServerPortProxy}/*", `;
           }
 
           this.debug(chalk.red.bold(`${appConfig.baseName} has redirect URIs ${this.keycloakRedirectUris}`));

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -35,7 +35,11 @@ describe(`generator - ${generator}`, () => {
 
   describe('with defaults options', () => {
     before(async () => {
-      await helpers.runJHipster(generator).withJHipsterConfig().withMockedJHipsterGenerators().withMockedSource();
+      await helpers
+        .runJHipster(generator)
+        .withJHipsterConfig()
+        .withMockedJHipsterGenerators({ except: ['jhipster:java:node'] })
+        .withMockedSource();
     });
 
     it('should match files snapshot', () => {
@@ -50,6 +54,7 @@ describe(`generator - ${generator}`, () => {
       expect(result.getComposedGenerators()).toMatchInlineSnapshot(`
 [
   "jhipster:bootstrap",
+  "jhipster:java:build-tool",
   "jhipster:maven",
   "jhipster:project-name",
 ]

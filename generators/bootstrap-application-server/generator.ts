@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -31,6 +31,7 @@ import {
 import { loadRequiredConfigIntoEntity, prepareEntityPrimaryKeyForTemplates } from '../base-application/support/index.js';
 import {
   addEntitiesOtherRelationships,
+  getPrimaryKeyValue,
   hibernateSnakeCase,
   loadDerivedServerConfig,
   loadRequiredConfigDerivedProperties,
@@ -43,7 +44,6 @@ import { getPomVersionProperties } from '../maven/support/index.js';
 import { prepareField as prepareFieldForLiquibaseTemplates } from '../liquibase/support/index.js';
 import { getDockerfileContainers } from '../docker/utils.js';
 import { normalizePathEnd } from '../base/support/path.js';
-import { getFrontendAppName } from '../base/support/index.js';
 import { getMainClassName } from '../java/support/index.js';
 import { loadConfig, loadDerivedConfig } from '../../lib/internal/index.js';
 import serverCommand from '../server/command.js';
@@ -95,6 +95,7 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
         applicationDefaults({
           javaVersion: this.useVersionPlaceholders ? 'JAVA_VERSION' : JAVA_VERSION,
           packageInfoJavadocs: [],
+          javaNodeBuildPaths: [],
           javaProperties: {},
           javaManagedProperties: {},
           javaDependencies: ({ javaDependencies }) => ({
@@ -124,11 +125,8 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
       prepareForTemplates({ application: app }) {
         const application: any = app;
         // Application name modified, using each technology's conventions
-        application.frontendAppName = getFrontendAppName({ baseName: application.baseName });
         application.mainClass = getMainClassName({ baseName: application.baseName });
-
         application.jhiTablePrefix = hibernateSnakeCase(application.jhiPrefix);
-
         application.mainJavaDir = SERVER_MAIN_SRC_DIR;
         application.mainJavaPackageDir = normalizePathEnd(`${SERVER_MAIN_SRC_DIR}${application.packageFolder}`);
         application.mainJavaResourceDir = SERVER_MAIN_RES_DIR;
@@ -147,10 +145,10 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
 
   get loadingEntities() {
     return this.asLoadingEntitiesTaskGroup({
-      loadingEntities({ application, entitiesToLoad }) {
+      loadingEntities({ entitiesToLoad }) {
         for (const { entityName } of entitiesToLoad) {
           const entity = this.sharedData.getEntity(entityName);
-          loadRequiredConfigIntoEntity.call(this, entity, application);
+          loadRequiredConfigIntoEntity.call(this, entity, this.jhipsterConfigWithDefaults);
         }
       },
       requiredOtherSideRelationships() {
@@ -165,8 +163,8 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
 
   get preparingEachEntity() {
     return this.asPreparingEachEntityTaskGroup({
-      prepareEntity({ entity }) {
-        prepareEntityServerForTemplates(entity);
+      prepareEntity({ entity, application }) {
+        prepareEntityServerForTemplates(entity, application);
         loadRequiredConfigDerivedProperties(entity);
       },
       preparePrimaryKey({ entity, application }) {
@@ -184,8 +182,8 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
 
   get preparingEachEntityField() {
     return this.asPreparingEachEntityFieldTaskGroup({
-      prepareDatabase({ entity, field }) {
-        prepareFieldForLiquibaseTemplates(entity, field);
+      prepareDatabase({ application, field }) {
+        prepareFieldForLiquibaseTemplates(application, field);
       },
     });
   }
@@ -222,5 +220,27 @@ export default class BoostrapApplicationServer extends BaseApplicationGenerator 
 
   get [BaseApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
     return this.postPreparingEachEntity;
+  }
+
+  get default() {
+    return this.asDefaultTaskGroup({
+      async postPreparingEntity({ application, entities }) {
+        if (!application.backendTypeJavaAny) return;
+        for (const entity of entities) {
+          if (entity.primaryKey) {
+            entity.resetFakerSeed(`${application.baseName}post-prepare-server`);
+            entity.primaryKey.javaSampleValues ??= [
+              getPrimaryKeyValue(entity.primaryKey, application.databaseType!, 1),
+              getPrimaryKeyValue(entity.primaryKey, application.databaseType!, 2),
+              getPrimaryKeyValue(entity.primaryKey, application.databaseType!, entity.faker.number.int({ min: 10, max: 100 })),
+            ];
+          }
+        }
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.DEFAULT]() {
+    return this.default;
   }
 }

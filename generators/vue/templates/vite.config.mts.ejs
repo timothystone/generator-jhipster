@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -72,6 +72,7 @@ let config = defineConfig({
     alias: {
       vue: '@vue/compat/dist/vue.esm-bundler.js',
       '@': fileURLToPath(new URL('./<%- this.relativeDir(clientRootDir, clientSrcDir) %>app/', import.meta.url)),
+      '@content': fileURLToPath(new URL('./<%- this.relativeDir(clientRootDir, clientSrcDir) %>content/', import.meta.url)),
     },
   },
   define: {
@@ -81,7 +82,7 @@ let config = defineConfig({
   },
   server: {
     host: true,
-    port: 9000,
+    port: <%- devServerPort %>,
     proxy: Object.fromEntries(
       [
         '/api',

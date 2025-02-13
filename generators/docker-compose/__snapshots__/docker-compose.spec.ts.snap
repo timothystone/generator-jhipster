@@ -641,7 +641,6 @@ jhipster:
     image: postgresql-placeholder
     environment:
       - POSTGRES_USER=mspsql
-      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test:
@@ -1031,7 +1030,6 @@ jhipster:
     image: postgresql-placeholder
     environment:
       - POSTGRES_USER=mspsql
-      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test:
@@ -1092,12 +1090,10 @@ jhipster:
       - BUCKET=mscouchbase
     healthcheck:
       test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:8091/ui/index.html
+        - CMD-SHELL
+        - curl -f "http://localhost:8091/ui/index.html" && sleep 20
       interval: 5s
-      timeout: 5s
+      timeout: 25s
       retries: 10
   
   msmariadb:
@@ -1445,7 +1441,6 @@ jhipster:
     image: postgresql-placeholder
     environment:
       - POSTGRES_USER=mspsql
-      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test:
@@ -1776,7 +1771,6 @@ jhipster:
     image: postgresql-placeholder
     environment:
       - POSTGRES_USER=mspsql
-      - POSTGRES_PASSWORD=password
       - POSTGRES_HOST_AUTH_METHOD=trust
     healthcheck:
       test:
@@ -1832,12 +1826,10 @@ jhipster:
       - BUCKET=mscouchbase
     healthcheck:
       test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:8091/ui/index.html
+        - CMD-SHELL
+        - curl -f "http://localhost:8091/ui/index.html" && sleep 20
       interval: 5s
-      timeout: 5s
+      timeout: 25s
       retries: 10
   
   msmariadb:

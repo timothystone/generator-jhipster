@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,9 +19,7 @@
 import { lowerFirst } from 'lodash-es';
 import { formatDocAsJavaDoc } from '../../java/support/doc.js';
 
-const doesTheEnumValueHaveACustomValue = enumValue => {
-  return enumValue.includes('(');
-};
+const doesTheEnumValueHaveACustomValue = enumValue => enumValue.includes('(');
 
 const getCustomValuesState = enumValues => {
   const state = {
@@ -73,9 +71,7 @@ const extractEnumInstance = field => {
   return lowerFirst(fieldType);
 };
 
-const extractEnumEntries = field => {
-  return field.fieldValues.split(',').map(fieldValue => fieldValue.trim());
-};
+const extractEnumEntries = field => field.fieldValues.split(',').map(fieldValue => fieldValue.trim());
 
 /**
  * Build an enum object

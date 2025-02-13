@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -21,23 +21,14 @@ import chalk from 'chalk';
 
 import { packageJson } from '../../../lib/index.js';
 
-const isNodeVersionCompliantWithRequirement = (gatheredFromEnvironment, requiredVersion) => {
-  return !semver.satisfies(gatheredFromEnvironment, requiredVersion);
-};
+const isNodeVersionCompliantWithRequirement = (gatheredFromEnvironment, requiredVersion) =>
+  !semver.satisfies(gatheredFromEnvironment, requiredVersion);
 
-const getNodeReleaseFromCurrentProcess = () => {
-  return process.release || {};
-};
+const getNodeReleaseFromCurrentProcess = () => process.release || {};
 
-const isNodeLTS = release => {
-  return release.lts;
-};
-const getNodeVersionFromCurrentProcess = () => {
-  return process.version;
-};
-const requiredEngineFromPackageJson = () => {
-  return packageJson.engines.node;
-};
+const isNodeLTS = release => release.lts;
+const getNodeVersionFromCurrentProcess = () => process.version;
+const requiredEngineFromPackageJson = () => packageJson.engines.node;
 
 /**
  * @private

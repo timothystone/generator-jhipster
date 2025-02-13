@@ -10,6 +10,7 @@ import type { JavaAnnotation } from '../java/support/add-java-annotation.ts';
 import type { ApplicationPropertiesNeedles } from './support/needles.ts';
 
 export type SpringEntity = {
+  entitySearchLayer?: boolean;
   /* Generate entity's Entity */
   entityDomainLayer?: boolean;
   /* Generate entity's Repository */
@@ -19,6 +20,12 @@ export type SpringEntity = {
   entitySpringPreAuthorize?: string;
   entitySpringReadPreAuthorize?: string;
   skipJunitTests?: string;
+  entityR2dbcRepository?: boolean;
+};
+
+export type ServerEntity = SpringEntity & {
+  skipDbChangelog?: boolean;
+  entityAbsolutePackage?: string;
 };
 
 export type SpringBootSourceType = JavaSourceType &
@@ -151,7 +158,10 @@ export type SpringBootApplication = JavaApplication &
     databaseMigrationLiquibase: boolean;
 
     communicationSpringWebsocket: boolean;
+    anyEntityHasRelationshipWithUser: boolean;
     requiresDeleteAllUsers: boolean;
     reactorBlock: string;
     reactorBlockOptional: string;
+
+    domains: string[];
   };

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -119,12 +119,19 @@ export function getConfigForClientApplication(options: ApplicationDefaults = {})
     options[CLIENT_THEME_VARIANT] = 'primary';
   }
   if (clientFramework === 'vue') {
-    options.clientBundler = options.microfrontend || options.applicationType === 'microservice' ? 'webpack' : 'vite';
+    options.clientBundler ??= options.microfrontend || options.applicationType === 'microservice' ? 'webpack' : 'vite';
+    options.devServerPort ??= options.clientBundler === 'webpack' ? 9060 : 9000;
   } else if (clientFramework === 'react') {
-    options.clientBundler = 'webpack';
+    options.clientBundler ??= 'webpack';
+    options.devServerPort ??= 9060;
   } else if (clientFramework === 'angular') {
-    options.clientBundler = 'webpack';
+    options.clientBundler ??= 'webpack';
+    options.devServerPort ??= 4200;
+  } else {
+    options.devServerPort ??= 9060;
   }
+  options.devServerPortProxy ??= options.clientBundler === 'webpack' ? 9000 : undefined;
+
   return options;
 }
 
@@ -193,6 +200,8 @@ export function getConfigForDatabaseType(options: ApplicationDefaults = {}): App
       options[DEV_DATABASE_TYPE] = options[PROD_DATABASE_TYPE];
     }
   }
+  options.databaseMigration ??= options.databaseType === SQL ? 'liquibase' : 'no';
+
   return options;
 }
 

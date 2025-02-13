@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 import {
-  filterEntitiesAndPropertiesForClient,
   filterEntitiesForClient,
+  filterEntityPropertiesForClient,
   loadClientConfig,
   loadDerivedClientConfig,
   preparePostEntityClientDerivedProperties,
@@ -27,6 +27,7 @@ import BaseApplicationGenerator from '../base-application/index.js';
 import { loadStoredAppOptions } from '../app/support/index.js';
 import clientCommand from '../client/command.js';
 import { loadConfig, loadDerivedConfig } from '../../lib/internal/index.js';
+import { getFrontendAppName } from '../base/support/index.js';
 
 export default class BootStrapApplicationClient extends BaseApplicationGenerator {
   constructor(args: any, options: any, features: any) {
@@ -68,6 +69,9 @@ export default class BootStrapApplicationClient extends BaseApplicationGenerator
         loadDerivedConfig(clientCommand.configs, { application });
         loadDerivedClientConfig({ application });
       },
+      prepareForTemplates({ application }) {
+        application.frontendAppName = getFrontendAppName({ baseName: application.baseName });
+      },
     });
   }
 
@@ -75,19 +79,26 @@ export default class BootStrapApplicationClient extends BaseApplicationGenerator
     return this.preparing;
   }
 
-  get postPreparingEachEntity() {
-    return this.asPostPreparingEachEntityTaskGroup({
+  get default() {
+    return this.asDefaultTaskGroup({
       control({ control }) {
-        control.filterEntitiesAndPropertiesForClient = filterEntitiesAndPropertiesForClient;
-        control.filterEntitiesForClient = filterEntitiesForClient;
+        control.filterEntitiesForClient ??= filterEntitiesForClient;
+        control.filterEntityPropertiesForClient ??= filterEntityPropertiesForClient;
+        control.filterEntitiesAndPropertiesForClient ??= entities => {
+          entities = control.filterEntitiesForClient!(entities);
+          entities.forEach(control.filterEntityPropertiesForClient!);
+          return entities;
+        };
       },
-      postPreparingEntity({ entity }) {
-        preparePostEntityClientDerivedProperties(entity);
+      async postPreparingEntity({ entities }) {
+        for (const entity of entities) {
+          await preparePostEntityClientDerivedProperties(entity);
+        }
       },
     });
   }
 
-  get [BaseApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
-    return this.postPreparingEachEntity;
+  get [BaseApplicationGenerator.DEFAULT]() {
+    return this.default;
   }
 }

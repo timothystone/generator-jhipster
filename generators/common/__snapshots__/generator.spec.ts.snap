@@ -115,6 +115,8 @@ This application was generated using JHipster JHIPSTER_VERSION, you can find doc
   },
   "engines": {},
   "scripts": {
+    "prettier:check": "prettier --check \\"{,src/**/,webpack/,.blueprint/**/}*.{md,json,yml,js,cjs,mjs,ts,cts,mts}\\"",
+    "prettier:format": "prettier --write \\"{,src/**/,webpack/,.blueprint/**/}*.{md,json,yml,js,cjs,mjs,ts,cts,mts}\\"",
     "prepare": "husky"
   },
   "config": {
@@ -142,12 +144,13 @@ sonar.test.inclusions = src/test/**/*.*, src/main/webapp/app/**/*.spec.ts
 sonar.coverage.jacoco.xmlReportPaths = target/site/**/jacoco*.xml
 sonar.java.codeCoveragePlugin = jacoco
 sonar.junit.reportPaths = target/surefire-reports,target/failsafe-reports
-sonar.testExecutionReportPaths = target/test-results/jest/TESTS-results-sonar.\\
-  xml
+sonar.testExecutionReportPaths = \\
+  target/test-results/jest/TESTS-results-sonar.xml
 sonar.javascript.lcov.reportPaths = target/test-results/lcov.info
 
 sonar.sourceEncoding = UTF-8
-sonar.exclusions = src/main/webapp/content/**/*.*, src/main/webapp/i18n/*.js, \\
+sonar.exclusions = \\
+  src/main/webapp/content/**/*.*, src/main/webapp/i18n/*.js, \\
   target/classes/static/**/*.*
 
 sonar.issue.ignore.multicriteria = \\

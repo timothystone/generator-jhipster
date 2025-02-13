@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -23,9 +23,7 @@
  * @param text the text to check, which should not begin with the closing wrapper character '<'
  * @return {boolean} true if the text is considered wrapped, false otherwise
  */
-const isSimpleText = (previousLine, text) => {
-  return !previousLine.endsWith('>') && !text.startsWith('<');
-};
+const isSimpleText = (previousLine, text) => !previousLine.endsWith('>') && !text.startsWith('<');
 
 /**
  * Format As Liquibase Remarks

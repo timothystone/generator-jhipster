@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,61 +19,22 @@
 import { defaults } from 'lodash-es';
 import { Validations, authenticationTypes, databaseTypes, fieldTypes } from '../../lib/jhipster/index.js';
 import { loadRequiredConfigIntoEntity } from '../base-application/support/index.js';
-import { PaginationTypes } from '../../lib/jhipster/entity-options.js';
 import { LOGIN_REGEX, LOGIN_REGEX_JS } from '../generator-constants.js';
 import { getDatabaseTypeData } from '../server/support/database.js';
 import type BaseApplicationGenerator from '../base-application/generator.js';
 import { formatDateForChangelog } from '../base/support/timestamp.js';
+import type { Entity as ApplicationEntity, UserEntity } from '../../lib/types/application/entity.js';
 
 const { CASSANDRA } = databaseTypes;
 const { OAUTH2 } = authenticationTypes;
 const { CommonDBTypes } = fieldTypes;
 
-const { STRING: TYPE_STRING, BOOLEAN: TYPE_BOOLEAN, INSTANT } = CommonDBTypes;
-
-export const auditableEntityFields = () => [
-  {
-    fieldName: 'createdBy',
-    fieldType: TYPE_STRING,
-    readonly: true,
-    skipServer: true,
-    builtIn: true,
-    fieldValidateRules: [Validations.MAXLENGTH],
-    fieldValidateRulesMaxlength: 50,
-    autoGenerate: true,
-  },
-  {
-    fieldName: 'createdDate',
-    fieldType: INSTANT,
-    readonly: true,
-    skipServer: true,
-    builtIn: true,
-    autoGenerate: true,
-  },
-  {
-    fieldName: 'lastModifiedBy',
-    fieldType: TYPE_STRING,
-    readonly: true,
-    skipServer: true,
-    builtIn: true,
-    fieldValidateRules: [Validations.MAXLENGTH],
-    fieldValidateRulesMaxlength: 50,
-    autoGenerate: true,
-  },
-  {
-    fieldName: 'lastModifiedDate',
-    fieldType: INSTANT,
-    readonly: true,
-    skipServer: true,
-    builtIn: true,
-    autoGenerate: true,
-  },
-];
+const { STRING: TYPE_STRING, BOOLEAN: TYPE_BOOLEAN } = CommonDBTypes;
 
 const authorityEntityName = 'Authority';
 
-export function createUserEntity(this: BaseApplicationGenerator, customUserData = {}, application) {
-  const userEntityDefinition = this.getEntityConfig('User')?.getAll();
+export function createUserEntity(this: BaseApplicationGenerator, customUserData = {}, application): Partial<UserEntity> {
+  const userEntityDefinition = this.getEntityConfig('User')?.getAll() as Partial<UserEntity>;
   if (userEntityDefinition) {
     if (userEntityDefinition.relationships && userEntityDefinition.relationships.length > 0) {
       this.log.warn('Relationships on the User entity side will be disregarded');
@@ -86,15 +46,18 @@ export function createUserEntity(this: BaseApplicationGenerator, customUserData 
 
   const creationTimestamp = new Date(this.jhipsterConfig.creationTimestamp ?? Date.now());
   const cassandraOrNoDatabase = application.databaseTypeNo || application.databaseTypeCassandra;
+  const hasImageField = !cassandraOrNoDatabase;
   // Create entity definition for built-in entity to make easier to deal with relationships.
-  const user = {
+  const user: Partial<UserEntity> = {
     name: 'User',
     builtIn: true,
     changelogDate: formatDateForChangelog(creationTimestamp),
     entityTableName: `${application.jhiTablePrefix}_user`,
     relationships: [],
     fields: userEntityDefinition ? userEntityDefinition.fields || [] : [],
-    dto: true,
+    dto: 'any',
+    dtoMapstruct: true,
+    dtoAny: true,
     adminUserDto: `AdminUser${application.dtoSuffix ?? ''}`,
     builtInUser: true,
     skipClient: application.clientFrameworkReact || application.clientFrameworkVue,
@@ -104,7 +67,7 @@ export function createUserEntity(this: BaseApplicationGenerator, customUserData 
     entityRestLayer: false,
     entitySearchLayer: false,
     hasImageField: !cassandraOrNoDatabase,
-    pagination: cassandraOrNoDatabase ? PaginationTypes.NO : PaginationTypes.PAGINATION,
+    pagination: cassandraOrNoDatabase ? 'no' : 'pagination',
     auditableEntity: !cassandraOrNoDatabase,
     i18nKeyPrefix: 'userManagement',
     ...customUserData,
@@ -114,7 +77,7 @@ export function createUserEntity(this: BaseApplicationGenerator, customUserData 
   // Fallback to defaults for test cases.
   loadRequiredConfigIntoEntity(user, this.jhipsterConfigWithDefaults);
 
-  const oauth2 = user.authenticationType === OAUTH2;
+  const oauth2 = (user as any).authenticationType === OAUTH2;
   // If oauth2 or databaseType is cassandra, force type string, otherwise keep undefined for later processing.
   const userIdType = oauth2 || user.databaseType === CASSANDRA ? TYPE_STRING : undefined;
   const fieldValidateRulesMaxlength = userIdType === TYPE_STRING ? 100 : undefined;
@@ -161,7 +124,7 @@ export function createUserEntity(this: BaseApplicationGenerator, customUserData 
       fieldValidateRulesMaxlength: 191,
       builtIn: true,
     },
-    ...(user.hasImageField
+    ...(hasImageField
       ? [
           {
             fieldName: 'imageUrl',
@@ -194,14 +157,18 @@ export function createUserEntity(this: BaseApplicationGenerator, customUserData 
   return user;
 }
 
-export function createUserManagementEntity(this: BaseApplicationGenerator, customUserManagementData = {}, application) {
+export function createUserManagementEntity(
+  this: BaseApplicationGenerator,
+  customUserManagementData = {},
+  application,
+): Partial<ApplicationEntity> {
   const user = createUserEntity.call(this, {}, application);
-  for (const field of user.fields) {
+  for (const field of user.fields ?? []) {
     // Login is used as the id field in rest api.
     if (field.fieldName === 'login') {
-      field.id = true;
+      (field as any).id = true;
     } else if (field.fieldName === 'id') {
-      field.id = false;
+      (field as any).id = false;
       field.fieldValidateRules = [Validations.REQUIRED];
       // Set id type fallback since it's not id anymore and will not be calculated.
       field.fieldType = field.fieldType ?? getDatabaseTypeData(application.databaseType).defaultPrimaryKeyType;
@@ -241,8 +208,8 @@ export function createUserManagementEntity(this: BaseApplicationGenerator, custo
   return userManagement;
 }
 
-export function createAuthorityEntity(this: BaseApplicationGenerator, customAuthorityData = {}, application) {
-  const entityDefinition = this.getEntityConfig(authorityEntityName)?.getAll();
+export function createAuthorityEntity(this: BaseApplicationGenerator, customAuthorityData = {}, application): Partial<ApplicationEntity> {
+  const entityDefinition = this.getEntityConfig(authorityEntityName)?.getAll() as Partial<ApplicationEntity>;
   if (entityDefinition) {
     if (entityDefinition.relationships && entityDefinition.relationships.length > 0) {
       this.log.warn(`Relationships on the ${authorityEntityName} entity side will be disregarded`);
@@ -255,7 +222,7 @@ export function createAuthorityEntity(this: BaseApplicationGenerator, customAuth
   const creationTimestamp = new Date(this.jhipsterConfig.creationTimestamp ?? Date.now());
   creationTimestamp.setMinutes(creationTimestamp.getMinutes() + 2);
   // Create entity definition for built-in entity to make easier to deal with relationships.
-  const authorityEntity = {
+  const authorityEntity: Partial<ApplicationEntity> = {
     name: authorityEntityName,
     entitySuffix: '',
     clientRootFolder: 'admin',

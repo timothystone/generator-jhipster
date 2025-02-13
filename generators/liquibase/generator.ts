@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -31,6 +31,7 @@ import {
 import { prepareSqlApplicationProperties } from '../spring-data-relational/support/index.js';
 import { fieldTypes } from '../../lib/jhipster/index.js';
 import type { MavenProperty } from '../maven/types.js';
+import type { Field } from '../../lib/types/application/index.js';
 import { liquibaseFiles } from './files.js';
 import {
   liquibaseComment,
@@ -85,8 +86,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
       preparing({ application }) {
         application.liquibaseDefaultSchemaName = '';
         // Generate h2 properties at master.xml for blueprints that uses h2 for tests or others purposes.
-        (application as any).liquibaseAddH2Properties =
-          (application as any).liquibaseAddH2Properties ?? (application as any).devDatabaseTypeH2Any;
+        application.liquibaseAddH2Properties = application.liquibaseAddH2Properties ?? application.devDatabaseTypeH2Any;
       },
       checkDatabaseCompatibility({ application }) {
         if (!application.databaseTypeSql && !application.databaseTypeNeo4j) {
@@ -115,9 +115,9 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
 
   get preparingEachEntityField() {
     return this.asPreparingEachEntityFieldTaskGroup({
-      prepareEntityField({ entity, field }) {
+      prepareEntityField({ application, field }) {
         if (!field.transient) {
-          prepareFieldForLiquibase(entity, field);
+          prepareFieldForLiquibase(application, field);
         }
       },
       validateConsistencyOfField({ entity, field }) {
@@ -170,13 +170,13 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
             const { previousEntity: entity } = databaseChangelog;
             loadRequiredConfigIntoEntity(entity, this.jhipsterConfigWithDefaults);
             prepareEntity(entity, this, application);
-            prepareEntityForServer(entity);
+            prepareEntityForServer(entity, application);
             if (!entity.embedded && !entity.primaryKey) {
               prepareEntityPrimaryKeyForTemplates.call(this, { entity, application });
             }
             for (const field of entity.fields ?? []) {
               prepareField(entity, field, this);
-              prepareFieldForLiquibase(entity, field);
+              prepareFieldForLiquibase(application, field);
             }
           }
         }
@@ -312,7 +312,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
 `,
             propertyClass: `public static class Liquibase {
 
-    private Boolean asyncStart;
+    private Boolean asyncStart = true;
 
     public Boolean getAsyncStart() {
         return asyncStart;
@@ -333,6 +333,9 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
         }
 
         const { javaDependencies } = application;
+        const shouldAddProperty = (property: string, value: string) => {
+          return value && !source.hasJavaProperty?.(property) && application.javaManagedProperties![property] !== value;
+        };
         const checkProperty = (property: string) => {
           if (!source.hasJavaManagedProperty?.(property) && !source.hasJavaProperty?.(property)) {
             const message = `${property} is required by maven-liquibase-plugin, make sure to add it to your pom.xml`;
@@ -357,7 +360,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
           liquibasePluginHibernateDialect = '${liquibase-plugin.hibernate-dialect}';
           // eslint-disable-next-line no-template-curly-in-string
           liquibasePluginJdbcDriver = '${liquibase-plugin.driver}';
-          if (h2Version) {
+          if (shouldAddProperty('h2.version', h2Version)) {
             mavenProperties.push({ property: 'h2.version', value: h2Version });
           } else {
             checkProperty('h2.version');
@@ -375,13 +378,13 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
           liquibasePluginJdbcDriver = applicationAny.prodJdbcDriver;
         }
 
-        if (validationVersion) {
+        if (shouldAddProperty('jakarta-validation.version', validationVersion)) {
           mavenProperties.push({ property: 'jakarta-validation.version', value: validationVersion });
         } else {
           checkProperty('jakarta-validation.version');
         }
 
-        if (liquibaseVersion) {
+        if (shouldAddProperty('liquibase.version', liquibaseVersion)) {
           mavenProperties.push({ property: 'liquibase.version', value: liquibaseVersion });
         } else {
           checkProperty('liquibase.version');
@@ -489,9 +492,6 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
 
         source.addGradleProperty?.({ property: 'liquibaseTaskPrefix', value: 'liquibase' });
         source.addGradleProperty?.({ property: 'liquibasePluginVersion', value: gradleLiquibaseVersion });
-        if (application.javaManagedProperties?.['liquibase.version']) {
-          source.addGradleProperty?.({ property: 'liquibaseCoreVersion', value: application.javaManagedProperties['liquibase.version'] });
-        }
 
         source.applyFromGradle?.({ script: 'gradle/liquibase.gradle' });
         source.addGradlePlugin?.({ id: 'org.liquibase.gradle' });
@@ -521,6 +521,8 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
           declaredConstructors: [
             'liquibase.database.LiquibaseTableNamesFactory.class',
             'liquibase.report.ShowSummaryGeneratorFactory.class',
+            'liquibase.changelog.FastCheckService.class',
+            'liquibase.changelog.visitor.ValidatingVisitorGeneratorFactory.class',
           ],
           publicConstructors: ['liquibase.ui.LoggerUIService.class'],
         });
@@ -694,7 +696,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
    * @param leadingWhitespace
    * @returns
    */
-  createDefaultValueLiquibaseAttribute(field, leadingWhitespace = false) {
+  createDefaultValueLiquibaseAttribute(field: Field, leadingWhitespace = false) {
     if (field.liquibaseDefaultValueAttributeValue === undefined) {
       return '';
     }
@@ -857,7 +859,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
    * @param {string} prodDatabaseType - database type
    * @param {boolean} noSnakeCase - do not convert names to snakecase
    */
-  getFKConstraintName(entityName, relationshipName, prodDatabaseType, noSnakeCase) {
+  getFKConstraintName(entityName: string, relationshipName: string, prodDatabaseType: string, noSnakeCase: boolean): string {
     const result = getFKConstraintName(entityName, relationshipName, { prodDatabaseType, noSnakeCase });
     (this as any).validateResult(result);
     return result.value;
@@ -872,7 +874,7 @@ export default class LiquibaseGenerator extends BaseEntityChangesGenerator {
    * @param {string} prodDatabaseType - database type
    * @param {boolean} noSnakeCase - do not convert names to snakecase
    */
-  getUXConstraintName(entityName, columnName, prodDatabaseType, noSnakeCase) {
+  getUXConstraintName(entityName: string, columnName: string, prodDatabaseType: string, noSnakeCase: boolean): string {
     const result = getUXConstraintName(entityName, columnName, { prodDatabaseType, noSnakeCase });
     (this as any).validateResult(result);
     return result.value;

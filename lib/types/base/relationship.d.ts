@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
-export type Relationship = {
+import type { Property } from './property.js';
+
+export type Relationship = Property & {
   relationshipName: string;
   otherEntityName: string;
   relationshipType: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many';

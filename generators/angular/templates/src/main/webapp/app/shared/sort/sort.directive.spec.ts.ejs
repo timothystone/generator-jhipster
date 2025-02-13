@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,12 +24,11 @@ import { SortDirective } from './sort.directive';
 import { SortState, sortStateSignal } from './sort-state';
 
 @Component({
-  standalone: true,
   imports: [SortDirective],
   template: `
     <table>
       <thead>
-        <tr <%= jhiPrefix %>Sort [sortState]="sortState" (sortChange)="transition($event)"></tr>
+        <tr <%= jhiPrefix %>Sort [(sortState)]="sortState" (sortChange)="transition($event)"></tr>
       </thead>
     </table>
   `,

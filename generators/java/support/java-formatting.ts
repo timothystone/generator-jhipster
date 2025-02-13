@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -34,47 +34,4 @@ export const javaBeanCase = (beanName: string): string => {
     return beanName;
   }
   return upperFirst(beanName);
-};
-
-/**
- * @private
- * Create a java getter of reference.
- *
- * @param {object|string[]} reference
- * @return {string}
- */
-export const buildJavaGet = reference => {
-  let refPath;
-  if (typeof refPath === 'string') {
-    refPath = [reference];
-  } else if (Array.isArray(reference)) {
-    refPath = reference;
-  } else {
-    refPath = [reference.name];
-  }
-  return refPath.map(partialPath => `get${javaBeanCase(partialPath)}()`).join('.');
-};
-
-/**
- * @private
- * Create a java getter method of reference.
- *
- * @param {object} reference
- * @param {string} type
- * @return {string}
- */
-export const buildJavaGetter = (reference, type = reference.type) => {
-  return `${type} get${javaBeanCase(reference.name)}()`;
-};
-
-/**
- * @private
- * Create a java getter method of reference.
- *
- * @param {object} reference
- * @param {string} valueDefinition
- * @return {string}
- */
-export const buildJavaSetter = (reference, valueDefinition = `${reference.type} ${reference.name}`) => {
-  return `set${javaBeanCase(reference.name)}(${valueDefinition})`;
 };

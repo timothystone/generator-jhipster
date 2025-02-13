@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,7 +18,7 @@
  */
 
 import chalk from 'chalk';
-import { includes, intersection } from 'lodash-es';
+import { intersection } from 'lodash-es';
 
 import {
   applicationOptions,
@@ -30,36 +30,19 @@ import {
 } from '../../lib/jhipster/index.js';
 import { R2DBC_DB_OPTIONS, SQL_DB_OPTIONS } from '../server/support/database.js';
 import type CoreGenerator from '../base-core/generator.js';
+import { asPromptingTask } from '../base-application/support/task-type-inference.js';
 
 const { OptionNames } = applicationOptions;
 const { GATEWAY, MONOLITH } = applicationTypes;
 const { CAFFEINE, EHCACHE, HAZELCAST, INFINISPAN, MEMCACHED, REDIS } = cacheTypes;
 const { OAUTH2 } = authenticationTypes;
 const { CASSANDRA, H2_DISK, H2_MEMORY, MONGODB, NEO4J, SQL, COUCHBASE } = databaseTypes;
-const { SERVICE_DISCOVERY_TYPE, WEBSOCKET, SEARCH_ENGINE, ENABLE_SWAGGER_CODEGEN } = OptionNames;
+const { WEBSOCKET, SEARCH_ENGINE, ENABLE_SWAGGER_CODEGEN } = OptionNames;
 const NO_DATABASE = databaseTypes.NO;
 const NO_CACHE_PROVIDER = cacheTypes.NO;
 const { GATLING, CUCUMBER } = testFrameworkTypes;
 
-/**
- * Get Option From Array
- *
- * @param {Array} array - array
- * @param {any} option - options
- * @returns {boolean} true if option is in array and is set to 'true'
- */
-const getOptionFromArray = (array, option) => {
-  let optionValue: any = false;
-  array.forEach(value => {
-    if (includes(value, option)) {
-      optionValue = value.split(':')[1];
-    }
-  });
-  optionValue = optionValue === 'true' ? true : optionValue;
-  return optionValue;
-};
-
-export async function askForServerSideOpts(this: CoreGenerator, { control }) {
+export const askForServerSideOpts = asPromptingTask(async function ({ control }) {
   if (control.existingProject && !this.options.askAnswered) return;
 
   const { applicationType, authenticationType, reactive } = this.jhipsterConfigWithDefaults;
@@ -122,17 +105,18 @@ export async function askForServerSideOpts(this: CoreGenerator, { control }) {
         type: 'list',
         name: 'devDatabaseType',
         message: `Which ${chalk.yellow('*development*')} database would you like to use?`,
-        choices: response =>
-          [SQL_DB_OPTIONS.find(it => it.value === response.prodDatabaseType)].concat([
+        choices: response => {
+          const currentDatabase = SQL_DB_OPTIONS.find(it => it.value === response.prodDatabaseType)!;
+          return [
             {
-              value: H2_DISK,
-              name: 'H2 with disk-based persistence',
+              ...currentDatabase,
+              name: `${currentDatabase.name} (requires Docker or manually configured database)`,
             },
-            {
-              value: H2_MEMORY,
-              name: 'H2 with in-memory persistence',
-            },
-          ]) as any,
+          ].concat([
+            { value: H2_DISK, name: `H2 with disk-based persistence` },
+            { value: H2_MEMORY, name: `H2 with in-memory persistence` },
+          ]);
+        },
         default: this.jhipsterConfigWithDefaults.devDatabaseType,
       },
       {
@@ -151,7 +135,7 @@ export async function askForServerSideOpts(this: CoreGenerator, { control }) {
           },
           {
             value: HAZELCAST,
-            name: 'Hazelcast (distributed cache, for multiple nodes, supports rate-limiting for gateway applications)',
+            name: 'Hazelcast (distributed cache for multiple nodes)',
           },
           {
             value: INFINISPAN,
@@ -185,15 +169,14 @@ export async function askForServerSideOpts(this: CoreGenerator, { control }) {
     ],
     this.config,
   );
-}
+});
 
-export async function askForOptionalItems(this: CoreGenerator, { control }) {
+export const askForOptionalItems = asPromptingTask(async function askForOptionalItems(this: CoreGenerator, { control }) {
   if (control.existingProject && !this.options.askAnswered) return;
 
   const { applicationType, reactive, databaseType } = this.jhipsterConfigWithDefaults;
 
   const choices: any[] = [];
-  const defaultChoice = [];
   if ([SQL, MONGODB, NEO4J].includes(databaseType)) {
     choices.push({
       name: 'Elasticsearch as search engine',
@@ -214,54 +197,66 @@ export async function askForOptionalItems(this: CoreGenerator, { control }) {
       });
     }
   }
-  choices.push({
-    name: 'Apache Kafka as asynchronous messages broker',
-    value: 'messageBroker:kafka',
-  });
-  choices.push({
-    name: 'Apache Pulsar as asynchronous messages broker',
-    value: 'messageBroker:pulsar',
-  });
-  choices.push({
-    name: 'API first development using OpenAPI-generator',
-    value: 'enableSwaggerCodegen:true',
-  });
+  choices.push(
+    {
+      name: 'Apache Kafka as asynchronous messages broker',
+      value: 'messageBroker:kafka',
+    },
+    {
+      name: 'Apache Pulsar as asynchronous messages broker',
+      value: 'messageBroker:pulsar',
+    },
+    {
+      name: 'API first development using OpenAPI-generator',
+      value: 'enableSwaggerCodegen:true',
+    },
+  );
 
   if (choices.length > 0) {
-    await this.prompt({
+    const selectedChoices: string[] = [WEBSOCKET, SEARCH_ENGINE, 'messageBroker', ENABLE_SWAGGER_CODEGEN]
+      .map(property => [property, this.jhipsterConfig[property]])
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => `${key}:${value}`)
+      .filter(Boolean) as string[];
+
+    choices.forEach(choice => {
+      choice.checked = selectedChoices.includes(choice.value);
+    });
+
+    const answers = await this.prompt({
       type: 'checkbox',
       name: 'serverSideOptions',
       message: 'Which other technologies would you like to use?',
       choices,
-      default: defaultChoice,
-    }).then(answers => {
-      this.jhipsterConfig.serverSideOptions = answers.serverSideOptions;
-      this.jhipsterConfig.websocket = getOptionFromArray(answers.serverSideOptions, WEBSOCKET);
-      this.jhipsterConfig.searchEngine = getOptionFromArray(answers.serverSideOptions, SEARCH_ENGINE);
-      this.jhipsterConfig.messageBroker = getOptionFromArray(answers.serverSideOptions, 'messageBroker');
-      this.jhipsterConfig.enableSwaggerCodegen = getOptionFromArray(answers.serverSideOptions, ENABLE_SWAGGER_CODEGEN);
-      // Only set this option if it hasn't been set in a previous question, as it's only optional for monoliths
-      if (!this.jhipsterConfig.serviceDiscoveryType) {
-        this.jhipsterConfig.serviceDiscoveryType = getOptionFromArray(answers.serverSideOptions, SERVICE_DISCOVERY_TYPE);
-      }
+      default: selectedChoices,
     });
-  }
-}
 
-export async function askForServerTestOpts(this: CoreGenerator, { control }) {
+    Object.assign(
+      this.jhipsterConfig,
+      Object.fromEntries(
+        answers.serverSideOptions
+          .map(it => it.split(':'))
+          .map(([key, value]) => [key, ['true', 'false'].includes(value) ? value === 'true' : value]),
+      ),
+    );
+  }
+});
+
+export const askForServerTestOpts = asPromptingTask(async function (this: CoreGenerator, { control }) {
   if (control.existingProject && this.options.askAnswered !== true) return;
 
+  const testFrameworks = this.jhipsterConfigWithDefaults.testFrameworks ?? [];
   const answers = await this.prompt([
     {
       type: 'checkbox',
       name: 'serverTestFrameworks',
       message: 'Besides JUnit, which testing frameworks would you like to use?',
       choices: [
-        { name: 'Gatling', value: GATLING },
-        { name: 'Cucumber', value: CUCUMBER },
+        { name: 'Gatling', value: GATLING, checked: testFrameworks.includes(GATLING) },
+        { name: 'Cucumber', value: CUCUMBER, checked: testFrameworks.includes(CUCUMBER) },
       ],
       default: intersection([GATLING, CUCUMBER], this.jhipsterConfigWithDefaults.testFrameworks),
     },
   ]);
   this.jhipsterConfig.testFrameworks = [...new Set([...(this.jhipsterConfig.testFrameworks ?? []), ...answers.serverTestFrameworks])];
-}
+});

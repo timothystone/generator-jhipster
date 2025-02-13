@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -32,9 +32,7 @@ class RandexpWithFaker extends Randexp {
       throw new Error('Faker is required');
     }
     // In order to have consistent results with RandExp, the RNG is seeded.
-    this.randInt = (from: number, to?: number): number => {
-      return faker.number.int({ min: from, max: to });
-    };
+    this.randInt = (from: number, to?: number): number => faker.number.int({ min: from, max: to });
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,6 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { startCase } from 'lodash-es';
 
 import BaseApplicationGenerator from '../base-application/index.js';
 
@@ -83,19 +84,10 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
       },
 
       configureDevServerPort() {
-        if (this.jhipsterConfig.devServerPort !== undefined) return;
+        if (this.jhipsterConfig.devServerPort !== undefined || this.jhipsterConfig.applicationIndex === undefined) return;
 
-        const { clientFramework, applicationIndex } = this.jhipsterConfigWithDefaults;
-        const devServerBasePort = clientFramework === ANGULAR ? 4200 : 9060;
-        let devServerPort;
-
-        if (applicationIndex !== undefined) {
-          devServerPort = devServerBasePort + applicationIndex;
-        } else if (!devServerPort) {
-          devServerPort = devServerBasePort;
-        }
-
-        this.jhipsterConfig.devServerPort = devServerPort;
+        const { applicationIndex, devServerPort } = this.jhipsterConfigWithDefaults;
+        this.jhipsterConfig.devServerPort = devServerPort + applicationIndex;
       },
     });
   }
@@ -126,7 +118,7 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
     return this.asLoadingTaskGroup({
       loadSharedConfig({ application }) {
         // TODO v8 rename to nodePackageManager;
-        (application as any).clientPackageManager = 'npm';
+        application.clientPackageManager = 'npm';
       },
 
       loadPackageJson({ application }) {
@@ -146,6 +138,13 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
   // Public API method used by the getter and also by Blueprints
   get preparing() {
     return this.asPreparingTaskGroup({
+      preparing({ applicationDefaults }) {
+        applicationDefaults({
+          clientBundlerName: ctx => (ctx.clientBundlerExperimentalEsbuild ? 'esbuild' : startCase(ctx.clientBundler)),
+          clientTestFramework: ctx => (ctx.clientFrameworkVue ? 'vitest' : 'jest'),
+          clientTestFrameworkName: ctx => startCase(ctx.clientTestFramework),
+        });
+      },
       microservice({ application }) {
         if (application.applicationTypeMicroservice) {
           application.withAdminUi = false;
@@ -193,6 +192,11 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
   // Public API method used by the getter and also by Blueprints
   get writing() {
     return this.asWritingTaskGroup({
+      async cleanup({ application, control }) {
+        await control.cleanupFiles({
+          '8.7.4': [`${application.clientSrcDir}swagger-ui/dist/images/throbber.gif`],
+        });
+      },
       webappFakeDataSeed({ application: { clientFramework } }) {
         this.resetEntitiesFakeData(clientFramework);
       },
@@ -239,6 +243,23 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
         } else {
           scriptsStorage.set('ci:frontend:build', 'npm run webapp:build:$npm_package_config_default_environment');
           scriptsStorage.set('ci:frontend:test', 'npm run ci:frontend:build && npm test');
+        }
+
+        if (application.clientRootDir) {
+          // Add scripts to map to client package.json
+          this.packageJson.merge({
+            scripts: {
+              'webapp:build': `npm run -w ${application.clientRootDir} webapp:build`,
+              'ci:frontend:test': `npm run -w ${application.clientRootDir} ci:frontend:test`,
+            },
+          });
+
+          const clientWorkspace = application.clientRootDir.slice(0, -1);
+          const packageJson = this.packageJson.createProxy();
+          const workspaces = packageJson.workspaces as string[] | undefined;
+          if (!workspaces?.includes(clientWorkspace)) {
+            packageJson.workspaces = [...(workspaces ?? []), clientWorkspace];
+          }
         }
       },
 

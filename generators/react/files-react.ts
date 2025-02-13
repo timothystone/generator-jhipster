@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 import { asWriteFilesSection, asWritingTask } from '../base-application/support/index.js';
-import { clientApplicationTemplatesBlock, clientRootTemplatesBlock, clientSrcTemplatesBlock } from '../client/support/files.js';
+import { clientApplicationTemplatesBlock, clientRootTemplatesBlock } from '../client/support/files.js';
 
 export const files = asWriteFilesSection({
   common: [
@@ -254,11 +254,6 @@ export const files = asWriteFilesSection({
       condition: generator => generator.microfrontend,
       ...clientApplicationTemplatesBlock(),
       templates: ['main.tsx', 'shared/error/error-loading.tsx'],
-    },
-    {
-      condition: generator => generator.microfrontend && generator.applicationTypeGateway,
-      ...clientSrcTemplatesBlock(),
-      templates: ['microfrontends/entities-menu.tsx', 'microfrontends/entities-routes.tsx'],
     },
   ],
   clientTestFw: [

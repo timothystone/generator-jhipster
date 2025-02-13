@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,7 +24,6 @@ import <%= packageName %>.repository.UserRepository;
 import <%= packageName %>.security.AuthoritiesConstants;
 import <%= packageName %>.service.MailService;
 import org.springframework.data.domain.Sort;
-import java.util.Collections;
 import <%= packageName %>.service.UserService;
 import <%= packageName %>.service.dto.<%= user.adminUserDto %>;
 import <%= packageName %>.web.rest.errors.BadRequestAlertException;
@@ -77,6 +76,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
+import java.util.Collections;
 <%_ } else { _%>
 import java.util.*;
 <%_ } _%>
@@ -149,7 +149,7 @@ public class UserResource {
     /**
      * {@code POST  /admin/users}  : Creates a new user.
      * <p>
-     * Creates a new user if the login and email are not already used, and sends an
+     * Creates a new user if the login and email are not already used, and sends a
      * mail with an activation link.
      * The user needs to be activated on creation.
      *

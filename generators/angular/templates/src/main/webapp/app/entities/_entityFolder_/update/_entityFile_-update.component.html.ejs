@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -30,7 +30,6 @@
   const fieldTypeBlobContent = field.fieldTypeBlobContent;
   const readonly = field.readonly;
   let fieldInputType = 'text';
-  const translationKey = field.fieldTranslationKey;
   if (field.fieldTypeNumeric) {
     fieldInputType = 'number';
   } else if (field.fieldTypeLocalDate) {
@@ -100,6 +99,9 @@ _%>
     <%_ } else if (field.fieldTypeBoolean) { _%>
                     <input type="<%= fieldInputType %>" class="form-check" name="<%= fieldName %>" id="field_<%= fieldName %>"
                            data-cy="<%= fieldName %>" formControlName="<%= fieldName %>" <% if (readonly) { %> [readonly]="true"<% } %>/>
+    <%_ } else if (field.fieldTypeLocalTime) { _%>
+                    <input type="time" class="form-control" name="<%= fieldName %>" id="field_<%= fieldName %>" data-cy="<%= fieldName %>"
+                           formControlName="<%= fieldName %>"<% if (readonly) { %> [readonly]="true"<% } %>/>
     <%_ } else { _%>
                     <input type="<%= fieldInputType %>" class="form-control" name="<%= fieldName %>" id="field_<%= fieldName %>" data-cy="<%= fieldName %>"
                            formControlName="<%= fieldName %>"<% if (field.id && !field.autoGenerate) { %> [readonly]="editForm.get('<%= primaryKey.name %>')!.disabled"<% } else if (readonly) { %> [readonly]="true"<% } %>/>
@@ -175,7 +177,7 @@ _%>
                         <option [ngValue]="null" selected></option>
                     }
     <%_ } else { _%>
-                    @if (editForm.get([<%- this.buildAngularFormPath(relationship.reference) %>])!.value == null) {
+                    @if (editForm.get(['<%- relationship.propertyName %>'])!.value == null) {
                         <option [ngValue]="null" selected></option>
                     }
     <%_ } _%>
@@ -196,10 +198,10 @@ _%>
                 </div>
   <%_ } _%>
   <%_ if (relationship.relationshipValidate && relationship.persistableRelationship) { _%>
-            @if (editForm.get([<%- this.buildAngularFormPath(relationship.reference) %>])!.invalid && (editForm.get([<%- this.buildAngularFormPath(relationship.reference) %>])!.dirty || editForm.get([<%- this.buildAngularFormPath(relationship.reference) %>])!.touched)) {
+            @if (editForm.get(['<%- relationship.propertyName %>'])!.invalid && (editForm.get(['<%- relationship.propertyName %>'])!.dirty || editForm.get(['<%- relationship.propertyName %>'])!.touched)) {
                 <div>
     <%_ if (relationshipRequired) { _%>
-                @if (editForm.get([<%- this.buildAngularFormPath(relationship.reference) %>])?.errors?.required) {
+                @if (editForm.get(['<%- relationship.propertyName %>'])?.errors?.required) {
                     <small class="form-text text-danger">__jhiTranslateTag__('entity.validation.required')</small>
                 }
     <%_ } _%>

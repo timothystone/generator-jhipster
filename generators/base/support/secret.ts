@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -51,11 +51,4 @@ export function createBase64Secret(len?: number | boolean, reproducible = false)
     return `SECRET--${len}`;
   }
   return Buffer.from(createSecret(len)).toString('base64');
-}
-
-/**
- * Create a strong secret from a timestamp and a base name
- */
-export function createSafeSecret(timestamp: number, baseName: string) {
-  return Buffer.from(`${timestamp}-${baseName}`).toString('base64');
 }

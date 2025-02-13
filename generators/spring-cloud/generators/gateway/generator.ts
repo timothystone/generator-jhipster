@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -55,7 +55,7 @@ export default class GatewayGenerator extends BaseApplicationGenerator {
   get preparing() {
     return this.asPreparingTaskGroup({
       prepareGateway({ application }) {
-        application.gatewayServicesApiAvailable = (application as any).serviceDiscoveryAny || !application.reactive;
+        application.gatewayServicesApiAvailable = application.serviceDiscoveryAny || !application.reactive;
         application.gatewayRoutes = (application.routes ?? []).map(routeDef => {
           const [route, host = route, serverPort = '8080'] = routeDef.split(':');
           return { route, serverPort, host };
@@ -74,7 +74,7 @@ export default class GatewayGenerator extends BaseApplicationGenerator {
         await control.cleanupFiles({
           '8.6.1': [
             [
-              application.reactive && (application as any).serviceDiscoveryAny,
+              application.reactive && application.serviceDiscoveryAny,
               `${application.javaPackageSrcDir}/web/filter/ModifyServersOpenApiFilter.java`,
               `${application.javaPackageTestDir}/web/filter/ModifyServersOpenApiFilterTest.java`,
             ],

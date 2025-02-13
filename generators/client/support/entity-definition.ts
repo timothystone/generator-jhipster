@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,8 +19,7 @@
 
 import { clientFrameworkTypes, fieldTypes, validations } from '../../../lib/jhipster/index.js';
 import getTypescriptKeyType from './types-utils.js';
-
-import { filterRelevantRelationships } from './template-utils.js';
+import { filterRelevantRelationships, generateTestEntityId } from './template-utils.js';
 
 const dbTypes = fieldTypes;
 const {
@@ -41,6 +39,7 @@ const {
   ZONED_DATE_TIME: TYPE_ZONED_DATE_TIME,
   INSTANT: TYPE_INSTANT,
   DURATION: TYPE_DURATION,
+  LOCAL_TIME: TYPE_TIME,
 } = dbTypes.CommonDBTypes;
 
 const TYPE_BYTES = dbTypes.RelationalOnlyDBTypes.BYTES;
@@ -69,7 +68,7 @@ const generateEntityClientFields = (
   embedded = false,
   clientFramework: string = ANGULAR,
 ) => {
-  const variablesWithTypes = [];
+  const variablesWithTypes: string[] = [];
   if (!embedded && primaryKey) {
     const tsKeyType = getTypescriptKeyType(primaryKey);
     if (clientFramework === VUE) {
@@ -87,7 +86,7 @@ const generateEntityClientFields = (
       tsType = 'boolean';
     } else if ([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL].includes(fieldType)) {
       tsType = 'number';
-    } else if ([TYPE_STRING, TYPE_UUID, TYPE_DURATION, TYPE_BYTES, TYPE_BYTE_BUFFER].includes(fieldType)) {
+    } else if ([TYPE_STRING, TYPE_UUID, TYPE_DURATION, TYPE_BYTES, TYPE_BYTE_BUFFER, TYPE_TIME].includes(fieldType)) {
       tsType = 'string';
       if ([TYPE_BYTES, TYPE_BYTE_BUFFER].includes(fieldType) && field.fieldTypeBlobContent !== 'text') {
         variablesWithTypes.push(`${fieldName}ContentType?: ${nullable ? 'string | null' : 'string'}`);
@@ -126,15 +125,11 @@ const generateEntityClientFields = (
 /**
  * @private
  * Generate a test entity, according to the type
- *
- * @param references
- * @param {number} [index] - index of the primary key sample, pass undefined for a random key.
  */
-export const generateTestEntity = (references, index = 'random') => {
-  const random = index === 'random';
+export const generateTestEntity = (references, index: 0 | 1 | 'random' = 'random') => {
   const entries = references
     .map(reference => {
-      if (random && reference.field) {
+      if (index === 'random') {
         const field = reference.field;
         const fakeData = field.generateFakeData('json-serializable');
         if (reference.field.fieldWithContentType) {
@@ -145,7 +140,7 @@ export const generateTestEntity = (references, index = 'random') => {
         }
         return [[reference.name, fakeData]];
       }
-      return [[reference.name, this.generateTestEntityId(reference.type, index, false)]];
+      return [[reference.name, generateTestEntityId(reference.type, index, false)]];
     })
     .flat();
   return Object.fromEntries(entries);

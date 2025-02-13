@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -55,15 +55,6 @@ export const vueFiles = {
       condition: generator => generator.microfrontend,
       ...clientApplicationTemplatesBlock(),
       templates: ['index.ts', 'core/error/error-loading.vue'],
-    },
-    {
-      condition: generator => generator.microfrontend,
-      ...clientSrcTemplatesBlock(),
-      templates: [
-        'microfrontends/entities-menu.component-test.ts',
-        'microfrontends/entities-menu-test.vue',
-        'microfrontends/entities-router-test.ts',
-      ],
     },
     {
       condition: generator => generator.applicationTypeMicroservice,

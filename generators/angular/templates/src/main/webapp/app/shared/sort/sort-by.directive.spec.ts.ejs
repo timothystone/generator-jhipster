@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -27,12 +27,11 @@ import { SortDirective } from './sort.directive';
 import { SortState, sortStateSignal } from './sort-state';
 
 @Component({
-  standalone: true,
   imports: [SortDirective, SortByDirective, FaIconComponent],
   template: `
     <table>
       <thead>
-        <tr <%= jhiPrefix %>Sort [sortState]="sortState" (sortChange)="transition($event)">
+        <tr <%= jhiPrefix %>Sort [(sortState)]="sortState" (sortChange)="transition($event)">
           <th <%= jhiPrefix %>SortBy="name">
             ID
             <fa-icon [icon]="'sort'"></fa-icon>
@@ -44,7 +43,6 @@ import { SortState, sortStateSignal } from './sort-state';
 })
 class TestSortByDirectiveComponent {
   sortState = sortStateSignal({ predicate: 'name' });
-  sortAllowed = true;
   transition = jest.fn();
 
   private library = inject(FaIconLibrary);
@@ -78,7 +76,7 @@ describe('Directive: SortByDirective', () => {
     fixture.detectChanges();
 
     // THEN
-    expect(sortByDirective.<%= jhiPrefix %>SortBy).toEqual('name');
+    expect(sortByDirective.<%= jhiPrefix %>SortBy()).toEqual('name');
     expect(sortByDirective.iconComponent()?.icon).toEqual(faSort.iconName);
   });
 
@@ -91,7 +89,7 @@ describe('Directive: SortByDirective', () => {
     fixture.detectChanges();
 
     // THEN
-    expect(sortByDirective.<%= jhiPrefix %>SortBy).toEqual('name');
+    expect(sortByDirective.<%= jhiPrefix %>SortBy()).toEqual('name');
     expect(sortByDirective.iconComponent()?.icon).toEqual(faSortUp.iconName);
   });
 
@@ -104,7 +102,7 @@ describe('Directive: SortByDirective', () => {
     fixture.detectChanges();
 
     // THEN
-    expect(sortByDirective.<%= jhiPrefix %>SortBy).toEqual('name');
+    expect(sortByDirective.<%= jhiPrefix %>SortBy()).toEqual('name');
     expect(sortByDirective.iconComponent()?.icon).toEqual(faSortDown.iconName);
   });
 
@@ -117,7 +115,7 @@ describe('Directive: SortByDirective', () => {
     fixture.detectChanges();
 
     // THEN
-    expect(sortByDirective.<%= jhiPrefix %>SortBy).toEqual('name');
+    expect(sortByDirective.<%= jhiPrefix %>SortBy()).toEqual('name');
     expect(sortByDirective.iconComponent()?.icon).toEqual(faSort.iconName);
   });
 

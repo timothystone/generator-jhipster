@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,5 +17,4 @@
  * limitations under the License.
  */
 export const SERVICE_HEALTHY = 'service_healthy';
-export const SERVICE_STARTED = 'service_started';
 export const SERVICE_COMPLETED_SUCCESSFULLY = 'service_completed_successfully';

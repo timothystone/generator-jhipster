@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,15 +22,11 @@ const path = require('path');
 <%_ if (enableTranslation) { _%>
 const { hashElement } = require('folder-hash');
 const MergeJsonWebpackPlugin = require('merge-jsons-webpack-plugin');
-  <%_ if (enableI18nRTL) { _%>
-const postcssRTLCSS = require('postcss-rtlcss');
-  <%_ } _%>
 <%_ } _%>
 const BrowserSyncPlugin = require('browser-sync-webpack-plugin');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const WebpackNotifierPlugin = require('webpack-notifier');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const ESLintPlugin = require('eslint-webpack-plugin');
 
 const environment = require('./environment');
 const proxyConfig = require('./proxy.conf');
@@ -47,10 +43,6 @@ module.exports = async (config, options, targetOptions) => {
   // PLUGINS
   if (config.mode === 'development') {
     config.plugins.push(
-      new ESLintPlugin({
-        configType: 'flat',
-        extensions: ['ts', 'js', 'html'],
-      }),
       new WebpackNotifierPlugin({
         title: '<%= humanizedBaseName %>',
         contentImage: path.join(__dirname, 'logo-jhipster.png'),
@@ -69,19 +61,19 @@ module.exports = async (config, options, targetOptions) => {
       new BrowserSyncPlugin(
         {
           host: 'localhost',
-          port: 9000,
+          port: <%- devServerPortProxy %>,
           https: tls,
           proxy: {
             target: `http${tls ? 's' : ''}://localhost:${targetOptions.target === 'serve' ? '<%= devServerPort %>' : '<%= applicationTypeMicroservice ? gatewayServerPort : serverPort %>'}`,
             ws: true,
             proxyOptions: {
-              changeOrigin: false, //pass the Host header to the backend unchanged  https://github.com/Browsersync/browser-sync/issues/430
+              changeOrigin: false, //pass the Host header to the backend unchanged https://github.com/Browsersync/browser-sync/issues/430
             },
             proxyReq: [
               function (proxyReq) {
                 // URI that will be retrieved by the ForwardedHeaderFilter on the server side
-                proxyReq.setHeader('X-Forwarded-Host', 'localhost:9000');
-                proxyReq.setHeader('X-Forwarded-Proto', 'https');
+                proxyReq.setHeader('X-Forwarded-Host', 'localhost:<%- devServerPortProxy %>');
+                proxyReq.setHeader('X-Forwarded-Proto', `http${tls ? 's' : ''}`);
               },
             ],
           },
@@ -137,22 +129,6 @@ module.exports = async (config, options, targetOptions) => {
     config.plugins.push(new CopyWebpackPlugin({ patterns }));
   }
 
-<%_ if (enableI18nRTL) { _%>
-  const scssRule = config.module.rules.find(x => x.test && x.test.toString().includes('scss'));
-  const uses = scssRule.rules.flatMap(r => r.use || r.oneOf.flatMap(o => o.use));
-  const postcssLoaderOptions = uses.filter(u => u.loader.includes('postcss-loader')).map(u => u.options);
-  postcssLoaderOptions.forEach(options => {
-    const generateOptions = options.postcssOptions;
-    options.postcssOptions = (loader) => {
-      const postcssOptions = generateOptions(loader);
-      postcssOptions.plugins.push(postcssRTLCSS());
-      return postcssOptions;
-    };
-    // https://github.com/angular/angular-cli/blob/4b9199d97f3bcb10710b5049b04d8a04436e2dd4/packages/angular_devkit/build_angular/src/webpack/configs/styles.ts#L201-L202
-    options.postcssOptions.config = false;
-  });
-
-<%_ } _%>
   config.plugins.push(
     new webpack.DefinePlugin({
 <%_ if (enableTranslation) { _%>
@@ -160,7 +136,6 @@ module.exports = async (config, options, targetOptions) => {
 <%_ } _%>
       // APP_VERSION is passed as an environment variable from the Gradle / Maven build tasks.
       __VERSION__: JSON.stringify(environment.__VERSION__),
-      __DEBUG_INFO_ENABLED__: environment.__DEBUG_INFO_ENABLED__ || config.mode === 'development',
       // The root URL for API calls, ending with a '/' - for example: `"https://www.jhipster.tech:8081/myservice/"`.
       // If this URL is left empty (""), then it will be relative to the current context.
       // If you use an API server, in `prod` mode, you will need to enable CORS

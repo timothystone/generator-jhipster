@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -42,7 +42,6 @@ const { BLUEPRINTS, BASE_NAME } = OptionNames;
  * Constructor taking the jdl object to check against application settings.
  * @param {JDLObject} jdlObject -  the jdl object to check.
  * @param {Object} logger - the logger to use, default to the console.
- * @param {Object} [options]
  */
 export default function createValidator(jdlObject: JDLObject, logger: any = console) {
   if (!jdlObject) {

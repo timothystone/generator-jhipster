@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -22,7 +21,7 @@ import chalk from 'chalk';
 import * as GENERATOR_LIST from '../generator-list.js';
 import { PRIORITY_NAMES_LIST } from '../base-application/priorities.js';
 
-const prioritiesForSub = () => PRIORITY_NAMES_LIST;
+const prioritiesForSub = (_subGen: string) => PRIORITY_NAMES_LIST;
 
 export const GENERATE_SNAPSHOTS = 'generateSnapshots';
 export const LINK_JHIPSTER_DEPENDENCY = 'linkJhipsterDependency';
@@ -78,11 +77,7 @@ export const allGeneratorsConfig = () => ({
   [ADDITIONAL_SUB_GENERATORS]: '',
   [DYNAMIC]: false,
   [JS]: true,
-  [GENERATORS]: Object.fromEntries(
-    Object.values(GENERATOR_LIST).map(subGenerator => {
-      return [subGenerator, allSubGeneratorConfig(subGenerator)];
-    }),
-  ),
+  [GENERATORS]: Object.fromEntries(Object.values(GENERATOR_LIST).map(subGenerator => [subGenerator, allSubGeneratorConfig(subGenerator)])),
 });
 
 export const prompts = () => {

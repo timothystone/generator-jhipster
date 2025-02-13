@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,18 +19,14 @@
 
 import type { IsNever } from 'type-fest';
 import type { Entity as BaseEntity } from '../base/entity.js';
-import type { SpringEntity } from '../../../generators/server/types.js';
+import type { ServerEntity } from '../../../generators/server/types.js';
 import type { Field as BaseField } from '../base/field.js';
 import type { Relationship as BaseRelationship } from '../base/relationship.js';
 import type { FieldType } from '../../application/field-types.ts';
 import type { FakerWithRandexp } from '../../../generators/base/support/faker.ts';
+import type { PartialAngularEntity } from '../../../generators/angular/types-partial.js';
 import type { Field } from './field.js';
 import type { Relationship } from './relationship.js';
-
-type AngularEntity = {
-  entityAngularAuthorities?: string;
-  entityAngularReadAuthorities?: string;
-};
 
 export type PrimaryKey<F extends BaseField = Field> = {
   name: string;
@@ -41,15 +37,20 @@ export type PrimaryKey<F extends BaseField = Field> = {
   derived: boolean;
   javaValueGenerator?: string;
   javaBuildSpecification?: string;
+
+  tsSampleValues?: (string | number)[];
+  javaSampleValues?: string[];
 };
 
 export interface Entity<F extends BaseField = Field, R extends BaseRelationship = never>
   extends Omit<Required<BaseEntity<F>>, 'relationships'>,
-    SpringEntity,
-    AngularEntity {
+    ServerEntity,
+    PartialAngularEntity {
   changelogDateForRecent: any;
-  relationships: (IsNever<R> extends true ? Relationship<Omit<Entity, 'relationships'>> : R)[];
-  otherRelationships: (IsNever<R> extends true ? Relationship<Omit<Entity, 'relationships'>> : R)[];
+  /** @experimental */
+  auditableEntity?: boolean;
+  relationships: (IsNever<R> extends true ? Relationship : R)[];
+  otherRelationships: (IsNever<R> extends true ? Relationship : R)[];
 
   primaryKey?: PrimaryKey<F>;
 
@@ -61,7 +62,8 @@ export interface Entity<F extends BaseField = Field, R extends BaseRelationship 
   entityAuthority?: string;
   entityReadAuthority?: string;
   hasCyclicRequiredRelationship?: boolean;
-  jpaMetamodelFiltering?: boolean;
+
+  entityJavadoc?: string;
 
   entityNameCapitalized: string;
   entityClass: string;
@@ -118,6 +120,8 @@ export interface Entity<F extends BaseField = Field, R extends BaseRelationship 
    * Any file is of type Bytes or ByteBuffer
    */
   anyFieldIsBlobDerived: boolean;
+  entityJavaFilterableProperties: any[];
+  entityJavaCustomFilters: any[];
   /**
    * Any field is of type ZonedDateTime, Instant or LocalDate
    */
@@ -125,6 +129,7 @@ export interface Entity<F extends BaseField = Field, R extends BaseRelationship 
   anyFieldIsDuration: boolean;
   anyFieldIsInstant: boolean;
   anyFieldIsLocalDate: boolean;
+  anyFieldIsLocalTime: boolean;
   /**
    * Any field is of type ZonedDateTime or Instant
    */
@@ -144,10 +149,42 @@ export interface Entity<F extends BaseField = Field, R extends BaseRelationship 
    * Any relationship is required or id
    */
   anyRelationshipIsRequired: boolean;
+  hasRelationshipWithBuiltInUser: boolean;
+
+  paginationPagination: boolean;
+  paginationInfiniteScroll: boolean;
+  paginationNo: boolean;
+
+  serviceClass: boolean;
+  serviceImpl: boolean;
+  serviceNo: boolean;
 
   dtoMapstruct: boolean;
+  dtoAny: boolean;
 
   propertyJavaFilteredType?: string;
 
+  resetFakerSeed(suffix?: string): void;
+  generateFakeData?: (type?: any) => any;
   faker: FakerWithRandexp;
+
+  tsSampleWithPartialData?: string;
+  tsSampleWithRequiredData?: string;
+  tsSampleWithFullData?: string;
+  tsSampleWithNewData?: string;
+  tsPrimaryKeySamples?: string[];
+
+  entityAngularJSSuffix?: string;
+  saveUserSnapshot?: boolean;
+
+  /** Properties from application required for entities published through gateways */
+  useMicroserviceJson?: boolean;
+  microserviceAppName?: string;
+  applicationType?: string;
+  microfrontend?: boolean;
+}
+
+export interface UserEntity extends Entity {
+  hasImageField?: boolean;
+  adminUserDto?: string;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -39,6 +39,13 @@ const command = {
         type: Boolean,
       },
       scope: 'storage',
+    },
+    gitDependency: {
+      cli: {
+        description: 'Use git dependency (eg: github:jhipster/generator-jhipster#main)',
+        type: String,
+      },
+      scope: 'generator',
     },
     cliName: {
       cli: {

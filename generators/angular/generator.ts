@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,24 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { camelCase } from 'lodash-es';
 import chalk from 'chalk';
 import { isFileStateModified } from 'mem-fs-editor/state';
-
 import BaseApplicationGenerator from '../base-application/index.js';
 import { GENERATOR_ANGULAR, GENERATOR_CLIENT, GENERATOR_LANGUAGES } from '../generator-list.js';
 import { defaultLanguage } from '../languages/support/index.js';
 import { clientFrameworkTypes } from '../../lib/jhipster/index.js';
-import {
-  generateTypescriptTestEntity as generateTestEntity,
-  generateEntityClientEnumImports as getClientEnumImportsFormat,
-  getTypescriptKeyType as getTSKeyType,
-  generateTestEntityId as getTestEntityId,
-  generateTestEntityPrimaryKey as getTestEntityPrimaryKey,
-} from '../client/support/index.js';
+import { generateEntityClientEnumImports as getClientEnumImportsFormat } from '../client/support/index.js';
 import { createNeedleCallback, mutateData } from '../base/support/index.js';
 import { writeEslintClientRootConfigFile } from '../javascript/generators/eslint/support/tasks.js';
-import type { PostWritingEntitiesTaskParam } from '../../lib/types/application/tasks.js';
+import type { TaskTypes as DefaultTaskTypes } from '../../lib/types/application/tasks.js';
 import { cleanupEntitiesFiles, postWriteEntitiesFiles, writeEntitiesFiles } from './entity-files-angular.js';
 import { writeFiles } from './files-angular.js';
 import cleanupOldFilesTask from './cleanup.js';
@@ -44,16 +36,14 @@ import {
   addItemToAdminMenu,
   addRoute,
   addToEntitiesMenu,
-  buildAngularFormPath as angularFormPath,
   isTranslatedAngularFile,
   translateAngularFilesTransform,
 } from './support/index.js';
+import type { AngularApplication, AngularEntity } from './types.js';
 
 const { ANGULAR } = clientFrameworkTypes;
 
-export default class AngularGenerator extends BaseApplicationGenerator {
-  localEntities?: any[];
-
+export default class AngularGenerator extends BaseApplicationGenerator<DefaultTaskTypes<AngularEntity, AngularApplication>> {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
@@ -93,17 +83,33 @@ export default class AngularGenerator extends BaseApplicationGenerator {
           __override__: true,
           eslintConfigFile: app => `eslint.config.${app.packageJsonType === 'module' ? 'js' : 'mjs'}`,
           webappEnumerationsDir: app => `${app.clientSrcDir}app/entities/enumerations/`,
-          angularLocaleId: app => app.nativeLanguageDefinition.angularLocale ?? defaultLanguage.angularLocale,
+          angularLocaleId: app => app.nativeLanguageDefinition.angularLocale ?? defaultLanguage.angularLocale!,
         });
-
         application.addPrettierExtensions?.(['html', 'css', 'scss']);
+      },
+      async javaNodeBuildPaths({ application }) {
+        application.javaNodeBuildPaths?.push('angular.json', 'tsconfig.json', 'tsconfig.app.json');
+        if (application.clientBundlerWebpack) {
+          application.javaNodeBuildPaths?.push('webpack/');
+        } else if (application.clientBundlerExperimentalEsbuild) {
+          application.javaNodeBuildPaths?.push('build-plugins/');
+          if (application.enableI18nRTL) {
+            application.javaNodeBuildPaths?.push('postcss.conf.json');
+          }
+        }
       },
       addNeedles({ source, application }) {
         source.addEntitiesToClient = param => {
-          this.addEntitiesToModule(param);
-          this.addEntitiesToMenu(param);
-        };
+          const routeTemplatePath = `${param.application.clientSrcDir}app/entities/entity.routes.ts`;
+          const ignoreNonExistingRoute = chalk.yellow(`Route(s) not added to ${routeTemplatePath}.`);
+          const addRouteCallback = addEntitiesRoute(param);
+          this.editFile(routeTemplatePath, { ignoreNonExisting: ignoreNonExistingRoute }, addRouteCallback);
 
+          const filePath = `${application.clientSrcDir}app/layouts/navbar/navbar.component.html`;
+          const ignoreNonExisting = chalk.yellow('Reference to entities not added to menu.');
+          const editCallback = addToEntitiesMenu(param);
+          this.editFile(filePath, { ignoreNonExisting }, editCallback);
+        };
         source.addAdminRoute = (args: Omit<Parameters<typeof addRoute>[0], 'needle'>) =>
           this.editFile(
             `${application.srcMainWebapp}app/admin/admin.routes.ts`,
@@ -127,24 +133,58 @@ export default class AngularGenerator extends BaseApplicationGenerator {
           }
         };
 
+        source.addLanguagesInFrontend = ({ languagesDefinition }) => {
+          if (application.clientBundlerExperimentalEsbuild) {
+            this.editFile(
+              `${application.clientSrcDir}i18n/index.ts`,
+              createNeedleCallback({
+                needle: 'i18n-language-loader',
+                contentToAdd: languagesDefinition.map(
+                  lang => `'${lang.languageTag}': async (): Promise<any> => import('i18n/${lang.languageTag}.json'),`,
+                ),
+              }),
+              createNeedleCallback({
+                needle: 'i18n-language-angular-loader',
+                contentToAdd: languagesDefinition
+                  .filter(lang => lang.angularLocale)
+                  .map(
+                    lang => `'${lang.languageTag}': async (): Promise<void> => import('@angular/common/locales/${lang.angularLocale}'),`,
+                  ),
+              }),
+            );
+          }
+        };
+
         source.addIconImport = args => {
           const iconsPath = `${application.srcMainWebapp}app/config/font-awesome-icons.ts`;
           const ignoreNonExisting = this.sharedData.getControl().ignoreNeedlesError && 'Icon imports not updated with icon';
           this.editFile(iconsPath, { ignoreNonExisting }, addIconImport(args));
         };
 
-        source.addWebpackConfig = args => {
-          const webpackPath = `${application.clientRootDir}webpack/webpack.custom.js`;
-          const ignoreNonExisting = this.sharedData.getControl().ignoreNeedlesError && 'Webpack configuration file not found';
-          this.editFile(
-            webpackPath,
-            { ignoreNonExisting },
-            createNeedleCallback({
-              needle: 'jhipster-needle-add-webpack-config',
-              contentToAdd: `${args.config},`,
-            }),
-          );
-        };
+        if (application.clientBundlerWebpack) {
+          source.addWebpackConfig = args => {
+            const webpackPath = `${application.clientRootDir}webpack/webpack.custom.js`;
+            const ignoreNonExisting = this.sharedData.getControl().ignoreNeedlesError && 'Webpack configuration file not found';
+            this.editFile(
+              webpackPath,
+              { ignoreNonExisting },
+              createNeedleCallback({
+                needle: 'jhipster-needle-add-webpack-config',
+                contentToAdd: `${args.config},`,
+              }),
+            );
+          };
+        }
+
+        if (application.clientRootDir) {
+          // Overrides only works if added in root package.json
+          this.packageJson.merge({
+            overrides: {
+              'browser-sync': application.nodeDependencies['browser-sync'],
+              webpack: application.nodeDependencies.webpack,
+            },
+          });
+        }
       },
     });
   }
@@ -164,6 +204,7 @@ export default class AngularGenerator extends BaseApplicationGenerator {
             ...(entity.entityReadAuthority?.split(',') ?? []),
           ]),
         });
+        entity.generateEntityClientEnumImports = fields => getClientEnumImportsFormat(fields, ANGULAR);
       },
     });
   }
@@ -196,10 +237,9 @@ export default class AngularGenerator extends BaseApplicationGenerator {
                 returnValue = fieldDefaultValue;
               }
             }
-
             return returnValue;
           },
-        });
+        } as any);
       },
     });
   }
@@ -210,9 +250,9 @@ export default class AngularGenerator extends BaseApplicationGenerator {
 
   get default() {
     return this.asDefaultTaskGroup({
-      loadEntities() {
+      loadEntities({ application }) {
         const entities = this.sharedData.getEntities().map(({ entity }) => entity);
-        this.localEntities = entities.filter(entity => !entity.builtIn && !entity.skipClient);
+        application.angularEntities = entities.filter(entity => !entity.builtIn && !entity.skipClient) as AngularEntity[];
       },
       queueTranslateTransform({ control, application }) {
         const { enableTranslation, jhiPrefix } = application;
@@ -222,7 +262,7 @@ export default class AngularGenerator extends BaseApplicationGenerator {
             filter: file => isFileStateModified(file) && file.path.startsWith(this.destinationPath()) && isTranslatedAngularFile(file),
             refresh: false,
           },
-          translateAngularFilesTransform(control.getWebappTranslation, { enableTranslation, jhiPrefix }),
+          translateAngularFilesTransform(control.getWebappTranslation!, { enableTranslation, jhiPrefix }),
         );
       },
     });
@@ -234,9 +274,10 @@ export default class AngularGenerator extends BaseApplicationGenerator {
 
   get writing() {
     return this.asWritingTaskGroup({
-      async cleanup({ control }) {
+      async cleanup({ application, control }) {
         await control.cleanupFiles({
           '8.6.1': ['.eslintrc.json', '.eslintignore'],
+          '8.7.4': [`${application.clientSrcDir}app/app.constants.ts`],
         });
       },
       cleanupOldFilesTask,
@@ -262,14 +303,47 @@ export default class AngularGenerator extends BaseApplicationGenerator {
 
   get postWriting() {
     return this.asPostWritingTaskGroup({
-      addWebsocketDependencies({ application }) {
+      clientBundler({ application, source }) {
+        const { clientBundlerExperimentalEsbuild, enableTranslation, nodeDependencies } = application;
+        if (clientBundlerExperimentalEsbuild) {
+          source.mergeClientPackageJson!({
+            devDependencies: {
+              '@angular-builders/custom-esbuild': null,
+              globby: null,
+              ...(enableTranslation ? { 'folder-hash': null, deepmerge: null } : {}),
+            },
+          });
+        } else {
+          source.mergeClientPackageJson!({
+            dependencies: enableTranslation
+              ? {
+                  '@ngx-translate/http-loader': null,
+                }
+              : {},
+            devDependencies: {
+              '@angular-builders/custom-webpack': null,
+              'browser-sync-webpack-plugin': null,
+              'copy-webpack-plugin': null,
+              'webpack-bundle-analyzer': null,
+              'webpack-merge': null,
+              'webpack-notifier': null,
+              ...(enableTranslation ? { 'folder-hash': null, 'merge-jsons-webpack-plugin': null } : {}),
+            },
+            overrides: {
+              'browser-sync': nodeDependencies['browser-sync'],
+              webpack: nodeDependencies.webpack,
+            },
+          });
+        }
+      },
+      addWebsocketDependencies({ application, source }) {
         const { authenticationTypeSession, communicationSpringWebsocket, nodeDependencies } = application;
         const dependencies = {};
         if (communicationSpringWebsocket) {
           if (authenticationTypeSession) {
             dependencies['ngx-cookie-service'] = nodeDependencies['ngx-cookie-service'];
           }
-          this.packageJson.merge({
+          source.mergeClientPackageJson!({
             dependencies: {
               'sockjs-client': nodeDependencies['sockjs-client'],
               '@stomp/rx-stomp': nodeDependencies['@stomp/rx-stomp'],
@@ -313,198 +387,5 @@ export default class AngularGenerator extends BaseApplicationGenerator {
 
   get [BaseApplicationGenerator.END]() {
     return this.delegateTasksToBlueprint(() => this.end);
-  }
-
-  /**
-   * @private
-   * Add new scss style to the angular application in "vendor.scss".
-   *
-   * @param {string} style - scss to add in the file
-   * @param {string} comment - comment to add before css code
-   *
-   * example:
-   *
-   * style = '.success {\n     @extend .message;\n    border-color: green;\n}'
-   * comment = 'Message'
-   *
-   * * ==========================================================================
-   * Message
-   * ========================================================================== *
-   * .success {
-   *     @extend .message;
-   *     border-color: green;
-   * }
-   *
-   */
-  addVendorSCSSStyle(style, comment?) {
-    this.needleApi.clientAngular.addVendorSCSSStyle(style, comment);
-  }
-
-  /**
-   * @private
-   * Add a new lazy loaded module to admin routing file.
-   *
-   * @param {string} route - The route for the module. For example 'entity-audit'.
-   * @param {string} modulePath - The path to the module file. For example './entity-audit/entity-audit.module'.
-   * @param {string} moduleName - The name of the module. For example 'EntityAuditModule'.
-   * @param {string} pageTitle - The translation key if i18n is enabled or the text if i18n is disabled for the page title in the browser.
-   *                             For example 'entityAudit.home.title' for i18n enabled or 'Entity audit' for i18n disabled.
-   *                             If undefined then application global page title is used in the browser title bar.
-   */
-  addAdminRoute(route, modulePath, moduleName, pageTitle) {
-    this.needleApi.clientAngular.addAdminRoute(route, modulePath, moduleName, pageTitle);
-  }
-
-  /**
-   * @private
-   * Add a new module in the TS modules file.
-   *
-   * @param {string} appName - Angular2 application name.
-   * @param {string} angularName - The name of the new admin item.
-   * @param {string} folderName - The name of the folder.
-   * @param {string} fileName - The name of the file.
-   * @param {boolean} enableTranslation - If translations are enabled or not.
-   * @param {string} clientFramework - The name of the client framework.
-   */
-  addAngularModule(appName, angularName, folderName, fileName, enableTranslation) {
-    this.needleApi.clientAngular.addModule(appName, angularName, folderName, fileName, enableTranslation);
-  }
-
-  /**
-   * @private
-   * Add a new icon to icon imports.
-   *
-   * @param {string} iconName - The name of the Font Awesome icon.
-   */
-  addIcon(iconName) {
-    this.needleApi.clientAngular.addIcon(iconName);
-  }
-
-  /**
-   * Add a new menu element to the admin menu.
-   *
-   * @param {string} routerName - The name of the Angular router that is added to the admin menu.
-   * @param {string} iconName - The name of the Font Awesome icon that will be displayed.
-   * @param {boolean} enableTranslation - If translations are enabled or not
-   * @param {string} translationKeyMenu - i18n key for entry in the admin menu
-   */
-  addElementToAdminMenu(routerName, iconName, enableTranslation, translationKeyMenu = camelCase(routerName), jhiPrefix?) {
-    this.needleApi.clientAngular.addElementToAdminMenu(routerName, iconName, enableTranslation, translationKeyMenu, jhiPrefix);
-  }
-
-  addEntitiesToMenu({ application, entities }: Pick<PostWritingEntitiesTaskParam, 'application' | 'entities'>) {
-    const filePath = `${application.clientSrcDir}app/layouts/navbar/navbar.component.html`;
-    const ignoreNonExisting = chalk.yellow('Reference to entities not added to menu.');
-    const editCallback = addToEntitiesMenu({ application, entities });
-
-    this.editFile(filePath, { ignoreNonExisting }, editCallback);
-  }
-
-  addEntitiesToModule(param: Pick<PostWritingEntitiesTaskParam, 'application' | 'entities'>) {
-    const filePath = `${param.application.clientSrcDir}app/entities/entity.routes.ts`;
-    const ignoreNonExisting = chalk.yellow(`Route(s) not added to ${filePath}.`);
-    const addRouteCallback = addEntitiesRoute(param);
-    this.editFile(filePath, { ignoreNonExisting }, addRouteCallback);
-  }
-
-  /**
-   * @private
-   * Add new scss style to the angular application in "global.scss
-   *
-   * @param {string} style - css to add in the file
-   * @param {string} comment - comment to add before css code
-   *
-   * example:
-   *
-   * style = '.jhipster {\n     color: #baa186;\n}'
-   * comment = 'New JHipster color'
-   *
-   * * ==========================================================================
-   * New JHipster color
-   * ========================================================================== *
-   * .jhipster {
-   *     color: #baa186;
-   * }
-   *
-   */
-  addMainSCSSStyle(style, comment?) {
-    this.needleApi.clientAngular.addGlobalSCSSStyle(style, comment);
-  }
-
-  /**
-   * Returns the typescript import section of enums referenced by all fields of the entity.
-   * @param fields returns the import of enums that are referenced by the fields
-   * @returns {typeImports:Map} the fields that potentially contains some enum types
-   */
-  generateEntityClientEnumImports(fields) {
-    return getClientEnumImportsFormat(fields, ANGULAR);
-  }
-
-  /**
-   * Get the typescript type of a non-composite primary key
-   * @param primaryKey the primary key of the entity
-   * @returns {string} the typescript type.
-   */
-  getTypescriptKeyType(primaryKey) {
-    return getTSKeyType(primaryKey);
-  }
-
-  /**
-   * generates a value for a primary key type
-   * @param primaryKey the primary key attribute (or its type) of the entity
-   * @param index an index to add salt to the value
-   * @param wrapped if the value should be within quotes
-   * @returns {string|number|string}
-   */
-  generateTestEntityId(primaryKey, index = 0, wrapped = true) {
-    return getTestEntityId(primaryKey, index, wrapped);
-  }
-
-  /**
-   * @private
-   * Generate a test entity, for the PK references (when the PK is a composite, derived key)
-   *
-   * @param {any} primaryKey - primary key definition.
-   * @param {number} [index] - index of the primary key sample, pass undefined for a random key.
-   */
-  generateTestEntityPrimaryKey(primaryKey, index) {
-    return getTestEntityPrimaryKey(primaryKey, index);
-  }
-
-  /**
-   * @private
-   * Generate a test entity instance with faked values.
-   *
-   * @param {any} references - references to other entities.
-   * @param {any} additionalFields - additional fields to add to the entity or with default values that overrides generated values.
-   */
-  generateTypescriptTestEntity(references, additionalFields) {
-    return generateTestEntity(references, additionalFields);
-  }
-
-  /**
-   * @private
-   * Create a angular form path getter method of reference.
-   *
-   * @param {object} reference
-   * @param {string[]} prefix
-   * @return {string}
-   */
-  buildAngularFormPath(reference, prefix = []) {
-    return angularFormPath(reference, prefix);
-  }
-
-  /**
-   * @private
-   * Add a new menu element, at the root of the menu.
-   *
-   * @param {string} routerName - The name of the router that is added to the menu.
-   * @param {string} iconName - The name of the Font Awesome icon that will be displayed.
-   * @param {boolean} enableTranslation - If translations are enabled or not
-   * @param {string} clientFramework - The name of the client framework
-   * @param {string} translationKeyMenu - i18n key for entry in the menu
-   */
-  addElementToMenu(routerName, iconName, enableTranslation, _clientFramework?, translationKeyMenu = camelCase(routerName)) {
-    this.needleApi.clientAngular.addElementToMenu(routerName, iconName, enableTranslation, translationKeyMenu);
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -49,8 +49,33 @@ export default class NodeGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.composing);
   }
 
+  get preparing() {
+    return this.asPreparingTaskGroup({
+      async javaNodeBuildPaths({ application }) {
+        const { buildToolMaven, srcMainWebapp, javaNodeBuildPaths, clientDistDir } = application;
+
+        javaNodeBuildPaths.push(srcMainWebapp, 'package-lock.json', 'package.json');
+        if (buildToolMaven) {
+          // Gradle throws an error if the directory does not exist
+          javaNodeBuildPaths.push(clientDistDir!);
+        }
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.PREPARING]() {
+    return this.delegateTasksToBlueprint(() => this.preparing);
+  }
+
   get postPreparing() {
     return this.asPostPreparingTaskGroup({
+      sortBuildFiles({ application }) {
+        const { javaNodeBuildPaths } = application;
+        if (javaNodeBuildPaths) {
+          const files = [...new Set(javaNodeBuildPaths)];
+          javaNodeBuildPaths.splice(0, javaNodeBuildPaths.length, ...files.sort());
+        }
+      },
       useNpmWrapper({ application }) {
         if (application.useNpmWrapper) {
           this.useNpmWrapperInstallTask();
@@ -70,7 +95,6 @@ export default class NodeGenerator extends BaseApplicationGenerator {
           blocks: [
             {
               condition: (ctx: any) => ctx.useNpmWrapper,
-              transform: false,
               templates: ['npmw', 'npmw.cmd'],
             },
           ],

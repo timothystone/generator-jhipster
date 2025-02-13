@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -34,9 +34,6 @@ export const DeploymentTypes = {
   KUBERNETES: 'kubernetes',
   exists: (deploymentType?: any) => !!deploymentType && !!DeploymentTypes[deploymentType.toUpperCase().replace('-', '')],
 };
-
-export const DOCKERCOMPOSE = DeploymentTypes.DOCKERCOMPOSE;
-export const KUBERNETES = DeploymentTypes.KUBERNETES;
 
 const kubernetesRelatedOptions = {
   kubernetesNamespace: 'default',

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -42,7 +42,7 @@ export default class BootstrapGenerator extends BaseApplicationGenerator {
       jsExtensions({ applicationDefaults, application }) {
         applicationDefaults({
           cjsExtension: application.packageJsonTypeCommonjs ? '.js' : '.cjs',
-          mjsExtension: application.packageJsonTypeCommonjs ? '.js' : '.mjs',
+          mjsExtension: application.packageJsonTypeModule ? '.js' : '.mjs',
         });
       },
     });
@@ -50,6 +50,20 @@ export default class BootstrapGenerator extends BaseApplicationGenerator {
 
   get [BaseApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
+  }
+
+  get preparing() {
+    return this.asPreparingTaskGroup({
+      addSource({ application, source }) {
+        source.mergeClientPackageJson = args => {
+          this.mergeDestinationJson(`${application.clientRootDir}package.json`, args);
+        };
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.PREPARING]() {
+    return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
   get writing() {
@@ -69,24 +83,39 @@ export default class BootstrapGenerator extends BaseApplicationGenerator {
 
   get postWriting() {
     return this.asPostWritingTaskGroup({
-      addPrettierDependencies({ application }) {
-        const { packageJsonNodeEngine, packageJsonType, dasherizedBaseName, projectDescription, packageJsonScripts } = application;
+      mergePackageJson({ application, source }) {
+        const {
+          packageJsonNodeEngine,
+          packageJsonType,
+          dasherizedBaseName,
+          projectDescription,
+          packageJsonScripts,
+          clientPackageJsonScripts,
+        } = application;
+
         this.packageJson.merge({ scripts: packageJsonScripts! });
+
         this.packageJson.defaults({
           name: dasherizedBaseName,
           version: '0.0.0',
           description: projectDescription,
           license: 'UNLICENSED',
         });
+
         if (packageJsonType === 'module') {
           this.packageJson.merge({ type: packageJsonType });
         }
+
         if (packageJsonNodeEngine) {
           const packageJsonEngines: any = this.packageJson.get('engines') ?? {};
           this.packageJson.set('engines', {
             ...packageJsonEngines,
             node: typeof packageJsonNodeEngine === 'string' ? packageJsonNodeEngine : packageJson.engines.node,
           });
+        }
+
+        if (clientPackageJsonScripts && Object.keys(clientPackageJsonScripts).length > 0) {
+          source.mergeClientPackageJson!({ scripts: clientPackageJsonScripts });
         }
       },
     });

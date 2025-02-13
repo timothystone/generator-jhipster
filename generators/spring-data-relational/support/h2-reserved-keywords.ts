@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,6 +19,4 @@
 
 export const h2ReservedKeywords = ['KEY'];
 
-export const isReservedH2Keyword = (keyword: string) => {
-  return h2ReservedKeywords.includes(keyword.toUpperCase());
-};
+export const isReservedH2Keyword = (keyword: string) => h2ReservedKeywords.includes(keyword.toUpperCase());

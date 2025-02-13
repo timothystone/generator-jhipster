@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -29,12 +29,14 @@ const command: JHipsterCommandDefinition = {
       },
       configure(gen: any) {
         // Gets the owner, repo and issue_number from a string such as, "jhipster/generator-jhipster#12345"
-        const parsedIssue = parseIssue(gen.issue);
-        if (parsedIssue) {
-          gen.owner = parsedIssue.owner;
-          gen.repository = parsedIssue.repository;
-          gen.issue = parsedIssue.issue;
+        const { owner, repository, issue } = parseIssue(gen.issue);
+        if (owner) {
+          gen.owner = owner;
         }
+        if (repository) {
+          gen.repository = repository;
+        }
+        gen.issueNumber = issue;
       },
       scope: 'generator',
     },

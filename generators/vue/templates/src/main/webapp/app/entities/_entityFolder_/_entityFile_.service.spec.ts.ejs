@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2024 the original author or authors from the JHipster project.
+ Copyright 2013-2025 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,10 +17,9 @@
  limitations under the License.
 -%>
 <%_
-const tsKeyId = this.generateTestEntityId(primaryKey.type);
+const tsKeyId = primaryKey.tsSampleValues[0];
 const enumImports = this.generateEntityClientEnumImports(fields.filter(field => !field.id));
 _%>
-/* tslint:disable max-line-length */
 import axios from 'axios';
 import sinon from 'sinon'
 <%_ if (anyFieldIsDateDerived) { _%>
@@ -67,7 +66,7 @@ describe('Service Tests', () => {
       currentDate = new Date();
 <%_ } _%>
       elemDefault = new <%= entityAngularName %>(
-        <%- this.generateTestEntityId(primaryKey.type) %>,
+        <%- primaryKey.tsSampleValues[0] %>,
 <%_ fields.filter(field => !field.id).forEach((field) => {
     const fieldType = field.fieldType; _%>
   <%_ if (field.fieldIsEnum) { _%>
@@ -123,7 +122,7 @@ describe('Service Tests', () => {
 <%_ if (!readOnly) { _%>
       it('should create a <%= entityAngularName %>', async () => {
         const returnedFromService = Object.assign({
-          <%= primaryKey.name %>: <%- this.generateTestEntityId(primaryKey.type) %>,
+          <%= primaryKey.name %>: <%- primaryKey.tsSampleValues[0] %>,
   <%_ fields.filter(field => !field.id).forEach((field) => { _%>
     <%_ if (field.fieldTypeLocalDate) { _%>
           <%= field.fieldName%>: dayjs(currentDate).format(DATE_FORMAT),

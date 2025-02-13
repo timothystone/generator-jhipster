@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 import type { FieldType } from '../../application/field-types.ts';
+import type { Property } from './property.js';
 
 type FieldEnum = {
   fieldValues: string;
@@ -29,10 +30,20 @@ type FieldBlob = {
 };
 
 export type Field = Partial<FieldEnum> &
-  Partial<FieldBlob> & {
+  Partial<FieldBlob> &
+  Property & {
     fieldName: string;
     fieldType: FieldType | string;
-    documentation?: string;
     options?: Record<string, boolean | string | number>;
     fieldValidateRules?: string[];
+    fieldValidateRulesPattern?: string | RegExp;
+    fieldValidateRulesMaxlength?: number;
+    fieldValidateRulesMax?: number;
+    fieldValidateRulesMin?: number;
+    fieldValidateRulesMinlength?: number;
+    fieldValidationRequired?: boolean;
+    fieldValidateRulesMaxbytes?: number;
+    fieldValidateRulesMinbytes?: number;
+    /** @deprecated */
+    fieldTypeJavadoc?: string;
   };

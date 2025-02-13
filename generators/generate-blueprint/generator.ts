@@ -1,6 +1,6 @@
 // @ts-nocheck
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -57,6 +57,7 @@ export default class extends BaseGenerator {
   recreatePackageLock!: boolean;
   skipWorkflows!: boolean;
   ignoreExistingGenerators!: boolean;
+  gitDependency!: string;
 
   async _beforeQueue() {
     if (!this.fromBlueprint) {
@@ -371,7 +372,7 @@ export default class extends BaseGenerator {
           });
         } else {
           this.packageJson.merge({
-            dependencies: exactDependency,
+            dependencies: this.gitDependency ? { 'generator-jhipster': this.gitDependency } : exactDependency,
             engines: this.jhipsterConfig.caret ? caretDependency : exactDependency,
           });
         }

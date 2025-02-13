@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -60,9 +60,7 @@ export const databaseTypeData: Record<string, DatabaseTypeData> = {
   },
 };
 
-export const getDatabaseTypeData = (databaseType: string): DatabaseTypeData => {
-  return databaseTypeData[databaseType] ?? databaseTypeDataFallback;
-};
+export const getDatabaseTypeData = (databaseType: string): DatabaseTypeData => databaseTypeData[databaseType] ?? databaseTypeDataFallback;
 
 export const R2DBC_DB_OPTIONS = [
   {
@@ -104,7 +102,7 @@ export const SQL_DB_OPTIONS = [
     value: databaseTypes.MSSQL,
     name: 'Microsoft SQL Server',
   },
-];
+] as { value: string; name: string }[];
 
 /**
  * Get DB type from DB value
@@ -240,6 +238,6 @@ type UXConstraintName = {
 /**
  * get a unique constraint name for tables in JHipster preferred style.
  */
-export function getUXConstraintName(entityName, columnName, { prodDatabaseType, noSnakeCase }: UXConstraintName = {}) {
+export function getUXConstraintName(entityName: string, columnName: string, { prodDatabaseType, noSnakeCase }: UXConstraintName = {}) {
   return calculateDbName(entityName, columnName, { prodDatabaseType, noSnakeCase, prefix: 'ux_' });
 }

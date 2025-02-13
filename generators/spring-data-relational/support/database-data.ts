@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -151,10 +151,6 @@ const databaseData: Record<string, DatabaseDataSpec> = {
     jdbcDriver: 'org.postgresql.Driver',
     hibernateDialect: 'org.hibernate.dialect.PostgreSQLDialect',
     port: ':5432/',
-    // Password is required by Spring Boot v3.3.x, can be removed for v3.4.x, see https://github.com/spring-projects/spring-boot/pull/41511
-    // Use a strong password to avoid being flagged by SonarQube
-    defaultPassword: 'password',
-
     constraintNameMaxLength: 63,
     tableNameMaxLength: 63,
   },

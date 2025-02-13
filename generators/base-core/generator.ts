@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2024 the original author or authors from the JHipster project.
+ * Copyright 2013-2025 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -59,9 +59,9 @@ import { packageJson } from '../../lib/index.js';
 import type { BaseApplication } from '../base-application/types.js';
 import { GENERATOR_BOOTSTRAP } from '../generator-list.js';
 import NeedleApi from '../needle-api.js';
-import command from '../base/command.js';
+import baseCommand from '../base/command.js';
 import { GENERATOR_JHIPSTER, YO_RC_FILE } from '../generator-constants.js';
-import { loadConfig } from '../../lib/internal/index.js';
+import { loadConfig, loadDerivedConfig } from '../../lib/internal/index.js';
 import { getGradleLibsVersionsProperties } from '../gradle/support/dependabot-gradle.js';
 import { dockerPlaceholderGenerator } from '../docker/utils.js';
 import { getConfigWithDefaults } from '../../lib/jhipster/index.js';
@@ -186,7 +186,7 @@ export default class CoreGenerator extends YeomanGenerator<JHipsterGeneratorOpti
       this.sharedData = this.createSharedData({ help: this.options.help }) as any;
 
       /* Options parsing must be executed after forcing jhipster storage namespace and after sharedData have been populated */
-      this.parseJHipsterOptions(command.options);
+      this.parseJHipsterOptions(baseCommand.options);
 
       // Don't write jhipsterVersion to .yo-rc.json when reproducible
       if (
@@ -280,7 +280,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
    *
    * @param {string} version - A valid semver version string
    */
-  isJhipsterVersionLessThan(version) {
+  isJhipsterVersionLessThan(version: string): boolean {
     const jhipsterOldVersion = this.sharedData.getControl().jhipsterOldVersion;
     return this.isVersionLessThan(jhipsterOldVersion, version);
   }
@@ -289,7 +289,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
    * Wrapper for `semver.lt` to check if the oldVersion exists and is less than the newVersion.
    * Can be used by blueprints.
    */
-  isVersionLessThan(oldVersion: string | null, newVersion: string) {
+  isVersionLessThan(oldVersion: string | null, newVersion: string): boolean {
     return oldVersion ? semverLessThan(oldVersion, newVersion) : false;
   }
 
@@ -418,12 +418,14 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
         try {
           const command = await this.getCurrentJHipsterCommand();
           if (!command.configs) return;
+
+          const taskArgs = this.getArgsForPriority(PRIORITY_NAMES.LOADING);
+          const [{ application }] = taskArgs as any;
+          loadConfig.call(this, command.configs, { application: application ?? this });
+          loadDerivedConfig(command.configs, { application });
         } catch {
-          return;
+          // Ignore non existing command
         }
-        const taskArgs = this.getArgsForPriority(PRIORITY_NAMES.LOADING);
-        const [{ application }] = taskArgs as any;
-        await this.loadCurrentJHipsterCommandConfig(application ?? this);
       },
     });
   }
@@ -645,7 +647,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
    *                                 Set false to create a changelog date incrementing the last one.
    * @return {String} Changelog date.
    */
-  dateFormatForLiquibase(reproducible?: boolean) {
+  dateFormatForLiquibase(reproducible?: boolean): string {
     const control = this.sharedData.getControl();
     reproducible = reproducible ?? Boolean(control.reproducible);
     // Use started counter or use stored creationTimestamp if creationTimestamp option is passed
@@ -691,7 +693,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
   /**
    * Alternative templatePath that fetches from the blueprinted generator, instead of the blueprint.
    */
-  jhipsterTemplatePath(...path: string[]) {
+  jhipsterTemplatePath(...path: string[]): string {
     let existingGenerator: string;
     try {
       existingGenerator = this._jhipsterGenerator ?? requireNamespace(this.options.namespace).generator;
@@ -748,9 +750,8 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
 
   /**
    * Remove File
-   * @param file
    */
-  removeFile(...path: string[]) {
+  removeFile(...path: string[]): string {
     const destinationFile = this.destinationPath(...path);
     const relativePath = relative((this.env as any).logCwd, destinationFile);
     // Delete from memory fs to keep updated.
@@ -770,7 +771,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
    * Remove Folder
    * @param path
    */
-  removeFolder(...path: string[]) {
+  removeFolder(...path: string[]): void {
     const destinationFolder = this.destinationPath(...path);
     const relativePath = relative((this.env as any).logCwd, destinationFolder);
     // Delete from memory fs to keep updated.
@@ -788,7 +789,7 @@ You can ignore this error by passing '--skip-checks' to jhipster command.`);
   /**
    * Fetch files from the generator-jhipster instance installed
    */
-  fetchFromInstalledJHipster(...path: string[]) {
+  fetchFromInstalledJHipster(...path: string[]): string {
     if (path) {
       return joinPath(__dirname, '..', ...path);
     }
@@ -1241,9 +1242,7 @@ templates: ${JSON.stringify(existingTemplates, null, 2)}`;
    * Merge value to an existing json and write to destination
    */
   mergeDestinationJson(filepath: string, value: Record<string | number, any>) {
-    this.editFile(filepath, { create: true }, content => {
-      return JSON.stringify(merge(content ? JSON.parse(content) : {}, value), null, 2);
-    });
+    this.editFile(filepath, { create: true }, content => JSON.stringify(merge(content ? JSON.parse(content) : {}, value), null, 2));
   }
 
   /**
@@ -1390,7 +1389,7 @@ templates: ${JSON.stringify(existingTemplates, null, 2)}`;
     return this.options.sharedData.applications?.[this.calculateApplicationId(applicationFolder)];
   }
 
-  private createSharedData({ help }: { help?: boolean }): SharedData<BaseApplication> {
+  private createSharedData({ help }: { help?: boolean }): SharedData {
     const applicationId = this.options.applicationId ?? this.calculateApplicationId(this.destinationPath());
     if (this.options.sharedData.applications === undefined) {
       this.options.sharedData.applications = {};
@@ -1401,7 +1400,7 @@ templates: ${JSON.stringify(existingTemplates, null, 2)}`;
     }
     const { ignoreNeedlesError } = this.options;
 
-    return new SharedData<BaseApplication>(
+    return new SharedData(
       sharedApplications[applicationId],
       { destinationPath: this.destinationPath(), memFs: this.env.sharedFs, log: this.log, logCwd: this.env.logCwd },
       { ignoreNeedlesError },
