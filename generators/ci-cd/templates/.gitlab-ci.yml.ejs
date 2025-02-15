@@ -190,7 +190,7 @@ before_script:
     <%_ if (clientFrameworkAngular) { _%>
     - export NG_CLI_ANALYTICS="false"
     <%_ } _%>
-    - export MAVEN_USER_HOME=`pwd`/.maven
+    - export MAVEN_USER_HOME=`pwd`/.mvn
     <%_ if (!skipClient) { _%>
         <%_ if (!insideDocker) { _%>
     - ./mvnw -ntp com.github.eirslett:frontend-maven-plugin:install-node-and-npm@install-node-and-npm -Dmaven.repo.local=$MAVEN_USER_HOME
