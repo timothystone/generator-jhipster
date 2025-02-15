@@ -27,19 +27,22 @@
 
 include:
 <%_ if (buildToolGradle && !skipServer) { _%>
-  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven@3.11.4
-    inputs:
-      image: registry.hub.docker.com/library/maven:3.9-eclipse-temurin-21
-      deploy-enabled: true
-<%_ } _%>
-<%_ if (buildToolMaven && !skipServer) { _%>
-  - component: $CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.8.0
+  - component: $CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.9.1
     inputs:
       image: "registry.hub.docker.com/library/gradle:jdk21" 
 <%_ } _%>
+<%_ if (buildToolMaven && !skipServer) { _%>
+  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven@4.3.1
+    inputs:
+      image: registry.hub.docker.com/library/maven:3.9-eclipse-temurin-21
+      deploy-enabled: true  
+<%_ } _%>
 <%_ if (insideDocker && buildToolMaven) { _%>
   # Jib is implemented as an extension to Maven, and uses supporting features of the TBC Maven template
-  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven-jib@3.11.4
+  - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven-jib@4.3.1
+<%_ } _%>
+<%_ if (clientFrameworkAngular) { _%>
+  - component: $CI_SERVER_FQDN/to-be-continuous/angular/gitlab-ci-angular@4.11.1
 <%_ } _%>
 
 <%_ if (!skipServer) { _%>
@@ -66,13 +69,13 @@ before_script:
     <%_ if (!skipClient) { _%>
     - ./gradlew <%= clientPackageManager %>_install -PnodeInstall --no-daemon
     <%_ } _%>
-nohttp:
-    stage: check
+gradle-nohttp:
+    stage: .pre
     script:
         - ./gradlew checkstyleNohttp --no-daemon
     <%_ if (ciCdIntegrationsSnyk) { _%>
 
-dependency-scanning:
+gradle-dependency-scanning:
     stage: check
     script:
         - curl -Lo ./snyk $(curl -s https://api.github.com/repos/snyk/snyk/releases/latest | grep "browser_download_url.*snyk-linux" | cut -d ':' -f 2,3 | tr -d \" | tr -d ' ')
@@ -131,7 +134,7 @@ gradle-integration-test:
         expire_in: 1 day
 
     <%_ if (!skipClient) { _%>
-frontend-test:
+gradle-frontend-test:
     stage: test
     script:
         - ./gradlew <%= clientPackageManager %>_run_<%= frontTestCommand %> -PnodeInstall --no-daemon
@@ -145,7 +148,7 @@ frontend-test:
     <%_ } _%>
 
     <%_ if (ciCdIntegrationsSonar) { _%>
-sonar-analyze:
+gradle-sonar-analyze:
     stage: analyze
     except:
         - merge_requests
@@ -172,7 +175,7 @@ gradle-package:
 
 
     <%_ if (ciCdIntegrationsHeroku) { _%>
-deploy-to-production:
+gradle-deploy-to-production:
     stage: deploy
     script:
         - ./gradlew deployHeroku --no-daemon
@@ -181,6 +184,7 @@ deploy-to-production:
     when: manual
     <%_ } _%>
 <%_ } _%>
+
 <%_ if (buildToolMaven) { _%>
 before_script:
     <%_ if (clientFrameworkAngular) { _%>
