@@ -29,12 +29,12 @@ include:
 <%_ if (buildToolGradle && !skipServer) { _%>
   - component: $CI_SERVER_FQDN/to-be-continuous/gradle/gitlab-ci-gradle@2.9.1
     inputs:
-      image: "registry.hub.docker.com/library/gradle:jdk21" 
+      image: "registry.hub.docker.com/library/gradle:jdk17" 
 <%_ } _%>
 <%_ if (buildToolMaven && !skipServer) { _%>
   - component: $CI_SERVER_FQDN/to-be-continuous/maven/gitlab-ci-maven@4.3.1
     inputs:
-      image: registry.hub.docker.com/library/maven:3.9-eclipse-temurin-21
+      image: registry.hub.docker.com/library/maven:3.9-eclipse-temurin-17
       deploy-enabled: true  
 <%_ } _%>
 <%_ if (insideDocker && buildToolMaven) { _%>
@@ -190,18 +190,17 @@ before_script:
     <%_ if (clientFrameworkAngular) { _%>
     - export NG_CLI_ANALYTICS="false"
     <%_ } _%>
-    - export MAVEN_USER_HOME=`pwd`/.mvn
     <%_ if (!skipClient) { _%>
         <%_ if (!insideDocker) { _%>
-    - ./mvnw -ntp com.github.eirslett:frontend-maven-plugin:install-node-and-npm@install-node-and-npm -Dmaven.repo.local=$MAVEN_USER_HOME
-    - ./mvnw -ntp com.github.eirslett:frontend-maven-plugin:<%= clientPackageManager %> -Dmaven.repo.local=$MAVEN_USER_HOME
+    - ./mvnw com.github.eirslett:frontend-maven-plugin:install-node-and-npm@install-node-and-npm 
+    - ./mvnw com.github.eirslett:frontend-maven-plugin:<%= clientPackageManager %> 
         <%_ } _%>
     <%_ } _%>
 
 nohttp:
     stage: check
     script:
-        - ./mvnw -ntp checkstyle:check -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw checkstyle:check
     <%_ if (ciCdIntegrationsSnyk) { _%>
 
 dependency-scanning:
@@ -217,7 +216,7 @@ dependency-scanning:
 maven-compile:
     stage: build
     script:
-        - ./mvnw -ntp compile -P-webapp -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw compile -P-webapp
     artifacts:
         paths:
             - target/classes/
@@ -240,7 +239,7 @@ maven-test:
 
     stage: test
     script:
-        - ./mvnw -ntp verify -P-webapp -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw verify -P-webapp 
     artifacts:
         reports:
             junit:
@@ -260,7 +259,7 @@ frontend-test:
         - npm install
         - npm test
         <%_ } else { _%>
-        - ./mvnw -ntp com.github.eirslett:frontend-maven-plugin:<%= clientPackageManager %> -Dfrontend.<%= clientPackageManager %>.arguments='run <%= frontTestCommand %>' -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw com.github.eirslett:frontend-maven-plugin:<%= clientPackageManager %> -Dfrontend.<%= clientPackageManager %>.arguments='run <%= frontTestCommand %>'
         <%_ } _%>
     artifacts:
         reports:
@@ -279,14 +278,14 @@ sonar-analyze:
         - frontend-test
         <%_ } _%>
     script:
-        - ./mvnw -ntp org.jacoco:jacoco-maven-plugin:prepare-agent initialize sonar:sonar <% if (sonarOrga) { %>-Dsonar.organization=<%= sonarOrga %> <% } %>-Dsonar.host.url=<%= sonarUrl %> -Dsonar.login=$SONAR_TOKEN -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw org.jacoco:jacoco-maven-plugin:prepare-agent initialize sonar:sonar <% if (sonarOrga) { %>-Dsonar.organization=<%= sonarOrga %> <% } %>-Dsonar.host.url=<%= sonarUrl %> -Dsonar.login=$SONAR_TOKEN 
     allow_failure: true
     <%_ } _%>
 
 maven-package:
     stage: package
     script:
-        - ./mvnw -ntp verify <% if (ciCdIntegrationsDeploy) { %>deploy <% } %>-Pprod -DskipTests -Dmaven.repo.local=$MAVEN_USER_HOME
+        - ./mvnw verify <% if (ciCdIntegrationsDeploy) { %>deploy <% } %>-Pprod -DskipTests 
     artifacts:
         paths:
             - target/*.jar
@@ -297,7 +296,7 @@ maven-package:
 deploy-to-production:
     stage: deploy
     script:
-      - ./mvnw -ntp com.heroku.sdk:heroku-maven-plugin:3.0.7:deploy -DskipTests -Pprod -Dheroku.buildpacks=heroku/jvm -Dheroku.appName=<%= herokuAppName %> -Dmaven.repo.local=$MAVEN_USER_HOME
+      - ./mvnw com.heroku.sdk:heroku-maven-plugin:3.0.7:deploy -DskipTests -Pprod -Dheroku.buildpacks=heroku/jvm -Dheroku.appName=<%= herokuAppName %> 
     environment:
         name: production
     when: manual
