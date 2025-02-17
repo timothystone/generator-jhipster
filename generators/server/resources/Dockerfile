@@ -18,7 +18,7 @@ LABEL ALIAS=keycloak
 
 FROM mysql:9.2.0
 
-FROM mariadb:11.6.2
+FROM mariadb:11.7.2
 
 FROM mongo:8.0.4
 LABEL ALIAS=mongodb
@@ -76,5 +76,5 @@ LABEL ALIAS=java-jre
 FROM swaggerapi/swagger-editor:latest
 LABEL ALIAS=swagger-editor
 
-FROM openzipkin/zipkin:3.4.3
+FROM openzipkin/zipkin:3.5.0
 LABEL ALIAS=zipkin
