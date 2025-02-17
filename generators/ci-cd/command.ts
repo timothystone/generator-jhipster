@@ -55,10 +55,15 @@ const command: JHipsterCommandDefinition = {
         { name: `Analyze your code with ${chalk.yellow('*Sonar*')}`, value: 'sonar' },
         // ['jenkins', 'github'].includes(this.pipeline)
         { name: `Build and publish a ${chalk.yellow('*Docker*')} image`, value: 'publishDocker' },
-        // ['jenkins', 'gitlab', 'travis', 'github', 'circle', 'azure']
+        // ['jenkins', 'travis', 'github', 'circle', 'azure']
         {
           name: `${chalk.yellow('*Snyk*')}: dependency scanning for security vulnerabilities (requires SNYK_TOKEN)`,
           value: 'snyk',
+        },
+        // ['gitlab']
+        {
+          name: `${chalk.yellow('*Trivy*')}: dependency scanning for security vulnerabilities`,
+          value: 'trivy',
         },
         // ['jenkins', 'gitlab', 'travis', 'github', 'circle']
         {
