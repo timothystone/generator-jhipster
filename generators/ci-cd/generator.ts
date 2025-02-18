@@ -73,6 +73,7 @@ export default class CiCdGenerator extends BaseApplicationGenerator {
       setTemplateConstants() {
         loadDerivedConfig(command.configs, { application: this.context });
 
+        this.log.log(this.context.ciCdIntegrations);
         if (this.context.ciCdIntegrations === undefined) {
           this.context.ciCdIntegrations = [];
         }
@@ -129,7 +130,17 @@ export default class CiCdGenerator extends BaseApplicationGenerator {
             },
             {
               condition: ctx => ctx.ciCdGitlab,
-              templates: ['.gitlab-ci.yml'],
+              templates: [
+                {
+                  sourceFile: '.gitlab-ci.yml',
+                  destinationFile: '.gitlab-ci.yml'
+                },
+                {
+                  sourceFile: 'gitlab/.m2/settings.xml',
+                  destinationFile: '.m2/settings.xml',
+                  noEjs: true
+                },
+              ],
             },
             {
               condition: ctx => ctx.ciCdCircle,

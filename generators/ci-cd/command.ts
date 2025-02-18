@@ -52,27 +52,27 @@ const command: JHipsterCommandDefinition = {
         // ['jenkins', 'gitlab']
         { name: `Deploy your application to a ${chalk.yellow('remote repository')}`, value: 'deploy' },
         // ['jenkins', 'gitlab', 'travis', 'github']
-        { name: `Analyze your code with ${chalk.yellow('*Sonar*')}`, value: 'sonar' },
+        { name: `Analyze your code with ${chalk.yellow.bold('*Sonar*')}`, value: 'sonar' },
         // ['jenkins', 'github'].includes(this.pipeline)
-        { name: `Build and publish a ${chalk.yellow('*Docker*')} image`, value: 'publishDocker' },
+        { name: `Build and publish a ${chalk.yellow.bold('*Docker*')} image`, value: 'publishDocker' },
         // ['jenkins', 'travis', 'github', 'circle', 'azure']
         {
-          name: `${chalk.yellow('*Snyk*')}: dependency scanning for security vulnerabilities (requires SNYK_TOKEN)`,
+          name: `${chalk.yellow.bold('*Snyk*')}: dependency scanning for security vulnerabilities (requires SNYK_TOKEN)`,
           value: 'snyk',
         },
         // ['gitlab']
         {
-          name: `${chalk.yellow('*Trivy*')}: dependency scanning for security vulnerabilities`,
+          name: `${chalk.yellow.bold('*Trivy*')}: dependency scanning for security vulnerabilities`,
           value: 'trivy',
         },
         // ['jenkins', 'gitlab', 'travis', 'github', 'circle']
         {
-          name: `Deploy to ${chalk.yellow('*Heroku*')} (requires HEROKU_API_KEY set on CI service)`,
+          name: `Deploy to ${chalk.yellow.bold('*Heroku*')} (requires HEROKU_API_KEY set on CI service)`,
           value: 'heroku',
         },
         // ['github']
         {
-          name: `Would you like to enable the ${chalk.yellow(
+          name: `Would you like to enable the ${chalk.yellow.bold(
             '*Cypress Dashboard*',
           )} (requires both CYPRESS_PROJECT_ID and CYPRESS_RECORD_KEY set on CI service)`,
           value: 'cypressDashboard',
