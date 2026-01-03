@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,24 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { before, describe, expect, it } from 'esmocha';
-import { snakeCase } from 'lodash-es';
+import { basename } from 'node:path';
 
-import { getCommandHelpOutput, shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.js';
-import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.ts';
+import { getCommandHelpOutput, shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
-  it('generator-list constant matches folder name', async () => {
-    await expect((await import('../generator-list.js'))[`GENERATOR_${snakeCase(generator).toUpperCase()}`]).toBe(generator);
-  });
   shouldSupportFeatures(Generator);
   describe('help', () => {
     it('should print expected information', async () => {
@@ -41,64 +34,6 @@ describe(`generator - ${generator}`, () => {
     });
   });
   describe('blueprint support', () => testBlueprintSupport(generator));
-  describe('with', () => {
-    describe('default config', () => {
-      before(async () => {
-        await helpers.runJHipster(generator).withJHipsterConfig().withSkipWritingPriorities().withMockedSource();
-      });
-
-      it('should match snapshot', () => {
-        expect(runResult.generator.sharedData.getApplication()).toMatchSnapshot({
-          user: expect.any(Object),
-          authority: expect.any(Object),
-          userManagement: expect.any(Object),
-          jhipsterPackageJson: expect.any(Object),
-          springBootDependencies: expect.any(Object),
-        });
-      });
-    });
-
-    describe('gateway', () => {
-      before(async () => {
-        await helpers
-          .runJHipster(generator)
-          .withJHipsterConfig({
-            applicationType: 'gateway',
-          })
-          .withSkipWritingPriorities();
-      });
-
-      it('should match snapshot', () => {
-        expect(runResult.generator.sharedData.getApplication()).toMatchSnapshot({
-          user: expect.any(Object),
-          authority: expect.any(Object),
-          userManagement: expect.any(Object),
-          jhipsterPackageJson: expect.any(Object),
-          jwtSecretKey: expect.any(String),
-          springBootDependencies: expect.any(Object),
-        });
-      });
-    });
-
-    describe('microservice', () => {
-      before(async () => {
-        await helpers
-          .runJHipster(generator)
-          .withJHipsterConfig({
-            applicationType: 'microservice',
-          })
-          .withSkipWritingPriorities();
-      });
-
-      it('should match snapshot', () => {
-        expect(runResult.generator.sharedData.getApplication()).toMatchSnapshot({
-          jhipsterPackageJson: expect.any(Object),
-          jwtSecretKey: expect.any(String),
-          springBootDependencies: expect.any(Object),
-        });
-      });
-    });
-  });
 
   describe('jdlStore', () => {
     describe('with application', () => {
@@ -218,7 +153,8 @@ describe(`generator - ${generator}`, () => {
   "prodDatabaseType",
   "devDatabaseType",
   "serverSideOptions",
-  "enableGradleEnterprise",
+  "enableGradleDevelocity",
+  "gradleDevelocityHost",
   "clientFramework",
   "microfrontend",
   "clientTestFrameworks",

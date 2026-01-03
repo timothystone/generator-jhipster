@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
-import JDLUnaryOption from '../../core/models/jdl-unary-option.js';
-import JDLBinaryOption from '../../core/models/jdl-binary-option.js';
-import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.js';
-import type AbstractJDLOption from '../../core/models/abstract-jdl-option.js';
-import type { ParsedJDLOption, ParsedJDLUseOption } from '../../core/types/parsed.js';
+import type { BinaryOptionType } from '../../core/built-in-options/binary-options.ts';
+import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.ts';
+import type { UnaryOptionType } from '../../core/built-in-options/unary-options.ts';
+import type AbstractJDLOption from '../../core/models/abstract-jdl-option.ts';
+import JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import JDLUnaryOption from '../../core/models/jdl-unary-option.ts';
+import type { ParsedJDLOption, ParsedJDLOptionConfig, ParsedJDLUseOption } from '../../core/types/parsed.ts';
 
 const { OptionValues, getOptionName } = binaryOptions;
 export default { convertOptions };
@@ -33,7 +35,7 @@ export default { convertOptions };
  * @returns {Array<JDLUnaryOption|JDLBinaryOption>} the converted JDLUnaryOption & JDLBinaryOption objects.
  */
 export function convertOptions(
-  parsedOptions: Record<string, ParsedJDLOption | Record<string, ParsedJDLOption>> | undefined,
+  parsedOptions: Record<string, ParsedJDLOptionConfig | Record<string, ParsedJDLOptionConfig>> | undefined,
   useOptions: ParsedJDLUseOption[],
 ): AbstractJDLOption[] {
   if (!parsedOptions) {
@@ -47,7 +49,7 @@ export function convertOptions(
 
 function convertUnaryOptions(parsedOptions: Record<string, ParsedJDLOption>): JDLUnaryOption[] {
   const convertedUnaryOptions: JDLUnaryOption[] = [];
-  unaryOptions.forEach((unaryOptionName: string) => {
+  unaryOptions.forEach((unaryOptionName: UnaryOptionType) => {
     const parsedUnaryOption = parsedOptions[unaryOptionName];
     if (!parsedUnaryOption?.list || parsedUnaryOption.list.length === 0) {
       return;
@@ -65,7 +67,7 @@ function convertUnaryOptions(parsedOptions: Record<string, ParsedJDLOption>): JD
 
 function convertBinaryOptions(parsedOptions: Record<string, Record<string, ParsedJDLOption>>): JDLBinaryOption[] {
   const convertedBinaryOptions: JDLBinaryOption[] = [];
-  binaryOptions.forEach((binaryOptionName: string) => {
+  binaryOptions.forEach((binaryOptionName: BinaryOptionType) => {
     if (!parsedOptions[binaryOptionName]) {
       return;
     }
@@ -92,12 +94,13 @@ function convertUseOptions(useOptions: ParsedJDLUseOption[]): JDLBinaryOption[] 
     const { optionValues, list, excluded } = useValue;
 
     optionValues.forEach(optionValue => {
-      if (!OptionValues[optionValue]) {
+      const optionName = (OptionValues as Record<string, string>)[optionValue];
+      if (!optionName) {
         return;
       }
       convertedUseOptions.push(
         new JDLBinaryOption({
-          name: getOptionName(OptionValues[optionValue])!,
+          name: getOptionName(optionName)!,
           value: optionValue,
           entityNames: list,
           excludedNames: excluded,

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,15 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import assert from 'assert';
-import { opendirSync, readFileSync, writeFileSync } from 'fs';
-import path, { basename } from 'path';
+import assert from 'node:assert';
+import { opendirSync, readFileSync, writeFileSync } from 'node:fs';
+import path, { basename } from 'node:path';
+
 import { before, describe, it } from 'mocha';
-import { getGeneratorFolder } from '../../lib/testing/get-generator.js';
+
+import { getGeneratorFolder } from '../../lib/testing/get-generator.ts';
 
 const fixEnforcements = process.argv.includes('--fix-enforcements');
 
-const readDir = dirPath => {
+const readDir = (dirPath: string) => {
   const files: string[] = [];
   const dir = opendirSync(dirPath);
   let dirent = dir.readSync();
@@ -41,14 +43,14 @@ const readDir = dirPath => {
   return files;
 };
 
-export default function checkEnforcements({ client }: { client?: boolean }, generator, ...generatorUsage: string[]) {
+export default function checkEnforcements({ client }: { client?: boolean }, generator: string, ...generatorUsage: string[]) {
   describe('enforce some developments patterns', () => {
-    const allFiles = readDir(getGeneratorFolder(generator));
+    const allFiles = readDir(getGeneratorFolder(generator)).filter(file => !/i18n\/(.*)\.json\.ejs$/.test(file));
     allFiles
       .filter(file => !/\.spec\.[mc]?[jt]s(.snap)?$/.test(file))
       .forEach(file => {
         describe(`file ${path.basename(file)}`, () => {
-          let content;
+          let content: string;
           before(() => {
             content = readFileSync(file, 'utf-8');
           });
@@ -62,9 +64,9 @@ export default function checkEnforcements({ client }: { client?: boolean }, gene
                   [' Java ', ' <%= backendType %> '],
                 ]
               : []),
-          ].forEach(([notSpected, replacement]) => {
-            const regex = new RegExp(notSpected, 'g');
-            const regexSeparator = new RegExp(`${notSpected}/`, 'g');
+          ].forEach(([notExpected, replacement]) => {
+            const regex = new RegExp(notExpected, 'g');
+            const regexSeparator = new RegExp(`${notExpected}/`, 'g');
             before(() => {
               if (!fixEnforcements || !replacement) return;
               if (file.endsWith('.ejs')) {
@@ -78,8 +80,8 @@ export default function checkEnforcements({ client }: { client?: boolean }, gene
                 }
               }
             });
-            it(`should not contain ${notSpected}`, () => {
-              assert(!regex.test(content), `file ${file} should not contain ${notSpected}`);
+            it(`should not contain ${notExpected}`, () => {
+              assert(!regex.test(content), `file ${file} should not contain ${notExpected}`);
             });
           });
         });
@@ -97,13 +99,18 @@ export default function checkEnforcements({ client }: { client?: boolean }, gene
         return 0;
       });
     templateFiles.forEach(templateFile => {
-      const reference = basename(templateFile, '.ejs').replace('_reactive.java', '_').replace('_imperative.java', '_');
+      const reference = basename(templateFile, '.ejs').replaceAll(
+        /_(reactive|imperative|caffeine|ehcache|hazelcast|infinispan|memcached|redis).java/g,
+        '_',
+      );
       it(`${templateFile} must have referenced with ${reference}`, () => {
         const found = jsFiles.find(jsFile => {
           const content = readFileSync(jsFile).toString();
           return content.includes(`/${reference}`) || content.includes(`'${reference}`);
         });
-        if (!found) throw new Error(`File ${templateFile} is not referenced`);
+        if (!found) {
+          throw new Error(`File ${templateFile} is not referenced`);
+        }
       });
     });
   });

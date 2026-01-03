@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 import { camelCase, upperFirst } from 'lodash-es';
-import type { JDLRelationshipType, RelationshipType } from './relationships.js';
-import { relationshipTypes } from './relationships.js';
+
+import type { JDLRelationshipType, RelationshipType } from './relationships.ts';
+import { relationshipTypes } from './relationships.ts';
 
 export const asJdlRelationshipType = (type: RelationshipType): JDLRelationshipType => upperFirst(camelCase(type)) as JDLRelationshipType;
 

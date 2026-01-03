@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,13 +18,15 @@
  */
 
 import { describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { applicationOptions } from '../../../jhipster/index.js';
-import { getDefaultRuntime } from '../runtime.js';
+
+import applicationOptions from '../../../jhipster/application-options.ts';
+import { createRuntime } from '../runtime.ts';
 
 const { OptionNames } = applicationOptions;
 
-const { applicationDefinition } = getDefaultRuntime();
+const { applicationDefinition } = createRuntime();
 
 describe('jdl - ApplicationOptions', () => {
   describe('doesOptionExist', () => {
@@ -81,13 +83,13 @@ describe('jdl - ApplicationOptions', () => {
     });
   });
   describe('shouldTheValueBeQuoted', () => {
-    const optionsThatShouldBeQuoted = new Set([
+    const optionsThatShouldBeQuoted = new Set<string>([
       OptionNames.JHIPSTER_VERSION,
       OptionNames.REMEMBER_ME_KEY,
       OptionNames.JWT_SECRET_KEY,
-      OptionNames.GRADLE_ENTERPRISE_HOST,
+      OptionNames.GRADLE_DEVELOCITY_HOST,
     ]);
-    const optionsThatShouldNotBeQuoted = new Set(
+    const optionsThatShouldNotBeQuoted = new Set<string>(
       Object.values(OptionNames).filter(optionName => !optionsThatShouldBeQuoted.has(optionName)),
     );
 

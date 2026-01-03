@@ -1,5 +1,5 @@
 #
-# Copyright 2013-2025 the original author or authors from the JHipster project.
+# Copyright 2013-2026 the original author or authors from the JHipster project.
 #
 # This file is part of the JHipster project, see https://www.jhipster.tech/
 # for more information.
@@ -29,7 +29,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: ./generator-jhipster/.github/actions/setup-generator-jhipster-jit
+    - uses: jhipster/actions/setup-runner@v1
+      with:
+        binary-dir: ${{ github.workspace }}/generator-jhipster/bin
+        npm-cache: false
     - name: 'mvn: install JHipster'
       run: |
         echo "::group::jhipster-bom"
@@ -40,11 +43,12 @@ runs:
       working-directory: ${{ github.workspace }}/${{ inputs.jhipster-bom-path }}
     - run: rm -rf tmp; mkdir tmp
       shell: bash
+      if: always()
       working-directory: ${{ github.workspace }}
     - name: 'mvn(imperative): cache dependencies'
       run: |
         echo "::group::maven(imperative)"
-        jh generate-sample cache.jdl --skip-install --workspaces --monorepository --skip-git
+        jhipster.cjs generate-sample cache.jdl --skip-install --workspaces --monorepository --skip-git --skip-jhipster-dependencies
         npm run backend:build-cache -- --ntp || true
         cd app1
         ./npmw -v
@@ -54,11 +58,12 @@ runs:
       working-directory: ${{ github.workspace }}/tmp
     - run: rm -rf tmp; mkdir tmp
       shell: bash
+      if: always()
       working-directory: ${{ github.workspace }}
     - name: 'mvn(reactive): cache dependencies'
       run: |
         echo "::group::maven(reactive)"
-        jh generate-sample cache.jdl --skip-install --workspaces --reactive --websocket no --monorepository --skip-git
+        jhipster.cjs generate-sample cache.jdl --skip-install --workspaces --reactive --websocket no --monorepository --skip-git --skip-jhipster-dependencies
         npm install --force
         npm run backend:build-cache -- --ntp || true
         echo "::endgroup::"
@@ -67,11 +72,12 @@ runs:
       working-directory: ${{ github.workspace }}/tmp
     - run: rm -rf tmp; mkdir tmp
       shell: bash
+      if: always()
       working-directory: ${{ github.workspace }}
     - name: 'gradle(imperative): cache dependencies'
       run: |
         echo "::group::gradle(imperative)"
-        jh generate-sample cache.jdl --skip-install --workspaces --build gradle --monorepository --skip-git
+        jhipster.cjs generate-sample cache.jdl --skip-install --workspaces --build gradle --monorepository --skip-git --skip-jhipster-dependencies
         npm install --force
         npm run backend:build-cache || true
         cd app1
@@ -82,11 +88,12 @@ runs:
       working-directory: ${{ github.workspace }}/tmp
     - run: rm -rf tmp; mkdir tmp
       shell: bash
+      if: always()
       working-directory: ${{ github.workspace }}
     - name: 'gradle(reactive): cache dependencies'
       run: |
         echo "::group::gradle(reactive)"
-        jh generate-sample cache.jdl --skip-install --workspaces --build gradle --reactive --websocket no --monorepository --skip-git
+        jhipster.cjs generate-sample cache.jdl --skip-install --workspaces --build gradle --reactive --websocket no --monorepository --skip-git --skip-jhipster-dependencies
         npm install --force
         npm run backend:build-cache || true
         echo "::endgroup::"

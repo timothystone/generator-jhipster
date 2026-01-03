@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,39 +18,47 @@
  */
 
 import { before, describe, it } from 'esmocha';
-import { expect } from 'chai';
-import { relationshipTypes } from '../basic-types/index.js';
-import { applicationTypes, fieldTypes, unaryOptions } from '../built-in-options/index.js';
-import JDLObject from '../models/jdl-object.js';
-import { JDLEntity, JDLEnum } from '../models/index.js';
-import JDLField from '../models/jdl-field.js';
-import JDLRelationship from '../models/jdl-relationship.js';
-import JDLUnaryOption from '../models/jdl-unary-option.js';
-import mergeJDLObjects from '../models/jdl-object-merger.js';
-import { createJDLApplication } from '.././__test-support__/index.js';
 
-const { MONOLITH } = applicationTypes;
+import { expect } from 'chai';
+
+import { APPLICATION_TYPE_MONOLITH } from '../../../core/application-types.ts';
+import fieldTypes from '../../../jhipster/field-types.ts';
+import { createJDLApplication } from '../__test-support__/index.ts';
+import { relationshipTypes } from '../basic-types/index.ts';
+import { unaryOptions } from '../built-in-options/index.ts';
+import { createRuntime } from '../runtime.ts';
+
+import { JDLEntity, JDLEnum } from './index.ts';
+import JDLField from './jdl-field.ts';
+import mergeJDLObjects from './jdl-object-merger.ts';
+import JDLObject from './jdl-object.ts';
+import JDLRelationship from './jdl-relationship.ts';
+import JDLUnaryOption from './jdl-unary-option.ts';
+
+const runtime = createRuntime();
 
 describe('jdl - JDLObjectMerger', () => {
   describe('mergeJDLObjects', () => {
     describe('when not passing the first object', () => {
       it('should fail', () => {
+        // @ts-expect-error invalid argument
         expect(() => mergeJDLObjects(undefined, {})).to.throw(/^Can't merge nil JDL objects\.$/);
       });
     });
     describe('when not passing the second object', () => {
       it('should fail', () => {
+        // @ts-expect-error invalid argument
         expect(() => mergeJDLObjects({}, undefined)).to.throw(/^Can't merge nil JDL objects\.$/);
       });
     });
     describe('when passing two jdl objects', () => {
-      let merged;
-      let firstJDLObject;
-      let secondJDLObject;
-      let originalFirstJDLObjectToString;
-      let originalSecondJDLObjectToString;
-      let firstJDLObjectAfterMergeToString;
-      let secondJDLObjectAfterMergeToString;
+      let merged: JDLObject;
+      let firstJDLObject: JDLObject;
+      let secondJDLObject: JDLObject;
+      let originalFirstJDLObjectToString: string;
+      let originalSecondJDLObjectToString: string;
+      let firstJDLObjectAfterMergeToString: string;
+      let secondJDLObjectAfterMergeToString: string;
 
       before(() => {
         firstJDLObject = createFirstJDLObjectForTheMergeTest();
@@ -89,11 +97,14 @@ describe('jdl - JDLObjectMerger', () => {
 
 function createFirstJDLObjectForTheMergeTest() {
   const jdlObject = new JDLObject();
-  const application = createJDLApplication({
-    applicationType: MONOLITH,
-    baseName: 'anApp',
-    databaseType: 'sql',
-  });
+  const application = createJDLApplication(
+    {
+      applicationType: APPLICATION_TYPE_MONOLITH,
+      baseName: 'anApp',
+      databaseType: 'sql',
+    },
+    runtime,
+  );
   const entityA = new JDLEntity({
     name: 'A',
   });
@@ -130,11 +141,14 @@ function createFirstJDLObjectForTheMergeTest() {
 
 function createSecondJDLObjectForTheMergeTest() {
   const jdlObject = new JDLObject();
-  const application = createJDLApplication({
-    applicationType: MONOLITH,
-    baseName: 'anotherApp',
-    databaseType: 'sql',
-  });
+  const application = createJDLApplication(
+    {
+      applicationType: APPLICATION_TYPE_MONOLITH,
+      baseName: 'anotherApp',
+      databaseType: 'sql',
+    },
+    runtime,
+  );
   const entityC = new JDLEntity({
     name: 'C',
   });

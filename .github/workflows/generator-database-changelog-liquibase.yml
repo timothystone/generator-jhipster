@@ -24,7 +24,7 @@ env:
 jobs:
   check-generator-database-changelog-liquibase:
     name: ${{ matrix.app-type }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ${{ github.workspace }}/app
@@ -48,49 +48,42 @@ jobs:
             liquibase: jdl
             environment: prod
             war: 0
+    env:
+      JHIPSTER_DEPENDENCIES_VERSION: '0.0.0-CICD'
     steps:
       #----------------------------------------------------------------------
       # Install all tools and check configuration
       #----------------------------------------------------------------------
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: generator-jhipster
-      - name: 'SETUP: environment'
-        id: setup
-        uses: ./generator-jhipster/.github/actions/setup
+      - uses: ./generator-jhipster/.github/actions/setup-default-node-java
+      - uses: jhipster/actions/setup-runner@v1
         with:
-          application-sample: ${{ matrix.app-type }}
-          entities-sample: ${{ matrix.entity }}
-          application-environment: ${{ matrix.environment }}
-          application-packaging: ${{ (matrix.war == 1 && 'war') || 'jar' }}
-      - uses: jhipster/actions/setup-runner@v0
-        with:
-          node-version: ${{ steps.setup.outputs.node-version }}
-          java-version: ${{ steps.setup.outputs.java-version }}
           maven-cache: true
+          binary-dir: ${{ github.workspace }}/generator-jhipster/bin
+      - run: npm ci --ignore-scripts
+        working-directory: ${{ github.workspace }}/generator-jhipster
       #----------------------------------------------------------------------
       # Install JHipster and generate project+entities
       #----------------------------------------------------------------------
-      - name: 'GENERATION: install JHipster'
-        run: $JHI_SCRIPTS/10-install-jhipster.sh
-      - name: 'GENERATION: config'
-        run: $JHI_SCRIPTS/11-generate-config.sh
-      - name: 'GENERATION: project'
-        run: $JHI_SCRIPTS/12-generate-project.sh --force --creation-timestamp '2020-01-01'
+      - run: jhipster.cjs --export-github-output
+        id: jhipster-output
+      - uses: jhipster/actions/build-jhipster-bom@v1
+        with:
+          jhipster-bom-ref: ${{ steps.jhipster-output.outputs.jhipster-bom-branch }}
+      - run: jhipster.cjs generate-sample incremental-changelog-samples/liquibase-jdl-rename-field/app.jdl --skip-jhipster-dependencies
         env:
-          JHI_SAMPLES: ${{ github.workspace }}/generator-jhipster/test-integration/incremental-changelog-samples
-      - name: 'GENERATION: incremental project'
-        run: $JHI_SCRIPTS/12-generate-project.sh --incremental-changelog --force
+          JHIPSTER_DEPENDENCIES_VERSION: ${{ steps.jhipster-output.outputs.jhipster-dependencies-version }}
+      - run: jhipster.cjs generate-sample --incremental-changelog incremental-changelog-samples/liquibase-jdl-rename-field-post/app.jdl --force
         env:
-          JHI_SAMPLES: ${{ github.workspace }}/generator-jhipster/test-integration/incremental-changelog-samples
-          JHI_APP: ${{ matrix.app-type }}-post
+          JHIPSTER_DEPENDENCIES_VERSION: ${{ steps.jhipster-output.outputs.jhipster-dependencies-version }}
       - name: 'GENERATION: incremental changes'
         run: |
           git add .
           git -c color.ui=always diff --cached
-      - name: 'GENERATION: jhipster info'
-        run: $JHI_SCRIPTS/14-jhipster-info.sh
+      - run: jhipster.cjs info
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
@@ -108,7 +101,7 @@ jobs:
         id: e2e
         run: npm run ci:e2e:run --if-present
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ matrix.app-type }}

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,27 +17,26 @@
  * limitations under the License.
  */
 import chalk from 'chalk';
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_JAVA, GENERATOR_LIQUIBASE, GENERATOR_SPRING_DATA_RELATIONAL } from '../generator-list.js';
-import { createBase64Secret, createSecret } from '../base/support/secret.js';
-import { applicationTypes, authenticationTypes } from '../../lib/jhipster/index.js';
+
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+import { ALPHANUMERIC_PATTERN } from '../../lib/constants/jdl.ts';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../lib/core/application-types.ts';
+import authenticationTypes from '../../lib/jhipster/authentication-types.ts';
+import { createBase64Secret, createSecret } from '../../lib/utils/secret.ts';
 
 const { OAUTH2, SESSION, JWT } = authenticationTypes;
-const { GATEWAY, MICROSERVICE, MONOLITH } = applicationTypes;
-
-const ALPHANUMERIC_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/;
 
 const command = {
-  options: {
+  configs: {
     fakeKeytool: {
       description: 'Add a fake certificate store file for test purposes',
-      type: Boolean,
-      env: 'FAKE_KEYTOOL',
+      cli: {
+        type: Boolean,
+        env: 'FAKE_KEYTOOL',
+        hide: true,
+      },
       scope: 'generator',
-      hide: true,
     },
-  },
-  configs: {
     reactive: {
       cli: {
         description: 'Generate a reactive backend',
@@ -54,7 +53,7 @@ const command = {
       prompt: gen => ({
         when: () => ['gateway', 'microservice'].includes(gen.jhipsterConfigWithDefaults.applicationType),
         type: 'input',
-        validate: input => (/^([0-9]*)$/.test(input) ? true : 'This is not a valid port number.'),
+        validate: (input: string) => (/^(\d*)$/.test(input) ? true : 'This is not a valid port number.'),
         message:
           'As you are running in a microservice architecture, on which port would like your server to run? It should be unique to avoid port conflicts.',
         default: () => gen.jhipsterConfigWithDefaults.serverPort,
@@ -73,7 +72,7 @@ const command = {
       },
       prompt: gen => ({
         when: () => ['gateway', 'microservice'].includes(gen.jhipsterConfigWithDefaults.applicationType),
-        type: 'list',
+        type: 'select',
         message: 'Which service discovery server do you want to use?',
         default: 'consul',
       }),
@@ -106,11 +105,11 @@ const command = {
         type: String,
       },
       prompt: (gen, config) => ({
-        type: 'list',
+        type: 'select',
         message: `Which ${chalk.yellow('*type*')} of authentication would you like to use?`,
         choices: () =>
-          gen.jhipsterConfigWithDefaults.applicationType !== MONOLITH
-            ? (config.choices as any).filter(({ value }) => value !== SESSION)
+          gen.jhipsterConfigWithDefaults.applicationType !== APPLICATION_TYPE_MONOLITH
+            ? config.choices?.filter(choice => (typeof choice === 'string' ? choice : choice.value !== SESSION))
             : config.choices,
         default: () => gen.jhipsterConfigWithDefaults.authenticationType,
       }),
@@ -123,11 +122,9 @@ const command = {
         const { jwtSecretKey, rememberMeKey, authenticationType, applicationType } = gen.jhipsterConfigWithDefaults;
         if (authenticationType === SESSION && !rememberMeKey) {
           gen.jhipsterConfig.rememberMeKey = createSecret();
-        } else if (authenticationType === OAUTH2 && gen.jhipsterConfig.skipUserManagement === undefined) {
-          gen.jhipsterConfig.skipUserManagement = true;
         } else if (
           jwtSecretKey === undefined &&
-          (authenticationType === JWT || applicationType === MICROSERVICE || applicationType === GATEWAY)
+          (authenticationType === JWT || applicationType === APPLICATION_TYPE_MICROSERVICE || applicationType === APPLICATION_TYPE_GATEWAY)
         ) {
           gen.jhipsterConfig.jwtSecretKey = createBase64Secret(64, gen.options.reproducibleTests);
         }
@@ -143,7 +140,7 @@ const command = {
         type: 'confirm',
         message: 'Do you want to generate a feign client?',
         when: ({ reactive }) =>
-          [MICROSERVICE].includes(gen.jhipsterConfigWithDefaults.applicationType) &&
+          [APPLICATION_TYPE_MICROSERVICE].includes(gen.jhipsterConfigWithDefaults.applicationType) &&
           (reactive ?? gen.jhipsterConfigWithDefaults.reactive) === false,
       }),
       jdl: {
@@ -168,11 +165,7 @@ const command = {
         tokenType: 'BOOLEAN',
       },
       configure: gen => {
-        if (gen.jhipsterConfig.syncUserWithIdp === undefined && gen.jhipsterConfigWithDefaults.authenticationType === OAUTH2) {
-          if (gen.isJhipsterVersionLessThan('8.1.1')) {
-            gen.jhipsterConfig.syncUserWithIdp = true;
-          }
-        } else if (gen.jhipsterConfig.syncUserWithIdp && gen.jhipsterConfig.authenticationType !== OAUTH2) {
+        if (gen.jhipsterConfig.syncUserWithIdp && gen.jhipsterConfig.authenticationType !== OAUTH2) {
           throw new Error('syncUserWithIdp is only supported with authenticationType oauth2');
         }
       },
@@ -201,19 +194,6 @@ const command = {
       choices: ['sql', 'mongodb', 'couchbase', 'cassandra', 'neo4j', 'no'],
       scope: 'storage',
     },
-    messageBroker: {
-      description: 'message broker',
-      cli: {
-        type: String,
-      },
-      jdl: {
-        type: 'string',
-        tokenType: 'NAME',
-        tokenValuePattern: ALPHANUMERIC_PATTERN,
-      },
-      choices: ['kafka', 'pulsar', 'no'],
-      scope: 'storage',
-    },
     databaseMigration: {
       description: 'Database migration',
       cli: {
@@ -238,8 +218,21 @@ const command = {
       },
       scope: 'storage',
     },
+    messageBroker: {
+      description: 'message broker',
+      cli: {
+        type: String,
+      },
+      jdl: {
+        type: 'string',
+        tokenType: 'NAME',
+        tokenValuePattern: ALPHANUMERIC_PATTERN,
+      },
+      choices: ['kafka', 'pulsar', 'no'],
+      scope: 'storage',
+    },
   },
-  import: [GENERATOR_JAVA, GENERATOR_LIQUIBASE, GENERATOR_SPRING_DATA_RELATIONAL, 'jhipster:spring-cloud:gateway'],
-} as const satisfies JHipsterCommandDefinition;
+  import: ['java', 'liquibase', 'jhipster:spring-data:relational', 'jhipster:spring-boot:cache', 'jhipster:spring-cloud'],
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

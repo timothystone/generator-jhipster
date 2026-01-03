@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,20 +18,24 @@
  */
 
 import { before, describe, it } from 'esmocha';
-import { expect } from 'chai';
-import { createJDLApplication } from '../core/models/jdl-application-factory.js';
-import JDLObject from '../core/models/jdl-object.js';
-import { applicationTypes } from '../core/built-in-options/index.js';
-import { convertApplicationsToJDL } from '../core/__test-support__/index.js';
 
-const { MONOLITH } = applicationTypes;
+import { expect } from 'chai';
+
+import { APPLICATION_TYPE_MONOLITH } from '../../core/application-types.ts';
+import { convertApplicationsToJDL } from '../core/__test-support__/index.ts';
+import { createJDLApplication } from '../core/models/jdl-application-factory.ts';
+import JDLObject from '../core/models/jdl-object.ts';
+import { createRuntime } from '../core/runtime.ts';
 
 describe('jdl - JSONToJDLApplicationConverter', () => {
+  const runtime = createRuntime();
+
   describe('convert', () => {
     describe('when not passing any argument', () => {
-      let jdlObject;
+      let jdlObject: JDLObject;
 
       before(() => {
+        // @ts-expect-error invalid argument
         jdlObject = convertApplicationsToJDL({});
       });
 
@@ -40,33 +44,39 @@ describe('jdl - JSONToJDLApplicationConverter', () => {
       });
     });
     describe('when not passing a jdl object', () => {
-      let jdlObject;
+      let jdlObject: JDLObject;
 
       before(() => {
         jdlObject = convertApplicationsToJDL({
-          applications: [{ 'generator-jhipster': { baseName: 'toto', applicationType: MONOLITH } }],
+          applications: [{ 'generator-jhipster': { baseName: 'toto', applicationType: APPLICATION_TYPE_MONOLITH } }],
         });
       });
 
       it('should return the converted applications', () => {
-        expect(jdlObject.applications.toto).to.deep.equal(createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' }, undefined));
+        expect(jdlObject.applications.toto).to.deep.equal(
+          createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime),
+        );
       });
     });
     describe('when passing a jdl object', () => {
-      let jdlObject;
+      let jdlObject: JDLObject;
 
       before(() => {
         const previousJDLObject = new JDLObject();
-        previousJDLObject.addApplication(createJDLApplication({ baseName: 'tata', applicationType: MONOLITH }, undefined));
+        previousJDLObject.addApplication(createJDLApplication({ baseName: 'tata', applicationType: APPLICATION_TYPE_MONOLITH }, runtime));
         jdlObject = convertApplicationsToJDL({
-          applications: [{ 'generator-jhipster': { baseName: 'toto', applicationType: MONOLITH } }],
+          applications: [{ 'generator-jhipster': { baseName: 'toto', applicationType: APPLICATION_TYPE_MONOLITH } }],
           jdl: previousJDLObject,
         });
       });
 
       it('should add the converted applications', () => {
-        expect(jdlObject.applications.tata).to.deep.equal(createJDLApplication({ applicationType: MONOLITH, baseName: 'tata' }, undefined));
-        expect(jdlObject.applications.toto).to.deep.equal(createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' }, undefined));
+        expect(jdlObject.applications.tata).to.deep.equal(
+          createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'tata' }, runtime),
+        );
+        expect(jdlObject.applications.toto).to.deep.equal(
+          createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime),
+        );
       });
     });
   });

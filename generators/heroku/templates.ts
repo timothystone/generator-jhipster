@@ -1,4 +1,4 @@
-export const mavenProfileContent = data => {
+export const mavenProfileContent = (data: any) => {
   return `
             <!-- force dependency version as used bonsai add-on as of now only supports 7.10.x -->
             <!-- https://github.com/jhipster/generator-jhipster/issues/18650 -->
@@ -41,16 +41,19 @@ export const mavenProfileContent = data => {
                             <url>\${env.JDBC_DATABASE_URL}</url>
                             <defaultSchemaName></defaultSchemaName>
                             <username>\${env.JDBC_DATABASE_USERNAME}</username>
-                            <password>\${env.JDBC_DATABASE_PASSWORD}</password>
-                            <referenceUrl>hibernate:spring:${data.packageName}.domain?dialect=${data.prodHibernateDialect}&amp;hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&amp;hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy</referenceUrl>
+                            <password>\${env.JDBC_DATABASE_PASSWORD}</password>${
+                              data.prodHibernateDialect && data.hibernateNamingPhysicalStrategy && data.hibernateNamingImplicitStrategy
+                                ? `
+                            <referenceUrl>hibernate:spring:${data.packageName}.domain?dialect=${data.prodHibernateDialect}&amp;hibernate.physical_naming_strategy=${data.hibernateNamingPhysicalStrategy}&amp;hibernate.implicit_naming_strategy=${data.hibernateNamingImplicitStrategy}</referenceUrl>`
+                                : ''
+                            }
                             <verbose>true</verbose>
-                            <logging>debug</logging>
                             <promptOnNonLocalDatabase>false</promptOnNonLocalDatabase>
                         </configuration>
                     </plugin>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-clean-plugin</artifactId>
-                        <version>\${maven-clean-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>clean-artifacts</id>

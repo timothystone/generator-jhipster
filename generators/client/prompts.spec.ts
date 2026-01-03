@@ -1,17 +1,18 @@
 import { before, describe, it } from 'esmocha';
-import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.js';
+
+import { APPLICATION_TYPE_MONOLITH } from '../../lib/core/application-types.ts';
 import {
-  applicationTypes,
   authenticationTypes,
   buildToolTypes,
   cacheTypes,
   clientFrameworkTypes,
   databaseTypes,
   testFrameworkTypes,
-} from '../../lib/jhipster/index.js';
-import { GENERATOR_APP } from '../generator-list.js';
+} from '../../lib/jhipster/index.ts';
+import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.ts';
 
-const { MONOLITH } = applicationTypes;
+const GENERATOR_APP = 'app';
+
 const { H2_DISK, MYSQL, SQL } = databaseTypes;
 const { EHCACHE } = cacheTypes;
 const { JWT } = authenticationTypes;
@@ -27,11 +28,11 @@ describe('generator - client - prompts', () => {
       before(async () => {
         await helpers
           .runJHipster(GENERATOR_APP)
-          .withControl({ getWebappTranslation: () => 'translations' })
+          .withSharedApplication({ getWebappTranslation: () => 'translations' })
           .withAnswers({
             baseName: 'sampleMysql',
             packageName: 'com.mycompany.myapp',
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: SQL,
             devDatabaseType: H2_DISK,
             prodDatabaseType: MYSQL,

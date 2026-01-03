@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,11 @@
  * limitations under the License.
  */
 
-import { before, describe, it, expect as jestExpect } from 'esmocha';
+import { before, describe, expect as jestExpect, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { binaryOptions } from '../built-in-options/index.js';
+
+import { binaryOptions } from './index.ts';
 
 describe('jdl - BinaryOptions', () => {
   it('should match values', () => {
@@ -53,12 +55,6 @@ describe('jdl - BinaryOptions', () => {
         expect(binaryOptions.exists(binaryOptions.Options.DTO, binaryOptions.Values.dto.MAPSTRUCT)).to.be.true;
       });
     });
-    describe('when checking for a custom binary option', () => {
-      it('should return true', () => {
-        expect(binaryOptions.exists('customOption')).to.be.true;
-        expect(binaryOptions.exists('customOption', 'customValue')).to.be.true;
-      });
-    });
   });
   describe('forEach', () => {
     describe('when not passing a function', () => {
@@ -68,7 +64,7 @@ describe('jdl - BinaryOptions', () => {
       });
     });
     describe('when passing a function', () => {
-      let result;
+      let result: any[];
 
       before(() => {
         result = [];

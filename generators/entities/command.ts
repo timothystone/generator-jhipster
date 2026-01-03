@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import serverCommand from '../server/command.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+import liquibaseCommand from '../liquibase/command.ts';
 
-const command: JHipsterCommandDefinition = {
+const command = {
   arguments: {
     entities: {
       type: Array,
@@ -27,9 +27,9 @@ const command: JHipsterCommandDefinition = {
       description: 'Entities to regenerate.',
     },
   },
-  options: {
-    skipDbChangelog: serverCommand.options!.skipDbChangelog,
+  configs: {
+    skipDbChangelog: liquibaseCommand.configs.skipDbChangelog,
   },
-};
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { ApplicationType } from '../../lib/types/application/application.js';
-import type { Entity } from '../../lib/types/application/index.js';
+import type {
+  Application as ClientApplication,
+  Entity as ClientEntity,
+  Field as ClientField,
+  Relationship as ClientRelationship,
+} from '../client/types.d.ts';
 
-export interface AngularEntity extends Entity {
+export type { Config, Options, Relationship, Source } from '../client/types.d.ts';
+
+export type Field = ClientField & {
+  fieldTsDefaultValue?: string;
+  defaultValue?: string;
+};
+
+export interface Entity<F extends Field = Field, R extends ClientRelationship = ClientRelationship> extends ClientEntity<F, R> {
   /**
    * @experimental to be replaced with a calculated property
    * Returns the typescript import section of enums referenced by all fields of the entity.
    * @param fields returns the import of enums that are referenced by the fields
    * @returns {typeImports:Map} the fields that potentially contains some enum types
    */
-  generateEntityClientEnumImports: (fields: any) => Map<any, any>;
+  generateEntityClientEnumImports?: (fields: any) => Map<any, any>;
+  entityAngularAuthorities?: string;
+  entityAngularReadAuthorities?: string;
 }
 
-export type AngularApplication = {
+export type Application<E extends Entity> = {
   /** @experimental to be replaced with needles */
-  angularEntities: AngularEntity[];
-} & ApplicationType<AngularEntity>;
+  angularEntities?: E[];
+  angularLocaleId?: string;
+
+  // Common properties
+  communicationSpringWebsocket?: boolean;
+} & ClientApplication<E>;

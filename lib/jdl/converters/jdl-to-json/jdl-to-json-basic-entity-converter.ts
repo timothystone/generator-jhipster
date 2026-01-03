@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,9 @@
  * limitations under the License.
  */
 
-import JSONEntity from '../../core/basic-types/json-entity.js';
-import { formatComment } from '../../core/utils/format-utils.js';
-import { getTableNameFromEntityNameFallback } from '../../core/utils/entity-table-name-creator.js';
-import type { JDLEntity } from '../../core/models/index.js';
+import JSONEntity from '../../core/basic-types/json-entity.ts';
+import type { JDLEntity } from '../../core/models/index.ts';
+import { formatComment } from '../../core/utils/format-utils.ts';
 
 export default {
   convert,
@@ -47,7 +46,7 @@ function createJSONEntities(jdlEntities: JDLEntity[]): Map<string, JSONEntity> {
       entityName,
       new JSONEntity({
         entityName,
-        entityTableName: jdlEntity.tableName ?? getTableNameFromEntityNameFallback(entityName),
+        entityTableName: jdlEntity.tableName,
         documentation: formatComment(jdlEntity.comment),
         annotations: jdlEntity.annotations,
       }),

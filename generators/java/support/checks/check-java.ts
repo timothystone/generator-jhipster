@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,7 +18,8 @@
  */
 import chalk from 'chalk';
 import { execaCommandSync } from 'execa';
-import { type ValidationResult } from '../../../base/api.js';
+
+import type { ValidationResult } from '../../../base-core/api.ts';
 
 /**
  * Check if installed java version is compatible
@@ -43,6 +44,6 @@ export default (javaCompatibleVersions: string[]): ValidationResult & { javaVers
     }
     return { error: `Error parsing Java version. Output: ${stderr}` };
   } catch (error) {
-    return { error: `Java was not found on your computer (${(error as any).message}).` };
+    return { error: `Java was not found on your computer (${(error as Error).message}).` };
   }
 };

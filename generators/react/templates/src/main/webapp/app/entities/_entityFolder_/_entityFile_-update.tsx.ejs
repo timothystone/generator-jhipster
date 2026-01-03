@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -86,7 +86,6 @@ export const <%= entityReactName %>Update = () => {
   const { id } = useParams<'id'>();
   const isNew = id === undefined;
 
-
   <%_ otherEntityActions.forEach(val => { _%>
   const <%= val.instance %> = useAppSelector(state => state.<%= val.reducer %>);
   <%_ }) _%>
@@ -158,7 +157,6 @@ _%>
     }
   }
 
-
   const defaultValues = () =>
     isNew
       ? {
@@ -201,8 +199,8 @@ _%>
     <div>
     <Row className="justify-content-center">
       <Col md="8">
-        <h2 id="<%= i18nKeyPrefix %>.home.createOrEditLabel" data-cy="<%= entityClass %>CreateUpdateHeading">
-          <Translate contentKey="<%= i18nKeyPrefix %>.home.createOrEditLabel">Create or edit a <%= entityClass %></Translate>
+        <h2 id="<%= i18nKeyPrefix %>.home.createOrEditLabel" data-cy="<%- entityNameCapitalized %>CreateUpdateHeading">
+          <Translate contentKey="<%= i18nKeyPrefix %>.home.createOrEditLabel">Create or edit a <%- entityNameCapitalized %></Translate>
         </h2>
       </Col>
     </Row>
@@ -210,14 +208,13 @@ _%>
       <Col md="8">
         { loading ? <p>Loading...</p> :
         <ValidatedForm defaultValues={defaultValues()} onSubmit={saveEntity} >
-          { !isNew ?
+          { !isNew &&
             <ValidatedField
               name="<%= primaryKey.fields[0].fieldName %>" required readOnly
               id="<%= entityFileName %>-<%= primaryKey.fields[0].fieldName %>"
               label={translate('<%= primaryKey.fields[0].fieldTranslationKey %>')}
               validate={{ required: true }}
             />
-            : null
           }
 <%_ for (field of fields.filter(field => !field.id)) {
     const fieldType = field.fieldType;
@@ -273,7 +270,7 @@ _%>
             <%- include('react_validators'); %>
           />
   <%_ } else if (field.fieldTypeBinary) { _%>
-    <%_ if (!field.blobContentTypeText) {  _%>
+    <%_ if (!field.blobContentTypeText) { _%>
             <%_ if (field.blobContentTypeImage) {_%>
             isImage accept="image/*"
             <%_ } else { _%>
@@ -303,7 +300,6 @@ _%>
 <%_ } _%>
 <%_ for (const rel of persistableRelationships.filter(rel => !rel.otherEntity.embedded)) {
     const otherEntityPkName = rel.otherEntity.primaryKey && rel.otherEntity.primaryKey.name || 'id';
-    const otherEntityNamePlural = rel.otherEntityNamePlural;
     const relationshipName = rel.relationshipName;
     const relationshipNameHumanized = rel.relationshipNameHumanized;
     const relationshipFieldName = rel.relationshipFieldName;
@@ -328,7 +324,7 @@ _%>
           >
               <option value="" key="0" />
               {
-                <%= otherEntityNamePlural %> ? <%= otherEntityNamePlural %>.map(otherEntity =>
+                <%= rel.otherEntity.entityInstancePlural %> ? <%= rel.otherEntity.entityInstancePlural %>.map(otherEntity =>
                   <option
                     value={otherEntity.<%= otherEntityPkName %>}
                     key={otherEntity.<%= otherEntityPkName %>}>
@@ -355,7 +351,7 @@ _%>
             >
               <option value="" key="0" />
               {
-                (<%= otherEntityNamePlural %>) ? <%= otherEntityNamePlural %>.map(otherEntity =>
+                (<%= rel.otherEntity.entityInstancePlural %>) ? <%= rel.otherEntity.entityInstancePlural %>.map(otherEntity =>
                 <option
                     value={otherEntity.<%= otherEntityPkName %>}
                     key={otherEntity.<%= otherEntityPkName %>}>

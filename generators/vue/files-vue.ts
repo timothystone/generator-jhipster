@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,22 +17,22 @@
  * limitations under the License.
  */
 
-import { asWritingEntitiesTask, asWritingTask } from '../base-application/support/index.js';
-import { clientApplicationTemplatesBlock, clientRootTemplatesBlock, clientSrcTemplatesBlock } from '../client/support/files.js';
+import { asWriteFilesSection, asWritingEntitiesTask, asWritingTask } from '../base-application/support/index.ts';
+import { clientApplicationTemplatesBlock, clientRootTemplatesBlock, clientSrcTemplatesBlock } from '../client/support/files.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../client/types.ts';
 
-export const vueFiles = {
+export const vueFiles = asWriteFilesSection({
   common: [
     clientRootTemplatesBlock({
       templates: [
-        '.postcssrc.js',
-        { sourceFile: 'eslint.config.js.jhi.vue', destinationFile: ctx => `${ctx.eslintConfigFile}.jhi.vue` },
+        'eslint.config.ts.jhi.vue',
         'package.json',
         'tsconfig.json',
         'tsconfig.app.json',
         'tsconfig.node.json',
         'tsconfig.vitest.json',
-        'vite.config.mts',
-        'vitest.config.mts',
+        'vite.config.ts',
+        'vitest.config.ts',
       ],
     }),
   ],
@@ -42,8 +42,10 @@ export const vueFiles = {
       templates: ['module-federation.config.cjs'],
     }),
     clientRootTemplatesBlock({
-      condition: ctx => ctx.microfrontend && ctx.clientBundlerWebpack,
+      condition: ctx => ctx.clientBundlerWebpack,
       templates: [
+        // webpack config files are commonjs, add a package.json in the webpack folder to set "type": "commonjs"
+        'webpack/package.json',
         'webpack/config.js',
         'webpack/webpack.common.js',
         'webpack/webpack.dev.js',
@@ -101,6 +103,10 @@ export const vueFiles = {
       ...clientApplicationTemplatesBlock(),
       templates: ['locale/translation.service.ts', 'shared/config/store/translation-store.ts', 'shared/config/languages.ts'],
     },
+    clientRootTemplatesBlock({
+      condition: ctx => ctx.enableTranslation && ctx.enableI18nRTL,
+      templates: ['postcss.config.ts'],
+    }),
   ],
   sharedVueApp: [
     {
@@ -149,7 +155,7 @@ export const vueFiles = {
         'account/login-form/login-form.vue',
         'account/login-form/login-form.component.ts',
         'account/login-form/login-form.component.spec.ts',
-        'account/login.service.ts',
+        'account/login-modal.ts',
         'router/account.ts',
       ],
     },
@@ -182,15 +188,10 @@ export const vueFiles = {
     {
       condition: generator => generator.authenticationTypeSession && generator.generateUserManagement,
       ...clientApplicationTemplatesBlock(),
-      templates: [
-        'account/sessions/sessions.vue',
-        'account/sessions/sessions.component.ts',
-        'account/sessions/sessions.component.spec.ts',
-        'account/login.service.spec.ts',
-      ],
+      templates: ['account/sessions/sessions.vue', 'account/sessions/sessions.component.ts', 'account/sessions/sessions.component.spec.ts'],
     },
     {
-      condition: generator => generator.authenticationTypeOauth2,
+      condition: generator => generator.authenticationUsesCsrf,
       ...clientApplicationTemplatesBlock(),
       templates: ['account/login.service.ts', 'account/login.service.spec.ts'],
     },
@@ -272,7 +273,7 @@ export const vueFiles = {
       templates: ['entities/user/user.service.ts'],
     },
   ],
-};
+});
 
 export const entitiesFiles = {
   entities: [
@@ -289,14 +290,17 @@ export const entitiesFiles = {
   ],
 };
 
-export const writeFiles = asWritingTask(async function writeFiles({ application }) {
+export const writeFiles = asWritingTask<ClientEntity, ClientApplication>(async function writeFiles({ application }) {
   await this.writeFiles({
     sections: vueFiles,
     context: application,
   });
 });
 
-export const writeEntitiesFiles = asWritingEntitiesTask(async function writeEntitiesFiles({ application, entities }) {
+export const writeEntitiesFiles = asWritingEntitiesTask<ClientEntity, ClientApplication>(async function writeEntitiesFiles({
+  application,
+  entities,
+}) {
   entities = entities.filter(entity => !entity.skipClient && !entity.builtInUser);
   await this.writeFiles({
     sections: entitiesFiles,

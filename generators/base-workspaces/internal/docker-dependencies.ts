@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,16 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { dockerContainers as elasticDockerContainer } from '../../generator-constants.js';
-import { getDockerfileContainers } from '../../docker/utils.js';
+import { mutateData } from '../../../lib/utils/object.ts';
+import type BaseCoreGenerator from '../../base-core/generator.ts';
+import { getDockerfileContainers } from '../../docker/utils.ts';
+import springBootDependencies from '../../spring-boot/resources/spring-boot-dependencies.ts';
 
-export async function loadDockerDependenciesTask(this: any, { context = this } = {}) {
-  const dockerfile = this.readTemplate(this.jhipsterTemplatePath('../../server/resources/Dockerfile'));
-  context.dockerContainers = this.prepareDependencies(
-    {
-      ...elasticDockerContainer,
-      ...getDockerfileContainers(dockerfile),
-    },
-    'docker',
+const ELASTICSEARCH_IMAGE = 'docker.elastic.co/elasticsearch/elasticsearch';
+
+export function loadDockerDependenciesTask<const G extends BaseCoreGenerator>(
+  this: G,
+  { context }: { context: { dockerContainers?: Record<string, string> } },
+) {
+  context.dockerContainers ??= {};
+  const dockerfile = this.readTemplate(this.fetchFromInstalledJHipster('server/resources/Dockerfile')) as string;
+  const elasticsearchClientVersion = springBootDependencies.properties['elasticsearch-client.version'];
+  mutateData(
+    context.dockerContainers,
+    this.prepareDependencies(
+      {
+        elasticsearchTag: elasticsearchClientVersion,
+        elasticsearchImage: ELASTICSEARCH_IMAGE,
+        elasticsearch: `${ELASTICSEARCH_IMAGE}:${elasticsearchClientVersion}`,
+        ...getDockerfileContainers(dockerfile),
+      },
+      'docker',
+    ),
   );
 }

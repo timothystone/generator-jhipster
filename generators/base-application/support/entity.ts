@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,7 +18,8 @@
  */
 
 import { upperFirst } from 'lodash-es';
-import type { Entity } from '../../../lib/types/application/entity.js';
 
-export const findEntityInEntities = (entityName: string, entities: Entity[]): Entity | undefined =>
+import type { Entity as BaseApplicationEntity } from '../types.ts';
+
+export const findEntityInEntities = (entityName: string, entities: BaseApplicationEntity[]): BaseApplicationEntity | undefined =>
   entities.find(entity => upperFirst(entity.name) === upperFirst(entityName));

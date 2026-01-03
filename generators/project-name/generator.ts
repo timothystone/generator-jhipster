@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,19 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { CommandBaseGenerator } from '../base/index.ts';
+import { CONTEXT_DATA_EXISTING_PROJECT } from '../base/support/constants.ts';
 
-import { camelCase, defaults, kebabCase, startCase, upperFirst } from 'lodash-es';
+import type command from './command.ts';
+import { getDefaultAppName } from './support/index.ts';
+import { validateProjectName } from './support/name-resolver.ts';
 
-import BaseApplicationGenerator from '../base-application/index.js';
-import { getHipster } from '../base/support/index.js';
-import { getDefaultAppName } from './support/index.js';
-
-import { validateProjectName } from './support/name-resolver.js';
-
-export default class ProjectNameGenerator extends BaseApplicationGenerator {
+export default class ProjectNameGenerator extends CommandBaseGenerator<typeof command> {
   javaApplication?: boolean;
   defaultBaseName: () => string = () =>
     getDefaultAppName({
+      cwd: this.destinationPath(),
       reproducible: this.options.reproducible,
       javaApplication: this.javaApplication,
     });
@@ -36,13 +35,15 @@ export default class ProjectNameGenerator extends BaseApplicationGenerator {
     validateProjectName(input, { javaApplication: this.javaApplication });
 
   async beforeQueue() {
-    this.sharedData.getControl().existingProject = Boolean(
-      this.options.defaults || this.options.applicationWithConfig || (this.jhipsterConfig.baseName !== undefined && this.config.existed),
-    );
+    this.getContextData(CONTEXT_DATA_EXISTING_PROJECT, {
+      factory: () => Boolean(this.options.defaults || (this.jhipsterConfig.baseName !== undefined && this.config.existed)),
+    });
 
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
+
+    await this.dependsOnBootstrap('project-name');
   }
 
   get initializing() {
@@ -57,44 +58,7 @@ export default class ProjectNameGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.INITIALIZING]() {
+  get [CommandBaseGenerator.INITIALIZING]() {
     return this.delegateTasksToBlueprint(() => this.initializing);
-  }
-
-  get loading() {
-    return this.asLoadingTaskGroup({
-      load({ application }) {
-        const { baseName, projectDescription } = this.jhipsterConfig;
-        application.baseName = baseName;
-        application.projectDescription = projectDescription;
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.LOADING]() {
-    return this.delegateTasksToBlueprint(() => this.loading);
-  }
-
-  get preparing() {
-    return this.asPreparingTaskGroup({
-      preparing({ application }) {
-        const { baseName, upperFirstCamelCaseBaseName } = application;
-        const humanizedBaseName = baseName.toLowerCase() === 'jhipster' ? 'JHipster' : startCase(baseName);
-        defaults(application, {
-          humanizedBaseName,
-          camelizedBaseName: camelCase(baseName),
-          hipster: getHipster(baseName),
-          capitalizedBaseName: upperFirst(baseName),
-          dasherizedBaseName: kebabCase(baseName),
-          lowercaseBaseName: baseName.toLowerCase(),
-          upperFirstCamelCaseBaseName,
-          projectDescription: `Description for ${humanizedBaseName}`,
-        });
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.PREPARING]() {
-    return this.delegateTasksToBlueprint(() => this.preparing);
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,16 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SERVER_MAIN_RES_DIR, SERVER_MAIN_SRC_DIR, SERVER_TEST_RES_DIR, SERVER_TEST_SRC_DIR } from '../generator-constants.js';
-import { addSectionsCondition, mergeSections } from '../base/support/index.js';
+import { asWriteFilesSection } from '../base-application/support/task-type-inference.ts';
+import { addSectionsCondition, mergeSections } from '../base-core/support/index.ts';
+import { SERVER_MAIN_RES_DIR, SERVER_MAIN_SRC_DIR, SERVER_TEST_RES_DIR, SERVER_TEST_SRC_DIR } from '../generator-constants.ts';
 import {
   javaMainPackageTemplatesBlock,
   moveToJavaPackageSrcDir,
   moveToJavaPackageTestDir,
   moveToSrcMainResourcesDir,
-} from '../java/support/index.js';
+} from '../java/support/index.ts';
 
-const imperativeConfigFiles = {
+import type { Application as SpringBootApplication } from './types.ts';
+
+const imperativeConfigFiles = asWriteFilesSection<SpringBootApplication>({
   imperativeFiles: [
     {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
@@ -38,9 +41,9 @@ const imperativeConfigFiles = {
       templates: ['config/CRLFLogConverterTest.java', 'config/WebConfigurerTest.java', 'config/WebConfigurerTestController.java'],
     },
   ],
-};
+});
 
-const reactiveConfigFiles = {
+const reactiveConfigFiles = asWriteFilesSection<SpringBootApplication>({
   reactiveFiles: [
     {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
@@ -57,70 +60,9 @@ const reactiveConfigFiles = {
       templates: ['META-INF/services/reactor.blockhound.integration.BlockHoundIntegration'],
     },
   ],
-};
+});
 
-const oauth2Files = {
-  oauth2Files: [
-    {
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['security/oauth2/AudienceValidator.java'],
-    },
-    {
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: ['security/oauth2/AudienceValidatorTest.java', 'config/TestSecurityConfiguration.java'],
-    },
-    {
-      condition: generator => generator.applicationTypeMonolith,
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['config/OAuth2Configuration.java'],
-    },
-    {
-      condition: generator => generator.generateAuthenticationApi,
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['web/rest/AuthInfoResource.java', data => `web/rest/LogoutResource_${data.imperativeOrReactive}.java`],
-    },
-    {
-      condition: generator => generator.generateAuthenticationApi,
-      path: SERVER_MAIN_SRC_DIR,
-      templates: [
-        {
-          file: generator =>
-            `_package_/web/filter/${
-              generator.reactive ? 'OAuth2ReactiveRefreshTokensWebFilter.java' : 'OAuth2RefreshTokensWebFilter.java'
-            }`,
-          renameTo: generator =>
-            `${generator.packageFolder}web/filter/${
-              generator.reactive ? 'OAuth2ReactiveRefreshTokensWebFilter.java' : 'OAuth2RefreshTokensWebFilter.java'
-            }`,
-        },
-      ],
-    },
-    {
-      condition: generator => generator.generateAuthenticationApi,
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: ['test/util/OAuth2TestUtil.java', 'web/rest/LogoutResourceIT.java'],
-    },
-    {
-      condition: generator => !generator.reactive && generator.generateAuthenticationApi,
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['security/oauth2/CustomClaimConverter.java'],
-    },
-    {
-      condition: generator => !generator.reactive && generator.generateAuthenticationApi,
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: ['security/oauth2/CustomClaimConverterIT.java'],
-    },
-  ],
-};
-
-const accountFiles = {
+const accountFiles = asWriteFilesSection<SpringBootApplication>({
   accountResource: [
     {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
@@ -151,9 +93,9 @@ const accountFiles = {
       ],
     },
   ],
-};
+});
 
-const userManagementFiles = {
+const userManagementFiles = asWriteFilesSection<SpringBootApplication>({
   userManagementFiles: [
     {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
@@ -190,57 +132,10 @@ const userManagementFiles = {
         'templates/mail/testEmail.html',
       ],
     },
-    {
-      condition: generator => !generator.enableTranslation,
-      path: SERVER_TEST_RES_DIR,
-      templates: ['i18n/messages_en.properties'],
-    },
   ],
-};
+});
 
-const jwtFiles = {
-  jwtBaseFiles: [
-    {
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['config/SecurityJwtConfiguration.java', 'management/SecurityMetersService.java'],
-    },
-    {
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: [
-        'management/SecurityMetersServiceTests.java',
-        'security/jwt/AuthenticationIntegrationTest.java',
-        'security/jwt/JwtAuthenticationTestUtils.java',
-        'security/jwt/AuthenticationIntegrationTest.java',
-        'security/jwt/TokenAuthenticationSecurityMetersIT.java',
-        'security/jwt/TokenAuthenticationIT.java',
-      ],
-    },
-  ],
-  entrypointFiles: [
-    {
-      condition: data => !data.generateAuthenticationApi,
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: ['security/jwt/TestAuthenticationResource.java'],
-    },
-    {
-      condition: generator => generator.generateAuthenticationApi,
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['web/rest/vm/LoginVM.java', 'web/rest/AuthenticateController.java'],
-    },
-    {
-      condition: generator => generator.generateAuthenticationApi,
-      path: `${SERVER_TEST_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageTestDir,
-      templates: ['web/rest/AuthenticateControllerIT.java'],
-    },
-  ],
-};
-
-const swaggerFiles = {
+const swaggerFiles = asWriteFilesSection<SpringBootApplication>({
   swagger: [
     {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
@@ -248,13 +143,13 @@ const swaggerFiles = {
       templates: ['config/OpenApiConfiguration.java'],
     },
   ],
-};
+});
 
 /**
  * The default is to use a file path string. It implies use of the template method.
  * For any other config an object { file:.., method:.., template:.. } can be used
  */
-export const baseServerFiles = {
+export const baseServerFiles = asWriteFilesSection<SpringBootApplication>({
   readme: [
     {
       templates: ['README.md.jhi.spring-boot'],
@@ -273,11 +168,11 @@ export const baseServerFiles = {
     {
       condition: generator => generator.buildToolGradle,
       templates: [
-        'build.gradle',
         'settings.gradle',
         'gradle.properties',
         'gradle/profile_dev.gradle',
         'gradle/profile_prod.gradle',
+        'gradle/spring-boot.gradle',
         'gradle/war.gradle',
         'gradle/zipkin.gradle',
       ],
@@ -304,7 +199,6 @@ export const baseServerFiles = {
         'config/application-dev.yml',
         'config/application-tls.yml',
         'config/application-prod.yml',
-        'i18n/messages.properties',
       ],
     },
   ],
@@ -330,12 +224,6 @@ export const baseServerFiles = {
       path: `${SERVER_MAIN_SRC_DIR}_package_/`,
       renameTo: moveToJavaPackageSrcDir,
       templates: [data => `config/SecurityConfiguration_${data.imperativeOrReactive}.java`],
-    },
-    {
-      condition: data => data.generateInMemoryUserCredentials && !data.reactive && data.authenticationTypeJwt,
-      path: `${SERVER_MAIN_SRC_DIR}_package_/`,
-      renameTo: moveToJavaPackageSrcDir,
-      templates: ['config/SecurityInMemoryConfiguration.java'],
     },
     {
       condition: generator => generator.generateUserManagement && generator.authenticationTypeSession && !generator.reactive,
@@ -505,12 +393,10 @@ export const baseServerFiles = {
       templates: ['web/rest/WithUnauthenticatedMockUser.java'],
     },
   ],
-};
+});
 
 export const serverFiles = mergeSections(
   baseServerFiles,
-  addSectionsCondition(jwtFiles, context => context.authenticationTypeJwt),
-  addSectionsCondition(oauth2Files, context => context.authenticationTypeOauth2),
   addSectionsCondition(accountFiles, context => context.generateAuthenticationApi),
   addSectionsCondition(userManagementFiles, context => context.generateUserManagement),
   addSectionsCondition(imperativeConfigFiles, context => !context.reactive),

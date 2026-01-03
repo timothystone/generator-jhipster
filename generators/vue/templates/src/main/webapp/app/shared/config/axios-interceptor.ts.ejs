@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -21,7 +21,7 @@ import axios from 'axios';
 const TIMEOUT = 1000000;
 const onRequestSuccess = config => {
 <%_ if (authenticationTypeJwt) { _%>
-  const token = localStorage.getItem('<%=jhiPrefixDashed %>-authenticationToken') || sessionStorage.getItem('<%=jhiPrefixDashed %>-authenticationToken');
+  const token = localStorage.getItem('<%=jhiPrefixDashed %>-authenticationToken') ?? sessionStorage.getItem('<%=jhiPrefixDashed %>-authenticationToken');
   if (token) {
     if (!config.headers) {
       config.headers = {};
@@ -35,7 +35,7 @@ const onRequestSuccess = config => {
 };
 const setupAxiosInterceptors = (onUnauthenticated, onServerError) => {
   const onResponseError = err => {
-    const status = err.status || err.response.status;
+    const status = err.status || err.response?.status;
     if (status === 403 || status === 401) {
       return onUnauthenticated(err);
     }

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -16,42 +16,81 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -%>
+import { MESSAGE_ALERT_HEADER_NAME, MESSAGE_ERROR_HEADER_NAME, MESSAGE_PARAM_HEADER_NAME } from './constants';
+
 export type HeaderMessage = {
-  /** Success message */
+  /** Success translation key or message */
   alert?: string;
-  /** Error message */
+<%_ if (enableTranslation) { _%>
+  /** Success translation key */
+  alertKey?: string;
+<%_ } _%>
+  /** Success message */
+  alertMessage?: string;
+
+  /** Error translation key or message */
   error?: string;
+<%_ if (enableTranslation) { _%>
+  /** Error translation key */
+  errorKey?: string;
+<%_ } _%>
+  /** Error message */
+  errorMessage?: string;
   /** Entity id for success messages. Entity name for error messages. */
   param?: string;
 };
 
-const headerToString = (headerValue: any): string => {
+const headerToString = (headerValue: any): string | undefined => {
+  if (headerValue === undefined) {
+    return undefined;
+  }
   if (Array.isArray(headerValue)) {
     if (headerValue.length > 1) {
-      throw new Error('Multiple header values found');
+      throw new TypeError('Multiple header values found');
     }
     headerValue = headerValue[0];
   }
   if (typeof headerValue !== 'string') {
-    throw new Error('Header value is not a string');
+    throw new TypeError('Header value is not a string');
   }
   return headerValue;
 };
 
-const decodeHeaderValue = (headerValue: string): string => decodeURIComponent(headerValue.replace(/\+/g, ' '));
+const decodeHeaderValue = (headerValue?: string): string | undefined =>
+  headerValue ? decodeURIComponent(headerValue.replaceAll('+', ' ')) : headerValue;
 
 export const getMessageFromHeaders = (headers: Record<string, any>): HeaderMessage => {
-  let alert: string | undefined = undefined;
-  let param: string | undefined = undefined;
-  let error: string | undefined = undefined;
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase().endsWith('-alert')) {
-      alert = headerToString(value);
-    } else if (key.toLowerCase().endsWith('-error')) {
-      error = headerToString(value);
-    } else if (key.toLowerCase().endsWith('-params')) {
-      param = decodeHeaderValue(headerToString(value));
-    }
-  }
-  return { alert, error, param };
+  const alertHeader = headerToString(headers[<% if (microfrontend || applicationTypeGateway) { %>Object.keys(headers).find(key => /^x-(.*)-alert$/.test(key)) ?? <% } %>MESSAGE_ALERT_HEADER_NAME]);
+<%_ if (enableTranslation) { _%>
+  // Try to determine if the alertHeader is a key or a message
+  const alertIsKey = /^[A-Za-z0-9](?:[A-Za-z0-9.]*[A-Za-z0-9])?$/.test(alertHeader ?? '');
+  const alertKey = alertIsKey ? alertHeader : undefined;
+  const alertMessage = alertIsKey ? undefined : alertHeader;
+
+<%_ } _%>
+  const errorHeader = headerToString(headers[<% if (microfrontend || applicationTypeGateway) { %>Object.keys(headers).find(key => /^x-(.*)-error$/.test(key)) ?? <% } %>MESSAGE_ERROR_HEADER_NAME]);
+<%_ if (enableTranslation) { _%>
+  // Try to determine if the errorHeader is a key or a message
+  const errorIsKey = /^[A-Za-z0-9](?:[A-Za-z0-9.]*[A-Za-z0-9])?$/.test(errorHeader ?? '');
+  const errorKey = errorIsKey ? errorHeader : undefined;
+  const errorMessage = errorIsKey ? undefined : errorHeader;
+<%_ } _%>
+
+  return {
+    alert: alertHeader,
+<%_ if (enableTranslation) { _%>
+    alertKey,
+    alertMessage,
+<%_ } else { _%>
+    alertMessage: alertHeader,
+<%_ } _%>
+    error: errorHeader,
+<%_ if (enableTranslation) { _%>
+    errorKey,
+    errorMessage,
+<%_ } else { _%>
+    errorMessage: errorHeader,
+<%_ } _%>
+    param: decodeHeaderValue(headerToString(headers[<% if (microfrontend || applicationTypeGateway) { %>Object.keys(headers).find(key => /^x-(.*)-params$/.test(key)) ?? <% } %>MESSAGE_PARAM_HEADER_NAME])),
+  };
 };

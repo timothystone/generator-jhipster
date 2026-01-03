@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,12 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asPromptingTask } from '../base-application/support/task-type-inference.js';
-import { httpsGet } from '../base/support/index.js';
+import { asPromptingTask } from '../base-application/support/task-type-inference.ts';
+import type CoreGenerator from '../base-core/generator.ts';
+
+import type ClientGenerator from './generator.ts';
 
 type Choice = { value: string; name: string };
 
-export const askForClientTheme = asPromptingTask(async function askForClientTheme({ control }) {
+export const askForClientTheme = asPromptingTask(async function askForClientTheme(this: ClientGenerator, { control }) {
   if (control.existingProject && !this.options.askAnswered) return;
 
   const config = this.jhipsterConfigWithDefaults;
@@ -29,15 +31,12 @@ export const askForClientTheme = asPromptingTask(async function askForClientThem
 
   await this.prompt(
     {
-      type: 'list',
+      type: 'select',
       name: 'clientTheme',
       when: () => ['angular', 'react', 'vue'].includes(clientFramework!),
       message: 'Would you like to use a Bootswatch theme (https://bootswatch.com/)?',
       choices: async () => {
-        const bootswatchChoices = await retrieveOnlineBootswatchThemes({ clientFramework }).catch(errorMessage => {
-          this.log.warn(errorMessage);
-          return retrieveLocalBootswatchThemes({ clientFramework });
-        });
+        const bootswatchChoices = await retrieveBootswatchThemes.call(this, { clientFramework });
         return [
           {
             value: 'none',
@@ -52,7 +51,7 @@ export const askForClientTheme = asPromptingTask(async function askForClientThem
   );
 });
 
-export const askForClientThemeVariant = asPromptingTask(async function askForClientThemeVariant({ control }) {
+export const askForClientThemeVariant = asPromptingTask(async function askForClientThemeVariant(this: ClientGenerator, { control }) {
   if (control.existingProject && !this.options.askAnswered) return;
   if ((this.jhipsterConfig.clientTheme ?? 'none') === 'none') {
     return;
@@ -61,7 +60,7 @@ export const askForClientThemeVariant = asPromptingTask(async function askForCli
   const config = this.jhipsterConfigWithDefaults;
   await this.prompt(
     {
-      type: 'list',
+      type: 'select',
       name: 'clientThemeVariant',
       when: () => !this.jhipsterConfig.skipClient,
       message: 'Choose a Bootswatch variant navbar theme (https://bootswatch.com/)?',
@@ -76,17 +75,17 @@ export const askForClientThemeVariant = asPromptingTask(async function askForCli
   );
 });
 
-async function retrieveOnlineBootswatchThemes({ clientFramework }): Promise<Choice[]> {
-  return _retrieveBootswatchThemes({ clientFramework, useApi: true });
-}
+async function retrieveBootswatchThemes(this: CoreGenerator, { clientFramework }: { clientFramework?: string }): Promise<Choice[]> {
+  try {
+    const response = await fetch(`https://bootswatch.com/api/${clientFramework === 'vue' ? '4' : '5'}.json`);
+    const { themes } = (await response.json()) as { themes: { name: string }[] };
+    return themes.map(theme => ({
+      value: theme.name.toLowerCase(),
+      name: theme.name,
+    }));
+  } catch (error) {
+    this.log.warn(error);
 
-async function retrieveLocalBootswatchThemes({ clientFramework }): Promise<Choice[]> {
-  return _retrieveBootswatchThemes({ clientFramework, useApi: false });
-}
-
-async function _retrieveBootswatchThemes({ clientFramework, useApi }): Promise<Choice[]> {
-  const errorMessage = 'Could not fetch bootswatch themes from API. Using default ones.';
-  if (!useApi) {
     return [
       { value: 'cerulean', name: 'Cerulean' },
       { value: 'cosmo', name: 'Cosmo' },
@@ -115,28 +114,4 @@ async function _retrieveBootswatchThemes({ clientFramework, useApi }): Promise<C
       { value: 'zephyr', name: 'Zephyr' },
     ];
   }
-
-  return new Promise((resolve, reject) => {
-    httpsGet(
-      `https://bootswatch.com/api/${clientFramework === 'vue' ? '4' : '5'}.json`,
-
-      body => {
-        try {
-          const { themes } = JSON.parse(body);
-
-          const bootswatchChoices = themes.map(theme => ({
-            value: theme.name.toLowerCase(),
-            name: theme.name,
-          }));
-
-          resolve(bootswatchChoices);
-        } catch {
-          reject(errorMessage);
-        }
-      },
-      () => {
-        reject(errorMessage);
-      },
-    );
-  });
 }

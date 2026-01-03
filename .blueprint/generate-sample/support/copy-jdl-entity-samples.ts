@@ -1,8 +1,11 @@
-import { cpSync, mkdirSync, statSync } from 'fs';
-import { extname, join } from 'path';
-import { jdlEntitiesSamplesFolder } from '../../constants.js';
+import { statSync } from 'node:fs';
+import { extname, join } from 'node:path';
 
-const isDirectory = dir => {
+import type { MemFsEditor } from 'mem-fs-editor';
+
+import { jdlEntitiesSamplesFolder } from '../../constants.ts';
+
+const isDirectory = (dir: string) => {
   try {
     return statSync(dir).isDirectory();
   } catch {
@@ -10,16 +13,15 @@ const isDirectory = dir => {
   }
 };
 
-export default function copyJdlEntitySamples(dest, ...entities) {
-  mkdirSync(dest, { recursive: true });
+export default function copyJdlEntitySamples(memFs: MemFsEditor, dest: string, ...entities: string[]) {
   for (const entity of entities) {
     const samplePath = join(jdlEntitiesSamplesFolder, entity);
     if (isDirectory(samplePath)) {
-      cpSync(samplePath, dest, { recursive: true });
+      memFs.copy(`${samplePath}/**`, dest);
     } else if (extname(samplePath) === '.jdl') {
-      cpSync(samplePath, join(dest, entity));
+      memFs.copy(samplePath, join(dest, entity));
     } else if (!extname(samplePath)) {
-      cpSync(`${samplePath}.jdl`, join(dest, `${entity}.jdl`));
+      memFs.copy(`${samplePath}.jdl`, join(dest, `${entity}.jdl`));
     }
   }
 }

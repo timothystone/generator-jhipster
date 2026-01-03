@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,8 +18,9 @@
  */
 
 import { osLocaleSync } from 'os-locale';
-import type { Language } from './languages.js';
-import { findLanguageForTag, supportedLanguages } from './languages.js';
+
+import type { Language } from './languages.ts';
+import { findLanguageForTag, supportedLanguages } from './languages.ts';
 
 const detectLanguage = (languages: readonly Language[] = supportedLanguages) => {
   const locale = osLocaleSync();

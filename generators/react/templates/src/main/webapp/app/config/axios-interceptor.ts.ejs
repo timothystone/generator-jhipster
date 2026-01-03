@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -35,7 +35,7 @@ const setupAxiosInterceptors = onUnauthenticated => {
   };
   const onResponseSuccess = response => response;
   const onResponseError = (err: AxiosError) => {
-    const status = err.status || (err.response ? err.response.status : 0);
+    const status = err.status ?? (err.response ? err.response.status : 0);
     if (status === 401) {
       onUnauthenticated();
     }

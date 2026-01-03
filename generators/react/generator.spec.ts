@@ -1,28 +1,23 @@
-import { basename, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { before, describe, expect, it } from 'esmocha';
-import { snakeCase } from 'lodash-es';
+import { basename } from 'node:path';
 
-import { buildClientSamples, entitiesClientSamples as entities, defaultHelpers as helpers, runResult } from '../../lib/testing/index.js';
-import { checkEnforcements, shouldSupportFeatures, testBlueprintSupport } from '../../test/support/index.js';
+import { clientFrameworkTypes } from '../../lib/jhipster/index.ts';
+import { buildClientSamples, defaultHelpers as helpers, entitiesClientSamples as entities, runResult } from '../../lib/testing/index.ts';
+import { checkEnforcements, shouldSupportFeatures, testBlueprintSupport } from '../../test/support/index.ts';
+import { asPostWritingTask } from '../base-application/support/task-type-inference.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../client/index.ts';
+import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.ts';
 
-import { clientFrameworkTypes } from '../../lib/jhipster/index.js';
-import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.js';
-import BaseApplicationGenerator from '../base-application/index.js';
-import { GENERATOR_REACT } from '../generator-list.js';
-import Generator from './index.js';
+import Generator from './index.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
 const { REACT: clientFramework } = clientFrameworkTypes;
 const commonConfig = { clientFramework, nativeLanguage: 'en', languages: ['fr', 'en'] };
 
 const testSamples = buildClientSamples(commonConfig);
 
-const clientAdminFiles = clientSrcDir => [
+const clientAdminFiles = (clientSrcDir: string) => [
   `${clientSrcDir}app/modules/administration/configuration/configuration.tsx`,
   `${clientSrcDir}app/modules/administration/health/health.tsx`,
   `${clientSrcDir}app/modules/administration/health/health-modal.tsx`,
@@ -30,23 +25,10 @@ const clientAdminFiles = clientSrcDir => [
   `${clientSrcDir}app/modules/administration/logs/logs.tsx`,
 ];
 
-class MockedLanguagesGenerator extends BaseApplicationGenerator<any> {
-  get [BaseApplicationGenerator.PREPARING]() {
-    return {
-      mockTranslations({ control }) {
-        control.getWebappTranslation = () => 'translations';
-      },
-    };
-  }
-}
-
 describe(`generator - ${clientFramework}`, () => {
-  it('generator-list constant matches folder name', async () => {
-    await expect((await import('../generator-list.js'))[`GENERATOR_${snakeCase(generator).toUpperCase()}`]).toBe(generator);
-  });
   shouldSupportFeatures(Generator);
   describe('blueprint support', () => testBlueprintSupport(generator));
-  checkEnforcements({ client: true }, GENERATOR_REACT);
+  checkEnforcements({ client: true }, generator);
 
   it('samples matrix should match snapshot', () => {
     expect(testSamples).toMatchSnapshot();
@@ -60,15 +42,55 @@ describe(`generator - ${clientFramework}`, () => {
         await helpers
           .runJHipster(generator)
           .withJHipsterConfig(sampleConfig, entities)
-          .withSharedApplication({ gatewayServicesApiAvailable: sampleConfig.applicationType === 'gateway' })
-          .withGenerators([[MockedLanguagesGenerator, { namespace: 'jhipster:languages' }]])
+          .withSharedApplication({
+            gatewayServicesApiAvailable: sampleConfig.applicationType === 'gateway',
+            getWebappTranslation: () => 'translations',
+          })
           .withMockedSource()
-          .withMockedGenerators(['jhipster:common']);
+          .withMockedGenerators(['jhipster:common', 'jhipster:client:i18n']);
       });
 
       it('should match generated files snapshot', () => {
         expect(runResult.getStateSnapshot()).toMatchSnapshot();
       });
+
+      it('should match application snapshot', () => {
+        const application = runResult.application!;
+        expect(application).toMatchSnapshot({
+          addLanguageCallbacks: expect.any(Array),
+          customizeTemplatePaths: expect.any(Array),
+          dockerContainers: expect.any(Object),
+          entities: expect.any(Array),
+          languages: expect.any(Array),
+          javaNodeBuildPaths: expect.any(Array),
+          jhipsterPackageJson: expect.any(Object),
+          nodeDependencies: expect.any(Object),
+          prettierExtensions: expect.any(Array),
+          prettierFolders: expect.any(Array),
+          supportedLanguages: expect.any(Array),
+          ...(application?.generateBuiltInUserEntity
+            ? {
+                user: expect.any(Object),
+              }
+            : {}),
+          ...(application?.generateBuiltInAuthorityEntity
+            ? {
+                authority: expect.any(Object),
+              }
+            : {}),
+          ...(application?.generateUserManagement
+            ? {
+                userManagement: expect.any(Object),
+              }
+            : {}),
+          ...(application?.enableTranslation
+            ? {
+                languagesToGenerateDefinition: expect.any(Array),
+              }
+            : {}),
+        });
+      });
+
       it('should match source calls snapshot', () => {
         expect(runResult.sourceCallsArg).toMatchSnapshot();
       });
@@ -83,7 +105,7 @@ describe(`generator - ${clientFramework}`, () => {
       });
 
       describe('withAdminUi', () => {
-        const { applicationType, withAdminUi } = sampleConfig;
+        const { applicationType, withAdminUi, enableTranslation } = sampleConfig;
         const clientSrcDir = `${clientRootDir}${clientRootDir ? 'src/' : CLIENT_MAIN_SRC_DIR}`;
         const generateAdminUi = applicationType !== 'microservice' && withAdminUi;
         const adminUiComponents = generateAdminUi ? 'should generate admin ui components' : 'should not generate admin ui components';
@@ -113,16 +135,95 @@ describe(`generator - ${clientFramework}`, () => {
                 '  },',
             );
 
-            assertion(
-              `${clientSrcDir}app/shared/layout/menus/admin.tsx`,
-              '    <MenuItem icon="tachometer-alt" to="/admin/metrics"><Translate contentKey="global.menu.admin.metrics">Metrics</Translate></MenuItem>\n' +
-                '    <MenuItem icon="heart" to="/admin/health"><Translate contentKey="global.menu.admin.health">Health</Translate></MenuItem>\n' +
-                '    <MenuItem icon="cogs" to="/admin/configuration"><Translate contentKey="global.menu.admin.configuration">Configuration</Translate></MenuItem>\n' +
-                '    <MenuItem icon="tasks" to="/admin/logs"><Translate contentKey="global.menu.admin.logs">Logs</Translate></MenuItem>',
-            );
+            if (enableTranslation) {
+              assertion(
+                `${clientSrcDir}app/shared/layout/menus/admin.tsx`,
+                '    <MenuItem icon="tachometer-alt" to="/admin/metrics"><Translate contentKey="global.menu.admin.metrics">Metrics</Translate></MenuItem>\n' +
+                  '    <MenuItem icon="heart" to="/admin/health"><Translate contentKey="global.menu.admin.health">Health</Translate></MenuItem>\n' +
+                  '    <MenuItem icon="cogs" to="/admin/configuration"><Translate contentKey="global.menu.admin.configuration">Configuration</Translate></MenuItem>\n' +
+                  '    <MenuItem icon="tasks" to="/admin/logs"><Translate contentKey="global.menu.admin.logs">Logs</Translate></MenuItem>',
+              );
+            }
           });
         }
       });
+    });
+  });
+
+  describe('addClientStyle needle api', () => {
+    before(async () => {
+      await helpers
+        .runJHipster(generator)
+        .withJHipsterConfig({
+          clientFramework: 'react',
+          skipServer: true,
+        })
+        .withTask(
+          'postWriting',
+          asPostWritingTask(({ source }) => {
+            source.addClientStyle!({ style: '@import without-comment' });
+            source.addClientStyle!({ style: '@import with-comment', comment: 'my comment' });
+          }),
+        );
+    });
+
+    it('Assert app.scss is updated', () => {
+      runResult.assertFileContent(`${CLIENT_MAIN_SRC_DIR}app/app.scss`, '@import without-comment');
+      runResult.assertFileContent(`${CLIENT_MAIN_SRC_DIR}app/app.scss`, '@import with-comment');
+      runResult.assertFileContent(
+        `${CLIENT_MAIN_SRC_DIR}app/app.scss`,
+        '* ==========================================================================\n' +
+          'my comment\n' +
+          '========================================================================== */\n',
+      );
+    });
+  });
+
+  describe('addEntitiesToClient needle api', () => {
+    before(async () => {
+      await helpers
+        .runJHipster(generator)
+        .withJHipsterConfig({
+          clientFramework: 'react',
+          enableTranslation: false,
+        })
+        .withTask(
+          'postWriting',
+          asPostWritingTask<ClientEntity, ClientApplication>(({ application, source }) => {
+            source.addEntitiesToClient({
+              application,
+              entities: [
+                {
+                  entityAngularName: 'entityName',
+                  entityPage: 'entityPage',
+                  entityUrl: 'entityUrl',
+                  entityInstance: 'entityInstance',
+                  entityFolderName: 'entityFolderName',
+                  entityFileName: 'entityFileName',
+                  entityNameHumanized: 'Router Name',
+                } as ClientEntity,
+              ],
+            });
+          }),
+        );
+    });
+
+    it('Assert entity is added to module', () => {
+      const indexModulePath = `${CLIENT_MAIN_SRC_DIR}app/entities/routes.tsx`;
+      const indexReducerPath = `${CLIENT_MAIN_SRC_DIR}app/entities/reducers.ts`;
+
+      runResult.assertFileContent(indexModulePath, "import entityName from './entityFolderName';");
+      runResult.assertFileContent(indexModulePath, '<Route path="/entityUrl/*" element={<entityName />} />');
+
+      runResult.assertFileContent(indexReducerPath, "import entityInstance from 'app/entities/entityFolderName/entityFileName.reducer';");
+      runResult.assertFileContent(indexReducerPath, 'entityInstance,');
+    });
+
+    it('Assert entity is added to menu', () => {
+      runResult.assertFileContent(
+        `${CLIENT_MAIN_SRC_DIR}app/entities/menu.tsx`,
+        /<MenuItem icon="asterisk" to="\/entityPage">\n( *)Router Name\n( *)<\/MenuItem>/,
+      );
     });
   });
 });

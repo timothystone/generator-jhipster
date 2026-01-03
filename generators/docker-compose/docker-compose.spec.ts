@@ -1,18 +1,23 @@
 import { before, describe, expect, it } from 'esmocha';
-import monitoringTypes from '../../lib/jhipster/monitoring-types.js';
-import applicationTypes from '../../lib/jhipster/application-types.js';
-import { GENERATOR_DOCKER_COMPOSE } from '../generator-list.js';
-import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.js';
+
+import { APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../lib/core/application-types.ts';
+import monitoringTypes from '../../lib/jhipster/monitoring-types.ts';
+import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.ts';
+
+const GENERATOR_DOCKER_COMPOSE = 'docker-compose';
 
 const { PROMETHEUS } = monitoringTypes;
-const { MICROSERVICE, MONOLITH } = applicationTypes;
 
 const NO_MONITORING = monitoringTypes.NO;
 
 const expectedFiles = {
-  dockercompose: ['docker-compose.yml', 'central-server-config/application.yml'],
-  prometheus: ['prometheus-conf/alert_rules.yml', 'prometheus-conf/prometheus.yml', 'alertmanager-conf/config.yml'],
-  monolith: ['docker-compose.yml'],
+  dockercompose: ['docker-compose/docker-compose.yml', 'docker-compose/central-server-config/application.yml'],
+  prometheus: [
+    'docker-compose/prometheus-conf/alert_rules.yml',
+    'docker-compose/prometheus-conf/prometheus.yml',
+    'docker-compose/alertmanager-conf/config.yml',
+  ],
+  monolith: ['docker-compose/docker-compose.yml'],
 };
 
 describe('generator - Docker Compose', () => {
@@ -24,9 +29,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: NO_MONITORING,
@@ -39,12 +44,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      // runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      // runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -56,9 +61,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: NO_MONITORING,
@@ -71,12 +76,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      // runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      // runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -88,9 +93,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: '.',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '..',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: NO_MONITORING,
@@ -103,7 +108,7 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('Correct the directory path by appending a trailing slash', () => {
-      runResult.assertFileContent('.yo-rc.json', '"directoryPath": "./"');
+      runResult.assertFileContent('docker-compose/.yo-rc.json', '"directoryPath": "../"');
     });
   });
 
@@ -115,9 +120,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: NO_MONITORING,
@@ -130,12 +135,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      // runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      // runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -147,9 +152,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -161,15 +166,15 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('no prometheus files', () => {
       runResult.assertNoFile(expectedFiles.prometheus);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -181,9 +186,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -195,15 +200,15 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('no prometheus files', () => {
       runResult.assertNoFile(expectedFiles.prometheus);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -215,9 +220,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: PROMETHEUS,
@@ -233,12 +238,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.prometheus);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -250,9 +255,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -264,12 +269,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -281,12 +286,15 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
-        appsFolders: chosenApps,
-        clusteredDbApps: ['04-mongo'],
-      });
+      await helpers
+        .runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE)
+
+        .withAnswers({
+          deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+          directoryPath: '../',
+          appsFolders: chosenApps,
+          clusteredDbApps: ['04-mongo'],
+        });
     });
     it('should match files snapshot', function () {
       expect(runResult.getSnapshot()).toMatchSnapshot();
@@ -295,12 +303,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      // runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      // runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -312,9 +320,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -326,12 +334,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      // runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      // runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -343,9 +351,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MONOLITH,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MONOLITH,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -357,9 +365,9 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.monolith);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -371,16 +379,16 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
     });
     it('should match files snapshot', function () {
       expect(runResult.getSnapshot()).toMatchSnapshot({
-        'realm-config/jhipster-realm.json': {
+        'docker-compose/realm-config/jhipster-realm.json': {
           contents: expect.any(String),
           stateCleared: 'modified',
         },
@@ -390,12 +398,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -407,9 +415,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
       });
@@ -421,12 +429,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -438,9 +446,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MICROSERVICE,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MICROSERVICE,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: ['10-couchbase'],
       });
@@ -452,12 +460,12 @@ describe('generator - Docker Compose', () => {
       runResult.assertFile(expectedFiles.dockercompose);
     });
     it('creates consul content', () => {
-      runResult.assertFileContent('docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
+      runResult.assertFileContent('docker-compose/docker-compose.yml', /SPRING_CLOUD_CONSUL_HOST=consul/);
     });
     it('creates compose file without container_name, external_links, links', () => {
-      runResult.assertNoFileContent('docker-compose.yml', /container_name:/);
-      runResult.assertNoFileContent('docker-compose.yml', /external_links:/);
-      runResult.assertNoFileContent('docker-compose.yml', /links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /container_name:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /external_links:/);
+      runResult.assertNoFileContent('docker-compose/docker-compose.yml', /links:/);
     });
   });
 
@@ -469,9 +477,9 @@ describe('generator - Docker Compose', () => {
         .withWorkspacesSamples(...chosenApps)
         .withGenerateWorkspaceApplications();
 
-      await helpers.runJHipsterInApplication(GENERATOR_DOCKER_COMPOSE).withAnswers({
-        deploymentApplicationType: MONOLITH,
-        directoryPath: './',
+      await helpers.runJHipsterDeployment(GENERATOR_DOCKER_COMPOSE).withAnswers({
+        deploymentApplicationType: APPLICATION_TYPE_MONOLITH,
+        directoryPath: '../',
         appsFolders: chosenApps,
         clusteredDbApps: [],
         monitoring: NO_MONITORING,

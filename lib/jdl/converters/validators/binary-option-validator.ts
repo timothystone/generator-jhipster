@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,21 +17,23 @@
  * limitations under the License.
  */
 
-import BinaryOptions from '../../core/built-in-options/binary-options.js';
-import OptionValidator from './option-validator.js';
+import BinaryOptions from '../../core/built-in-options/binary-options.ts';
+import type JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+
+import OptionValidator from './option-validator.ts';
 
 export default class BinaryOptionValidator extends OptionValidator {
   constructor() {
     super('binary', 'value');
   }
 
-  validate(jdlOption) {
+  validate(jdlOption: JDLBinaryOption) {
     super.validate(jdlOption);
     checkForInvalidValue(jdlOption);
   }
 }
 
-function checkForInvalidValue(jdlOption) {
+function checkForInvalidValue(jdlOption: JDLBinaryOption) {
   if (!!jdlOption.value && !BinaryOptions.exists(jdlOption.name, jdlOption.value)) {
     throw new Error(`The '${jdlOption.name}' option is not valid for value '${jdlOption.value}'.`);
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,23 +17,21 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
+import { beforeEach, describe, expect as jestExpect, it } from 'esmocha';
+import fs from 'node:fs';
+
 import { expect } from 'chai';
-import { beforeEach, describe, it, expect as jestExpect } from 'esmocha';
-import JDLObject from '../../core/models/jdl-object.js';
-import { JDLEntity } from '../../core/models/index.js';
-import exportToJDL from '../exporters/jdl-exporter.js';
-import JDLApplication from '../../core/models/jdl-application.js';
-import type { JDLJSONApplicationConfiguration } from '../../core/parsing/jdl-parsing-types.js';
-import { applicationOptions } from '../../core/built-in-options/index.js';
-import { basicHelpers as helpers } from '../../../../lib/testing/index.js';
-import { getDefaultRuntime } from '../../core/runtime.js';
+import helpers from 'yeoman-test';
 
-const {
-  OptionNames: { CLIENT_FRAMEWORK },
-} = applicationOptions;
+import { JDLEntity } from '../../core/models/index.ts';
+import JDLApplication from '../../core/models/jdl-application.ts';
+import JDLObject from '../../core/models/jdl-object.ts';
+import type { JDLJSONApplicationConfiguration } from '../../core/parsing/jdl-parsing-types.ts';
+import { createRuntime } from '../../core/runtime.ts';
 
-const runtime = getDefaultRuntime();
+import exportToJDL from './jdl-exporter.ts';
+
+const runtime = createRuntime();
 
 describe('jdl - JDLExporter', () => {
   beforeEach(async () => {
@@ -53,7 +51,7 @@ describe('jdl - JDLExporter', () => {
     describe('when passing valid parameters', () => {
       describe('with a path', () => {
         const PATH = 'myPath.jdl';
-        let fileExistence;
+        let fileExistence: boolean;
         let jdlContent = '';
 
         beforeEach(() => {
@@ -78,7 +76,7 @@ describe('jdl - JDLExporter', () => {
       describe('without a path', () => {
         describe('exports entity', () => {
           const DEFAULT_PATH = 'app.jdl';
-          let fileExistence;
+          let fileExistence: boolean;
           let jdlContent = '';
 
           beforeEach(() => {
@@ -102,11 +100,11 @@ describe('jdl - JDLExporter', () => {
         });
         describe('exports application', () => {
           describe('with clientFramework no', () => {
-            let jdlObject;
+            let jdlObject: JDLObject;
             beforeEach(() => {
               jdlObject = new JDLObject();
               const jdlApplication: JDLJSONApplicationConfiguration = {
-                config: { [CLIENT_FRAMEWORK]: 'no' },
+                config: { clientFramework: 'no' },
               };
               jdlObject.addApplication(new JDLApplication(jdlApplication, runtime));
             });

@@ -1,60 +1,29 @@
-/* eslint-disable @typescript-eslint/consistent-type-imports */
-import type { ExportApplicationPropertiesFromCommand } from '../../lib/command/types.js';
-import type CoreGenerator from '../base-core/generator.ts';
-import type { ClientApplication } from '../client/types.js';
-import type { I18nApplication } from '../languages/types.js';
-import type { SpringBootApplication } from '../server/types.js';
-import type { OptionWithDerivedProperties } from './application-options.js';
+import type { HandleCommandTypes } from '../../lib/command/types.ts';
+import type {
+  Application as JavascriptSimpleApplicationApplication,
+  Config as JavascriptSimpleApplicationConfig,
+  Options as JavascriptSimpleApplicationOptions,
+} from '../javascript-simple-application/types.ts';
 
-export type BaseApplication = {
-  jhipsterVersion: string;
-  baseName: string;
-  capitalizedBaseName: string;
-  dasherizedBaseName: string;
-  humanizedBaseName: string;
-  camelizedBaseName: string;
-  hipster: string;
-  lowercaseBaseName: string;
-  upperFirstCamelCaseBaseName: string;
-  documentationArchiveUrl: string;
+import type { BaseApplicationAddedApplicationProperties } from './application.ts';
+import type { Entity } from './entity.ts';
+import type bootstrapCommand from './generators/bootstrap/command.ts';
+import type { OptionWithDerivedProperties } from './internal/types/application-options.ts';
 
-  projectVersion: string;
-  projectDescription: string;
+export type * from './entity.ts';
 
-  jhiPrefix: string;
-  entitySuffix: string;
-  dtoSuffix: string;
+type Command = HandleCommandTypes<typeof bootstrapCommand>;
 
-  skipCommitHook: boolean;
-  skipJhipsterDependencies: boolean;
-  fakerSeed?: string;
+export type Config = JavascriptSimpleApplicationConfig &
+  Command['Config'] & {
+    entities?: string[];
+    backendType?: string;
+  };
 
-  nodeVersion: string;
-  nodePackageManager: string;
-  /* @deprecated use nodePackageManager */
-  clientPackageManager: string;
-  nodeDependencies: Record<string, string>;
+export type Options = JavascriptSimpleApplicationOptions & Command['Options'];
 
-  skipClient?: boolean;
-  skipServer?: boolean;
-  monorepository?: boolean;
-
-  blueprints?: { name: string; version: string }[];
-  testFrameworks?: string[];
-
-  /** Customize templates sourceFile and destinationFile */
-  customizeTemplatePaths: ((
-    this: CoreGenerator,
-    file: {
-      namespace: string;
-      sourceFile: string;
-      resolvedSourceFile: string;
-      destinationFile: string;
-      templatesRoots: string[];
-    },
-    context: any,
-  ) => undefined | { sourceFile: string; resolvedSourceFile: string; destinationFile: string; templatesRoots: string[] })[];
-} & I18nApplication;
+export type { Features } from '../base-simple-application/types.ts';
+export type { Source } from '../base-simple-application/types.ts';
 
 /* ApplicationType Start */
 type MicroservicesArchitectureApplication = {
@@ -63,7 +32,7 @@ type MicroservicesArchitectureApplication = {
 };
 
 type GatewayApplication = MicroservicesArchitectureApplication & {
-  microfrontends: string[];
+  microfrontends: { baseName: string; lowercaseBaseName?: string; capitalizedBaseName?: string; endpointPrefix?: string }[];
 };
 
 /*
@@ -77,38 +46,6 @@ type ApplicationType = DeterministicOptionWithDerivedProperties<
 type ApplicationProperties = OptionWithDerivedProperties<'applicationType', ['monolith', 'gateway', 'microservice']> &
   GatewayApplication &
   MicroservicesArchitectureApplication;
-
-/* ApplicationType End */
-
-/* AuthenticationType Start */
-/*
-Deterministic option causes types to be too complex
-type UserManagement =
-  | {
-      skipUserManagement: true;
-      generateUserManagement: false;
-      generateBuiltInUserEntity?: false;
-      generateBuiltInAuthorityEntity: false;
-    }
-  | {
-      skipUserManagement: false;
-      generateBuiltInUserEntity?: boolean;
-      generateUserManagement: true;
-      user: any;
-      userManagement: any;
-      generateBuiltInAuthorityEntity: boolean;
-      authority: any;
-    };
-    */
-type UserManagement<Entity> = {
-  skipUserManagement: boolean;
-  generateUserManagement: boolean;
-  generateBuiltInUserEntity?: boolean;
-  generateBuiltInAuthorityEntity: boolean;
-  user: Entity;
-  userManagement: Entity;
-  authority: Entity;
-};
 
 type JwtApplication = {
   jwtSecretKey: string;
@@ -130,63 +67,13 @@ type AuthenticationType = DeterministicOptionWithDerivedProperties<
   [JwtApplication, Oauth2Application, SessionApplication]
 >;
 */
-type AuthenticationProperties<Entity> = OptionWithDerivedProperties<'authenticationType', ['jwt', 'oauth2', 'session']> &
-  UserManagement<Entity> &
+type AuthenticationProperties = OptionWithDerivedProperties<'authenticationType', ['jwt', 'oauth2', 'session']> &
   JwtApplication &
   Oauth2Application &
   SessionApplication;
 
-/* AuthenticationType End */
-
-type QuirksApplication = {
-  cypressBootstrapEntities?: boolean;
-};
-
-export type CommonClientServerApplication<Entity> = BaseApplication &
-  QuirksApplication &
-  AuthenticationProperties<Entity> &
-  SpringBootApplication &
-  ClientApplication &
-  ExportApplicationPropertiesFromCommand<typeof import('../git/command.ts').default> &
-  ExportApplicationPropertiesFromCommand<typeof import('../docker/command.ts').default> &
-  import('../docker/types.d.ts').DockerApplicationType &
-  ExportApplicationPropertiesFromCommand<typeof import('../project-name/command.ts').default> &
-  ApplicationProperties & {
-    clientRootDir: string;
-    clientSrcDir: string;
-    clientTestDir?: string;
-    clientDistDir?: string;
-    devServerPort: number;
-    pages: string[];
-
-    serverPort: number;
-    backendType?: string;
-    backendTypeJavaAny?: boolean;
-    backendTypeSpringBoot?: boolean;
-    temporaryDir?: string;
-
-    hipsterName?: string;
-    hipsterProductName?: string;
-    hipsterHomePageProductName?: string;
-    hipsterStackOverflowProductName?: string;
-    hipsterBugTrackerProductName?: string;
-    hipsterChatProductName?: string;
-    hipsterTwitterUsername?: string;
-    hipsterDocumentationLink?: string;
-    hipsterTwitterLink?: string;
-    hipsterProjectLink?: string;
-    hipsterStackoverflowLink?: string;
-    hipsterBugTrackerLink?: string;
-    hipsterChatLink?: string;
-
-    dockerServicesDir?: string;
-    dockerServices?: string[];
-    prettierFolders?: string;
-    prettierExtensions?: string;
-  };
-
-type ServiceDiscoveryApplication = OptionWithDerivedProperties<'serviceDiscoveryType', ['no', 'eureka', 'consul']>;
-
-type MonitoringApplication = OptionWithDerivedProperties<'monitoring', ['no', 'elk', 'prometheus']>;
-
-export type PlatformApplication = ServiceDiscoveryApplication & MonitoringApplication;
+export type Application<E extends Entity> = Command['Application'] &
+  BaseApplicationAddedApplicationProperties<E> &
+  JavascriptSimpleApplicationApplication &
+  ApplicationProperties &
+  AuthenticationProperties & {};

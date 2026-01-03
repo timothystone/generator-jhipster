@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asPostWritingEntitiesTask, asWritingEntitiesTask } from '../base-application/support/task-type-inference.js';
-import { clientApplicationTemplatesBlock } from '../client/support/index.js';
+import { asPostWritingEntitiesTask, asWriteFilesSection, asWritingEntitiesTask } from '../base-application/support/task-type-inference.ts';
+import { clientApplicationTemplatesBlock, filterEntitiesForClient } from '../client/support/index.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../client/types.ts';
 
-export const reactFiles = {
+export const reactFiles = asWriteFilesSection({
   client: [
     {
       condition: generator => !generator.embedded,
@@ -49,11 +50,11 @@ export const reactFiles = {
       templates: ['entities/_entityFolder_/_entityFile_-reducer.spec.ts'],
     },
   ],
-};
+});
 
-export const writeEntitiesFiles = asWritingEntitiesTask(async function ({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesAndPropertiesForClient ?? (entities => entities))(entities).filter(
-    entity => !entity.builtInUser,
+export const writeEntitiesFiles = asWritingEntitiesTask<ClientEntity, ClientApplication>(async function ({ application, entities }) {
+  for (const entity of (application.filterEntitiesAndPropertiesForClient ?? filterEntitiesForClient)(entities).filter(
+    entity => !entity.builtInUser && !entity.embedded,
   )) {
     await this.writeFiles({
       sections: reactFiles,
@@ -62,31 +63,28 @@ export const writeEntitiesFiles = asWritingEntitiesTask(async function ({ contro
   }
 });
 
-export const postWriteEntitiesFiles = asPostWritingEntitiesTask(async function ({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesForClient ?? (entities => entities))(entities).filter(entity => !entity.builtInUser)) {
-    if (!entity.embedded) {
-      const { entityInstance, entityClass, entityAngularName, entityFolderName, entityFileName } = entity;
-
-      const { applicationTypeMicroservice, clientSrcDir } = application;
-      this.needleApi.clientReact.addEntityToModule(entityInstance, entityClass, entityAngularName, entityFolderName, entityFileName, {
-        applicationTypeMicroservice: applicationTypeMicroservice!,
-        clientSrcDir: clientSrcDir!,
-      });
-      (this as any).addEntityToMenu(
-        entity.entityPage,
-        application.enableTranslation,
-        entity.entityTranslationKeyMenu,
-        entity.entityClassHumanized,
-      );
-    }
-  }
+export const postWriteEntitiesFiles = asPostWritingEntitiesTask<ClientEntity, ClientApplication>(async function ({
+  application,
+  entities,
+  source,
+}) {
+  const clientEntities = (application.filterEntitiesForClient ?? filterEntitiesForClient)(entities).filter(
+    entity => !entity.builtInUser && !entity.embedded,
+  );
+  source.addEntitiesToClient({ application, entities: clientEntities });
 });
 
-export const cleanupEntitiesFiles = asWritingEntitiesTask(function cleanupEntitiesFiles({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesForClient ?? (entities => entities))(entities).filter(entity => !entity.builtInUser)) {
+export const cleanupEntitiesFiles = asWritingEntitiesTask<ClientEntity, ClientApplication>(function cleanupEntitiesFiles({
+  application,
+  control,
+  entities,
+}) {
+  for (const entity of (application.filterEntitiesForClient ?? filterEntitiesForClient)(entities).filter(
+    entity => !entity.builtInUser && !entity.embedded,
+  )) {
     const { entityFolderName, entityFileName } = entity;
 
-    if (this.isJhipsterVersionLessThan('7.0.0-beta.1')) {
+    if (control.isJhipsterVersionLessThan('7.0.0-beta.1')) {
       this.removeFile(`${application.clientTestDir}spec/app/entities/${entityFolderName}/${entityFileName}-reducer.spec.ts`);
     }
   }

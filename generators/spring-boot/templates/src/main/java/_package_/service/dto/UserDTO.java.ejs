@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,6 +22,7 @@ package <%= packageName %>.service.dto;
 import <%= user.entityAbsoluteClass %>;
 <%_ } _%>
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 <%_ if (user.primaryKey.hasUUID) { _%>
@@ -32,6 +33,7 @@ import java.util.UUID;
  * A DTO representing a user, with only the public attributes.
  */
 public class <%= user.dtoClass %> implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private <%= user.primaryKey.type %> id;

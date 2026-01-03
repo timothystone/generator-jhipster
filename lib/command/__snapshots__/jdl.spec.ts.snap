@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`getDefaultJDLApplicationConfig() should return the default JDL application config 1`] = `
 {
@@ -7,6 +7,9 @@ exports[`getDefaultJDLApplicationConfig() should return the default JDL applicat
       "type": "string",
     },
     "feignClient": {
+      "type": "boolean",
+    },
+    "graalvmSupport": {
       "type": "boolean",
     },
     "incrementalChangelog": {
@@ -25,6 +28,7 @@ exports[`getDefaultJDLApplicationConfig() should return the default JDL applicat
   "optionsValues": {
     "databaseMigration": {
       "liquibase": "liquibase",
+      "no": "no",
     },
     "messageBroker": {
       "kafka": "kafka",
@@ -41,6 +45,10 @@ exports[`getDefaultJDLApplicationConfig() should return the default JDL applicat
     {
       "name": "FEIGN CLIENT",
       "pattern": "feignClient",
+    },
+    {
+      "name": "GRAALVM SUPPORT",
+      "pattern": "graalvmSupport",
     },
     {
       "name": "INCREMENTAL CHANGELOG",
@@ -67,6 +75,11 @@ exports[`getDefaultJDLApplicationConfig() should return the default JDL applicat
     },
     "FEIGN CLIENT": {
       "msg": "feignClient property",
+      "pattern": undefined,
+      "type": "BOOLEAN",
+    },
+    "GRAALVM SUPPORT": {
+      "msg": "graalvmSupport property",
       "pattern": undefined,
       "type": "BOOLEAN",
     },

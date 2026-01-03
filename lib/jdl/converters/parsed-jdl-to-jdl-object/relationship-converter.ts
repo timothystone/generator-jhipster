@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-import JDLRelationship from '../../core/models/jdl-relationship.js';
-import { lowerFirst } from '../../core/utils/string-utils.js';
-import { formatComment } from '../../core/utils/format-utils.js';
-import { asJdlRelationshipType } from '../../core/basic-types/relationship-types.js';
-import type { ParsedJDLAnnotation, ParsedJDLRelationship } from '../../core/types/parsed.js';
+import { lowerFirst } from 'lodash-es';
+
+import { asJdlRelationshipType } from '../../core/basic-types/relationship-types.ts';
+import JDLRelationship from '../../core/models/jdl-relationship.ts';
+import type { ParsedJDLAnnotation, ParsedJDLRelationship } from '../../core/types/parsed.ts';
+import { formatComment } from '../../core/utils/format-utils.ts';
 
 export default { convertRelationships };
 

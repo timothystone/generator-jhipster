@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-import type JDLApplication from '../../../core/models/jdl-application.js';
-import { GENERATOR_NAME } from '../export-utils.js';
+import type JDLApplicationConfigurationOption from '../../../core/models/jdl-application-configuration-option.ts';
+import type JDLApplicationConfiguration from '../../../core/models/jdl-application-configuration.ts';
+import type JDLApplication from '../../../core/models/jdl-application.ts';
 import type {
   JDLJSONApplication,
   JDLJSONApplicationContent,
   PostProcessedJDLJSONApplication,
   RawJDLJSONApplication,
-} from '../../../core/types/exporter.js';
-import type JDLApplicationConfigurationOption from '../../../core/models/jdl-application-configuration-option.js';
-import type JDLApplicationConfiguration from '../../../core/models/jdl-application-configuration.js';
+} from '../../../core/types/exporter.ts';
+import { GENERATOR_NAME } from '../export-utils.ts';
 
 /**
  * Exports JDL applications to JDL files in separate folders (based on application base names).
@@ -65,8 +65,8 @@ function setUpApplicationStructure(application: JDLApplication): PostProcessedJD
   return postProcessedApplicationToExport;
 }
 
-function getApplicationConfig(application: JDLApplication): Partial<JDLJSONApplicationContent> {
-  const result = {};
+function getApplicationConfig(application: JDLApplication): JDLJSONApplicationContent {
+  const result: JDLJSONApplicationContent = {};
   application.forEachConfigurationOption((option: JDLApplicationConfigurationOption<any>) => {
     result[option.name] = option.getValue();
   });
@@ -77,9 +77,9 @@ function getApplicationNamespaceConfig(application: JDLApplication) {
   if (application.namespaceConfigs.length === 0) {
     return undefined;
   }
-  const result = {};
+  const result: Record<string, Record<string, any>> = {};
   application.forEachNamespaceConfiguration((configurationOption: JDLApplicationConfiguration) => {
-    result[configurationOption.namespace!] = result[configurationOption.namespace!] ?? {};
+    result[configurationOption.namespace!] ??= {};
     configurationOption.forEachOption(option => {
       result[configurationOption.namespace!][option.name] = option.getValue();
     });
@@ -88,20 +88,12 @@ function getApplicationNamespaceConfig(application: JDLApplication) {
 }
 
 function cleanUpOptions(application: RawJDLJSONApplication): PostProcessedJDLJSONApplication {
-  const res: RawJDLJSONApplication = structuredClone(application);
-  if (res[GENERATOR_NAME].frontEndBuilder) {
-    delete res[GENERATOR_NAME].frontEndBuilder;
-  }
-  delete res.entityNames;
-  if (application[GENERATOR_NAME].blueprints) {
-    res[GENERATOR_NAME].blueprints = application[GENERATOR_NAME].blueprints.map(blueprintName => ({
-      name: blueprintName,
-    }));
-  }
-  if (application[GENERATOR_NAME].microfrontends) {
-    res[GENERATOR_NAME].microfrontends = application[GENERATOR_NAME].microfrontends.map(baseName => ({
-      baseName,
-    }));
-  }
-  return res as unknown as PostProcessedJDLJSONApplication;
+  const res = structuredClone(application);
+  const blueprints = application[GENERATOR_NAME].blueprints?.map(blueprintName => ({
+    name: blueprintName,
+  }));
+  const microfrontends = application[GENERATOR_NAME].microfrontends?.map(baseName => ({
+    baseName,
+  }));
+  return { ...res, [GENERATOR_NAME]: { ...res[GENERATOR_NAME], blueprints, microfrontends } };
 }

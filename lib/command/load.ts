@@ -1,5 +1,6 @@
-import { applyDerivedProperty } from '../utils/derived-property.js';
-import type { CommandConfigScope, JHipsterConfigs } from './types.js';
+import { applyDerivedProperty } from '../utils/derived-property.ts';
+
+import type { CommandConfigScope, JHipsterConfigs } from './types.ts';
 
 const filteredScopeEntries = (commandsConfigs: JHipsterConfigs, scopes: CommandConfigScope[]) =>
   Object.entries(commandsConfigs).filter(([_key, def]) => scopes.includes(def.scope!));
@@ -49,21 +50,6 @@ export function loadCommandConfigsIntoApplication<Context>(
   loadConfigIntoContext.call(this, {
     source,
     templatesContext: application,
-    commandsConfigs,
-    scopes: ['storage', 'blueprint'],
-  });
-}
-
-export function loadCommandConfigsIntoGenerator<Context>(
-  this: Context,
-  options: {
-    commandsConfigs: JHipsterConfigs;
-  },
-): void {
-  const { commandsConfigs } = options;
-  loadConfigIntoContext.call(this, {
-    source: (this as any).options,
-    templatesContext: this as any,
     commandsConfigs,
     scopes: ['storage', 'blueprint'],
   });

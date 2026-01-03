@@ -1,19 +1,21 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { testIntegrationFolder } from '../../constants.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import type { WorkflowSample, WorkflowSamples } from '../../../lib/testing/workflow-samples.ts';
+import { testIntegrationFolder } from '../../constants.ts';
 
 const WORKFLOW_NAMES = ['angular', 'react', 'vue', 'daily-ms-oauth2', 'daily-neo4j'];
 export const DAILY_PREFIX = 'daily-';
 
-export const isDaily = workflow => workflow.startsWith(DAILY_PREFIX);
+export const isDaily = (workflow: string): boolean => workflow.startsWith(DAILY_PREFIX);
 
-export const getWorkflowSamples = (workflows: string[] = WORKFLOW_NAMES) =>
+export const getWorkflowSamples = (workflows: string[] = WORKFLOW_NAMES): Record<string, Record<string, WorkflowSample>> =>
   Object.fromEntries(
     workflows.map(workflow => [
       workflow,
       Object.fromEntries(
-        JSON.parse(readFileSync(join(testIntegrationFolder, `workflow-samples/${workflow}.json`)).toString())
-          .include.map(sample =>
+        (JSON.parse(readFileSync(join(testIntegrationFolder, `workflow-samples/${workflow}.json`)).toString()) as WorkflowSamples).include
+          .map(sample =>
             isDaily(workflow)
               ? {
                   ...sample,

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,9 +22,7 @@
   "description": "<%= projectDescription %>",
   "private": true,
   "license": "UNLICENSED",
-  "cacheDirectories": [
-    "node_modules"
-  ],
+  "type": "module",
   "dependencies": {
     "@eslint/js": null,
     "@fortawesome/fontawesome-svg-core": "<%= nodeDependencies['@fortawesome/fontawesome-svg-core'] %>",
@@ -49,14 +47,12 @@
     "react-router": "<%= nodeDependencies['react-router-dom'] %>",
     "react-router-dom": "<%= nodeDependencies['react-router-dom'] %>",
     "react-toastify": "<%= nodeDependencies['react-toastify'] %>",
-    "react-transition-group": "<%= nodeDependencies['react-transition-group'] %>",
     "reactstrap": "<%= nodeDependencies['reactstrap'] %>",
     "redux": "<%= nodeDependencies['redux'] %>",
 <%_ if (skipServer) { _%>
     "sonar-scanner": "<%= nodeDependencies['sonar-scanner'] %>",
 <%_ } _%>
-    "tslib": "<%= nodeDependencies['tslib'] %>",
-    "uuid": "<%= nodeDependencies['uuid'] %>"
+    "tslib": "<%= nodeDependencies['tslib'] %>"
   },
   "devDependencies": {
     "@testing-library/react": "<%= nodeDependencies['@testing-library/react'] %>",
@@ -72,7 +68,6 @@
     "browser-sync": "<%= nodeDependencies['browser-sync'] %>",
     "browser-sync-webpack-plugin": "<%= nodeDependencies['browser-sync-webpack-plugin'] %>",
     "copy-webpack-plugin": "<%= nodeDependencies['copy-webpack-plugin'] %>",
-    "core-js": "<%= nodeDependencies['core-js'] %>",
     "cross-env": "<%= nodeDependencies['cross-env'] %>",
     "css-loader": "<%= nodeDependencies['css-loader'] %>",
     "css-minimizer-webpack-plugin": "<%= nodeDependencies['css-minimizer-webpack-plugin'] %>",
@@ -89,7 +84,6 @@
     "jest-fixed-jsdom": "<%= nodeDependencies['jest-fixed-jsdom'] %>",
     "jest-junit": "<%= nodeDependencies['jest-junit'] %>",
     "jest-sonar": "<%= nodeDependencies['jest-sonar'] %>",
-    "json-loader": "<%= nodeDependencies['json-loader'] %>",
 <%_ if (enableTranslation) { _%>
     "folder-hash": "<%= nodeDependencies['folder-hash'] %>",
     "merge-jsons-webpack-plugin": "<%= nodeDependencies['merge-jsons-webpack-plugin'] %>",
@@ -107,16 +101,12 @@
     "simple-progress-webpack-plugin": "<%= nodeDependencies['simple-progress-webpack-plugin'] %>",
     "sinon": "<%= nodeDependencies['sinon'] %>",
     "source-map-loader": "<%= nodeDependencies['source-map-loader'] %>",
-    "sourcemap-istanbul-instrumenter-loader": "<%= nodeDependencies['sourcemap-istanbul-instrumenter-loader'] %>",
     "style-loader": "<%= nodeDependencies['style-loader'] %>",
     "swagger-ui-dist": "<%= nodeDependencies['swagger-ui-dist'] %>",
     "terser-webpack-plugin": "<%= nodeDependencies['terser-webpack-plugin'] %>",
     "thread-loader": "<%= nodeDependencies['thread-loader'] %>",
     "ts-jest": "<%= nodeDependencies['ts-jest'] %>",
     "ts-loader": "<%= nodeDependencies['ts-loader'] %>",
-<%_ if (cypressTests) { _%>
-    "cypress": "<%= nodeDependencies['cypress'] %>",
-<%_ } _%>
     "typescript": "<%= nodeDependencies['typescript'] %>",
     "typescript-eslint": "<%= nodeDependencies['typescript-eslint'] %>",
     "webpack": "<%= nodeDependencies['webpack'] %>",
@@ -134,30 +124,30 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "lint:fix": "<%= clientPackageManager %> run lint -- --fix",
+    "lint:fix": "<%- nodePackageManager %> run lint -- --fix",
     "cleanup": "rimraf <%= this.relativeDir(clientRootDir, temporaryDir) %>",
     "clean-www": "rimraf <%= this.relativeDir(clientRootDir, clientDistDir) %>",
-    "build": "<%= clientPackageManager %> run webapp:prod --",
+    "build": "<%- nodePackageManager %> run webapp:prod --",
     "build-watch": "concurrently 'npm run webapp:build:dev -- --watch'<% if(!skipServer) { %> npm:backend:start<% } %>",
     "jest": "jest --coverage --logHeapUsage --maxWorkers=2 --config jest.conf.js",
-    "jest:update": "<%= clientPackageManager %> run jest -- --updateSnapshot",
-    "start": "<%= clientPackageManager %> run webapp:dev --",
-    "start-tls": "<%= clientPackageManager %> run webapp:dev -- --env tls",
+    "jest:update": "<%- nodePackageManager %> run jest -- --updateSnapshot",
+    "start": "<%- nodePackageManager %> run webapp:dev --",
+    "start-tls": "<%- nodePackageManager %> run webapp:dev -- --env tls",
 <%_ if (skipServer) { _%>
     "sonar": "sonar-scanner",
 <%_ } _%>
-    "pretest": "<%= clientPackageManager %> run lint",
-    "test": "<%= clientPackageManager %> run jest --",
-    "test-ci": "<%= clientPackageManager %> run lint && <%= clientPackageManager %> run jest:update --",
-    "test:watch": "<%= clientPackageManager %> run jest -- --watch",
+    "pretest": "<%- nodePackageManager %> run lint",
+    "test": "<%- nodePackageManager %> run jest --",
+    "test-ci": "<%- nodePackageManager %> run lint && <%- nodePackageManager %> run jest:update --",
+    "test:watch": "<%- nodePackageManager %> run jest -- --watch",
     "watch": "concurrently 'npm run start' npm:backend:start",
-    "webapp:build": "<%= clientPackageManager %> run clean-www && <%= clientPackageManager %> run webapp:build:dev --",
+    "webapp:build": "<%- nodePackageManager %> run clean-www && <%- nodePackageManager %> run webapp:build:dev --",
     "webapp:build:dev": "webpack --config webpack/webpack.dev.js --env stats=minimal",
     "webapp:build:prod": "webpack --config webpack/webpack.prod.js --progress=profile",
-    "webapp:dev": "<%= clientPackageManager %> run webpack-dev-server -- --config webpack/webpack.dev.js --env stats=minimal",
-    "webapp:dev-verbose": "<%= clientPackageManager %> run webpack-dev-server -- --config webpack/webpack.dev.js --progress=profile --env stats=normal",
-    "webapp:prod": "<%= clientPackageManager %> run clean-www && <%= clientPackageManager %> run webapp:build:prod --",
-    "webapp:test": "<%= clientPackageManager %> run test --",
+    "webapp:dev": "<%- nodePackageManager %> run webpack-dev-server -- --config webpack/webpack.dev.js --env stats=minimal",
+    "webapp:dev-verbose": "<%- nodePackageManager %> run webpack-dev-server -- --config webpack/webpack.dev.js --progress=profile --env stats=normal",
+    "webapp:prod": "<%- nodePackageManager %> run clean-www && <%- nodePackageManager %> run webapp:build:prod --",
+    "webapp:test": "<%- nodePackageManager %> run test --",
     "webpack-dev-server": "webpack serve"
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export { default as autoCrlfTransform } from './auto-crlf-transform.js';
-export { default as createForceWriteConfigFilesTransform } from './force-write-config-files-transform.js';
-export * from './eslint-transform.js';
-export * from './java-unused-imports-transform.js';
-export * from './multi-step-transform/index.js';
-export * from './prettier-support.js';
-export { default as createSortConfigFilesTransform } from './sort-config-files-transform.js';
+export { default as autoCrlfTransform } from './auto-crlf-transform.ts';
+export { default as createForceWriteConfigFilesTransform } from './force-write-config-files-transform.ts';
+export * from './eslint-transform.ts';
+export * from './java-unused-imports-transform.ts';
+export * from './multi-step-transform/index.ts';
+export * from './prettier-support.ts';
+export { default as createSortConfigFilesTransform } from './sort-config-files-transform.ts';

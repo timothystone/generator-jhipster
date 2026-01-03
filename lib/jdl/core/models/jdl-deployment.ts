@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 import { isEqual } from 'lodash-es';
-import { applicationOptions, deploymentOptions } from '../built-in-options/index.js';
-import { merge } from '../utils/object-utils.js';
-import { join } from '../utils/set-utils.js';
-import type { ParsedJDLDeployment } from '../types/parsed.js';
 
-const { Options } = deploymentOptions;
+import deploymentOptions from '../../../jhipster/deployment-options.ts';
+import type { ParsedJDLDeployment } from '../types/parsed.ts';
+import { merge } from '../utils/object-utils.ts';
+import { join } from '../utils/set-utils.ts';
+
 const arrayTypes = ['appsFolders', 'clusteredDbApps'];
 
 export default class JDLDeployment {
@@ -45,11 +45,9 @@ export default class JDLDeployment {
     const merged = merge(defaults(args.deploymentType), args);
     Object.entries(merged).forEach(([key, option]) => {
       if (Array.isArray(option) && arrayTypes.includes(key)) {
-        this[key] = new Set(option);
-      } else if (key === applicationOptions.OptionNames.SERVICE_DISCOVERY_TYPE && option === Options.serviceDiscoveryType.no) {
-        this[key] = 'no';
+        (this as Record<string, any>)[key] = new Set(option);
       } else {
-        this[key] = option;
+        (this as Record<string, any>)[key] = option;
       }
     });
   }
@@ -59,10 +57,11 @@ export default class JDLDeployment {
   }
 }
 
-function stringifyConfig(applicationConfig) {
+function stringifyConfig(applicationConfig: Record<string, any>): string {
   let config = 'deployment {';
+  const deploymentTypeDefaults: Record<string, any> = defaults(applicationConfig.deploymentType);
   Object.entries(applicationConfig).forEach(([option, value]) => {
-    if (!isEqual(defaults(applicationConfig.deploymentType)[option], value) || option === 'deploymentType') {
+    if (!isEqual(deploymentTypeDefaults[option], value) || option === 'deploymentType') {
       config = `${config}\n    ${option}${stringifyOptionValue(option, value)}`;
     }
   });

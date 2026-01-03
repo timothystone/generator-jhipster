@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,18 +17,19 @@
  * limitations under the License.
  */
 
-import logger from '../utils/objects/logger.js';
-import type { JDLApplicationOptionTypeValue } from '../types/parsing.js';
-import type { JDLRuntime } from '../types/runtime.js';
-import JDLApplicationConfiguration from './jdl-application-configuration.js';
-import StringJDLApplicationConfigurationOption from './string-jdl-application-configuration-option.js';
-import IntegerJDLApplicationConfigurationOption from './integer-jdl-application-configuration-option.js';
-import BooleanJDLApplicationConfigurationOption from './boolean-jdl-application-configuration-option.js';
-import ListJDLApplicationConfigurationOption from './list-jdl-application-configuration-option.js';
-import type JDLApplicationConfigurationOption from './jdl-application-configuration-option.js';
+import type { JDLApplicationOptionTypeValue } from '../types/parsing.ts';
+import type { JDLRuntime } from '../types/runtime.ts';
+import logger from '../utils/objects/logger.ts';
+
+import BooleanJDLApplicationConfigurationOption from './boolean-jdl-application-configuration-option.ts';
+import IntegerJDLApplicationConfigurationOption from './integer-jdl-application-configuration-option.ts';
+import type JDLApplicationConfigurationOption from './jdl-application-configuration-option.ts';
+import JDLApplicationConfiguration from './jdl-application-configuration.ts';
+import ListJDLApplicationConfigurationOption from './list-jdl-application-configuration-option.ts';
+import StringJDLApplicationConfigurationOption from './string-jdl-application-configuration-option.ts';
 
 export default function createApplicationConfigurationFromObject(
-  configurationObject = {},
+  configurationObject: Record<string, any> = {},
   runtime: JDLRuntime,
 ): JDLApplicationConfiguration {
   const configuration = new JDLApplicationConfiguration();
@@ -67,7 +68,7 @@ function createUnknownJDLConfigurationOption(
   value: boolean | number | string[] | string,
   runtime: JDLRuntime,
 ): JDLApplicationConfigurationOption<any> {
-  let type;
+  let type: JDLApplicationOptionTypeValue;
   if (typeof value === 'boolean') {
     type = 'boolean';
   } else if (/^\d+$/.test(value as string)) {

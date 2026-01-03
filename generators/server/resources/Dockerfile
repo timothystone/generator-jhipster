@@ -1,7 +1,7 @@
 # Container name and `alias` can be used to retrieve the image with the tag
 # Tags can retrieved using the `alias` with `Tag` suffix
 # Images can be retrieved using the `alias` with `Image` suffix
-FROM jhipster/jhipster-registry:v7.4.0
+FROM jhipster/jhipster-registry:v7.5.0
 LABEL ALIAS=jhipster-registry
 
 FROM jhipster/jhipster-control-center:v0.5.0
@@ -10,58 +10,58 @@ LABEL ALIAS=jhipster-control-center
 FROM jhipster/consul-config-loader:v0.4.1
 LABEL ALIAS=consul-config-loader
 
-FROM postgres:17.3
+FROM postgres:18.1
 LABEL ALIAS=postgresql
 
-FROM quay.io/keycloak/keycloak:26.1.2
+FROM quay.io/keycloak/keycloak:26.4.7
 LABEL ALIAS=keycloak
 
-FROM mysql:9.2.0
+FROM mysql:9.5.0
 
-FROM mariadb:11.7.2
+FROM mariadb:12.1.2
 
-FROM mongo:8.0.4
+FROM mongo:8.2.3
 LABEL ALIAS=mongodb
 
-FROM couchbase/server:7.6.5
+FROM couchbase/server:8.0.0
 LABEL ALIAS=couchbase
 
-FROM cassandra:5.0
+FROM cassandra:5.0.6
 
 FROM mcr.microsoft.com/mssql/server:2019-CU16-GDR1-ubuntu-20.04
 LABEL ALIAS=mssql
 
-FROM neo4j:5.26.2
+FROM neo4j:5.26.19
 
-FROM hazelcast/management-center:5.7.0
+FROM hazelcast/management-center:5.9.0
 LABEL ALIAS=hazelcast
 
-FROM memcached:1.6.36-alpine
+FROM memcached:1.6.40-alpine
 
-FROM redis:7.4.2
+FROM redis:8.4.0
 
-FROM apache/kafka-native:3.9.0
+FROM apache/kafka-native:4.1.1
 LABEL ALIAS=kafka
 
-FROM apachepulsar/pulsar:4.0.2
+FROM apachepulsar/pulsar:4.1.2
 LABEL ALIAS=pulsar
 
-FROM sonarqube:25.2.0.102705-community
+FROM sonarqube:25.12.0.117093-community
 LABEL ALIAS=sonar
 
-FROM docker.io/bitnami/consul:1.20.3
+FROM hashicorp/consul:1.22.2
 LABEL ALIAS=consul
 
-FROM prom/prometheus:v3.1.0
+FROM prom/prometheus:v3.8.1
 LABEL ALIAS=prometheus
 
-FROM prom/alertmanager:v0.28.0
+FROM prom/alertmanager:v0.30.0
 LABEL ALIAS=prometheus-alertmanager
 
 FROM quay.io/coreos/prometheus-operator:v0.42.1
 LABEL ALIAS=prometheus-operator
 
-FROM grafana/grafana:11.5.1
+FROM grafana/grafana:12.3.1
 LABEL ALIAS=grafana
 
 FROM quay.io/coreos/grafana-watcher:v0.0.8
@@ -76,5 +76,5 @@ LABEL ALIAS=java-jre
 FROM swaggerapi/swagger-editor:latest
 LABEL ALIAS=swagger-editor
 
-FROM openzipkin/zipkin:3.5.0
+FROM openzipkin/zipkin:3.5.1
 LABEL ALIAS=zipkin

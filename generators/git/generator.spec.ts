@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,23 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { access } from 'fs/promises';
 import { before, describe, expect, it } from 'esmocha';
-import { testBlueprintSupport } from '../../test/support/tests.js';
-import { skipPrettierHelpers as helpers, runResult } from '../../lib/testing/index.js';
-import { GENERATOR_GIT } from '../generator-list.js';
+import { access } from 'node:fs/promises';
+import { basename, resolve } from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { runResult, skipPrettierHelpers as helpers } from '../../lib/testing/index.ts';
+import { testBlueprintSupport } from '../../test/support/tests.ts';
 
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
-  it('generator-list constant matches folder name', () => {
-    expect(GENERATOR_GIT).toBe(generator);
-  });
   describe('blueprint support', () => testBlueprintSupport(generator));
   describe('with', () => {
     describe('default config', () => {

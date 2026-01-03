@@ -14,48 +14,82 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { ApplicationType } from '../../../lib/types/application/application.js';
-import type { TaskTypes } from '../../../lib/types/application/tasks.js';
-import type CoreGenerator from '../../base-core/generator.js';
-import type { WriteFileSection } from '../../base/api.js';
-import type { Entity } from '../../../lib/types/application/entity.js';
+import type { ApplicationAll, EntityAll } from '../../../lib/types/application-all.ts';
+import type { SourceAll } from '../../../lib/types/source-all.ts';
+import type { SimpleTask, TaskTypes as BaseTasks } from '../../base/tasks.ts';
+import type { WriteFileBlock, WriteFileSection } from '../../base-core/api.ts';
+import type CoreGenerator from '../../base-core/generator.ts';
+import type { TaskTypes } from '../tasks.ts';
+import type {
+  Application as BaseApplicationApplication,
+  Entity as BaseApplicationEntity,
+  Source as BaseApplicationSource,
+} from '../types.ts';
 
-export function asWriteFilesSection<Data = ApplicationType<Entity>>(section: WriteFileSection<Data>) {
+export function asWriteFilesSection<Data = ApplicationAll>(section: WriteFileSection<Data>): WriteFileSection<Data> {
   return section;
 }
 
-export function asPromptingTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['PromptingTaskParam']) => void,
-) {
+export function asWriteFilesBlock<Data = ApplicationAll>(block: WriteFileBlock<Data>[]): WriteFileBlock<Data>[];
+export function asWriteFilesBlock<Data = ApplicationAll>(block: WriteFileBlock<Data>): WriteFileBlock<Data>;
+export function asWriteFilesBlock(block: any): any {
+  return block;
+}
+
+export function asWriteEntityFilesSection<Data = EntityAll & ApplicationAll>(section: WriteFileSection<Data>): WriteFileSection<Data> {
+  return section;
+}
+
+export function asInitializingTask<const G extends CoreGenerator = CoreGenerator>(
+  task: SimpleTask<G, BaseTasks['InitializingTaskParam']>,
+): SimpleTask<any, BaseTasks['InitializingTaskParam']> {
   return task;
 }
 
-export function asPostPreparingEachEntityTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['PostPreparingEachEntityTaskParam']) => void,
-) {
+export function asPromptingTask<const G extends CoreGenerator = CoreGenerator>(
+  task: SimpleTask<G, BaseTasks['PromptingTaskParam']>,
+): SimpleTask<any, BaseTasks['PromptingTaskParam']> {
   return task;
 }
 
-export function asWritingTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['WritingTaskParam']) => void,
-) {
+export function asPostPreparingEachEntityTask<
+  E extends BaseApplicationEntity = BaseApplicationEntity,
+  A extends BaseApplicationApplication<E> = BaseApplicationApplication<E>,
+  const G extends CoreGenerator = CoreGenerator,
+>(task: (this: G, params: TaskTypes<E, A>['PostPreparingEachEntityTaskParam']) => void) {
   return task;
 }
 
-export function asWritingEntitiesTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['WritingEntitiesTaskParam']) => void,
-) {
+export function asWritingTask<
+  E extends BaseApplicationEntity = BaseApplicationEntity,
+  A extends BaseApplicationApplication<E> = BaseApplicationApplication<E>,
+  const G extends CoreGenerator = CoreGenerator,
+>(task: (this: G, params: TaskTypes<E, A>['WritingTaskParam']) => void) {
   return task;
 }
 
-export function asPostWritingTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['PostWritingTaskParam']) => void,
-) {
+export function asWritingEntitiesTask<
+  E extends BaseApplicationEntity = BaseApplicationEntity,
+  A extends BaseApplicationApplication<E> = BaseApplicationApplication<E>,
+  const G extends CoreGenerator = CoreGenerator,
+>(task: (this: G, params: TaskTypes<E, A>['WritingEntitiesTaskParam']) => void) {
   return task;
 }
 
-export function asPostWritingEntitiesTask<E = Entity, A = ApplicationType<E>, const G extends CoreGenerator = CoreGenerator>(
-  task: (this: G, params: TaskTypes<E, A>['PostWritingEntitiesTaskParam']) => void,
-) {
+export function asPostWritingTask<
+  E extends BaseApplicationEntity = BaseApplicationEntity,
+  A extends BaseApplicationApplication<E> = BaseApplicationApplication<E>,
+  S extends BaseApplicationSource = SourceAll,
+  const G extends CoreGenerator = CoreGenerator,
+>(task: (this: G, params: TaskTypes<E, A, S>['PostWritingTaskParam']) => void) {
+  return task;
+}
+
+export function asPostWritingEntitiesTask<
+  E extends BaseApplicationEntity = BaseApplicationEntity,
+  A extends BaseApplicationApplication<E> = BaseApplicationApplication<E>,
+  S extends BaseApplicationSource = SourceAll,
+  const G extends CoreGenerator = CoreGenerator,
+>(task: (this: G, params: TaskTypes<E, A, S>['PostWritingEntitiesTaskParam']) => void) {
   return task;
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,7 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+
+import detectLanguage from './support/detect-language.ts';
 
 const command = {
   arguments: {
@@ -54,6 +56,11 @@ const command = {
         description: 'Language to be added to application (existing languages are not removed)',
         type: Array,
       },
+      configure(gen, value) {
+        if (value) {
+          gen.jhipsterConfig.languages = [...(gen.jhipsterConfig.languages ?? []), ...value];
+        }
+      },
       scope: 'none',
     },
     nativeLanguage: {
@@ -62,6 +69,18 @@ const command = {
         description: 'Set application native language',
         type: String,
         required: false,
+      },
+      configure(gen, value) {
+        if (value) {
+          if (value === true || value === 'true') {
+            gen.jhipsterConfig.nativeLanguage = detectLanguage();
+          } else if (typeof value === 'string') {
+            gen.jhipsterConfig.nativeLanguage = value;
+          }
+          if (!gen.jhipsterConfig.languages) {
+            gen.jhipsterConfig.languages = [gen.jhipsterConfig.nativeLanguage];
+          }
+        }
       },
       scope: 'storage',
     },
@@ -73,6 +92,6 @@ const command = {
       scope: 'generator',
     },
   },
-} as const satisfies JHipsterCommandDefinition;
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

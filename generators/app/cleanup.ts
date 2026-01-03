@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,17 @@
  * limitations under the License.
  */
 
-import { asWritingTask } from '../base-application/support/index.js';
+import { asWritingTask } from '../base-application/support/task-type-inference.ts';
 
 /**
  * Removes files that where generated in previous JHipster versions and therefore
  * need to be removed.
  */
-export default asWritingTask(function cleanupOldFilesTask() {
-  if (this.isJhipsterVersionLessThan('6.1.0')) {
+export default asWritingTask(function cleanupOldFilesTask({ control }) {
+  if (control.isJhipsterVersionLessThan('6.1.0')) {
+    // @ts-expect-error deprecated config
     this.config.delete('blueprint');
+    // @ts-expect-error deprecated config
     this.config.delete('blueprintVersion');
   }
 });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,14 +18,13 @@
  */
 import { capitalize } from 'lodash-es';
 
-import { validations } from '../../core/built-in-options/index.js';
-import { formatComment } from '../../core/utils/format-utils.js';
-import { camelCase } from '../../core/utils/string-utils.js';
-import type JDLObject from '../../core/models/jdl-object.js';
-import type { JSONField } from '../../core/types/json-config.js';
-import type { JDLEntity } from '../../core/models/index.js';
-import type JDLField from '../../core/models/jdl-field.js';
-import type { FieldType } from '../../../application/field-types.js';
+import { customCamelCase } from '../../../utils/string-utils.ts';
+import { validations } from '../../core/built-in-options/index.ts';
+import type { JDLEntity } from '../../core/models/index.ts';
+import type JDLField from '../../core/models/jdl-field.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+import type { JSONField } from '../../core/types/json-config.ts';
+import { formatComment } from '../../core/utils/format-utils.ts';
 
 const {
   Validations: { UNIQUE, REQUIRED },
@@ -54,8 +53,8 @@ function getConvertedFieldsForEntity(jdlEntity: JDLEntity, jdlObject: JDLObject)
   const convertedEntityFields: JSONField[] = [];
   jdlEntity.forEachField((jdlField: JDLField) => {
     let fieldData: JSONField = {
-      fieldName: camelCase(jdlField.name),
-      fieldType: jdlField.type as FieldType,
+      fieldName: customCamelCase(jdlField.name),
+      fieldType: jdlField.type,
     };
     const comment = formatComment(jdlField.comment);
     if (comment) {
@@ -80,10 +79,9 @@ function getConvertedFieldsForEntity(jdlEntity: JDLEntity, jdlObject: JDLObject)
       };
     }
     if (jdlField.optionQuantity() !== 0) {
-      const fieldOptions = getOptionsForField(jdlField);
       fieldData = {
         ...fieldData,
-        ...fieldOptions,
+        options: getOptionsForField(jdlField),
       };
     }
     convertedEntityFields.push(fieldData);
@@ -91,26 +89,22 @@ function getConvertedFieldsForEntity(jdlEntity: JDLEntity, jdlObject: JDLObject)
   return convertedEntityFields;
 }
 
-function getFieldValidations(jdlField: JDLField) {
-  const fieldValidations: any = {
-    fieldValidateRules: [],
-  };
+function getFieldValidations(jdlField: JDLField): Record<string, any> {
+  const fieldValidations: Record<string, any> = {};
+  const fieldValidateRules: string[] = [];
   jdlField.forEachValidation(validation => {
-    fieldValidations.fieldValidateRules.push(validation.name);
+    fieldValidateRules.push(validation.name);
     if (validation.name !== REQUIRED && validation.name !== UNIQUE) {
       fieldValidations[`fieldValidateRules${capitalize(validation.name)}`] = validation.value;
     }
   });
-  return fieldValidations;
+  return { ...fieldValidations, fieldValidateRules };
 }
 
-function getOptionsForField(jdlField: JDLField) {
-  const fieldOptions = {
-    options: {},
-  };
-  fieldOptions.options = {};
+function getOptionsForField(jdlField: JDLField): Record<string, any> {
+  const fieldOptions: Record<string, any> = {};
   jdlField.forEachOption(([key, value]) => {
-    fieldOptions.options[key] = value;
+    fieldOptions[key] = value;
   });
   return fieldOptions;
 }

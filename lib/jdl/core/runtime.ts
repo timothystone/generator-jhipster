@@ -1,14 +1,15 @@
 import type { Lexer, TokenType } from 'chevrotain';
-import { builtInJDLApplicationConfig } from '../../jhipster/application-options.js';
-import { getDefaultJDLApplicationConfig } from '../../command/jdl.js';
-import { buildTokens, createJDLLexer } from './parsing/lexer/lexer.js';
-import JDLParser from './parsing/jdl-parser.js';
-import { checkConfigKeys, checkTokens } from './parsing/self-checks/parsing-system-checker.js';
-import type { JDLRuntime } from './types/runtime.js';
-import type { JDLApplicationConfig, JDLValidatorOption } from './types/parsing.js';
-import JDLApplicationDefinition from './built-in-options/jdl-application-definition.js';
-import { buildApplicationTokens } from './built-in-options/tokens/application-tokens.js';
-import { deploymentTokens } from './built-in-options/tokens/deployment-tokens.js';
+
+import { builtInJDLApplicationConfig } from '../../jhipster/application-options.ts';
+
+import JDLApplicationDefinition from './built-in-options/jdl-application-definition.ts';
+import { buildApplicationTokens } from './built-in-options/tokens/application-tokens.ts';
+import { deploymentTokens } from './built-in-options/tokens/deployment-tokens.ts';
+import JDLParser from './parsing/jdl-parser.ts';
+import { buildTokens, createJDLLexer } from './parsing/lexer/lexer.ts';
+import { checkConfigKeys, checkTokens } from './parsing/self-checks/parsing-system-checker.ts';
+import type { JDLApplicationConfig, JDLValidatorOption } from './types/parsing.ts';
+import type { JDLRuntime } from './types/runtime.ts';
 
 const mergeDefinition = (definition: JDLApplicationConfig, defaultDefinition: JDLApplicationConfig) => {
   return {
@@ -29,8 +30,8 @@ const mergeDefinition = (definition: JDLApplicationConfig, defaultDefinition: JD
   };
 };
 
-export const createRuntime = (definition: JDLApplicationConfig): JDLRuntime => {
-  const newDefinition = mergeDefinition(definition, builtInJDLApplicationConfig);
+export const createRuntime = (definition?: JDLApplicationConfig): JDLRuntime => {
+  const newDefinition = definition ? mergeDefinition(definition, builtInJDLApplicationConfig) : builtInJDLApplicationConfig;
   const propertyValidations: Record<string, JDLValidatorOption> = newDefinition.validatorConfig;
   const applicationDefinition = new JDLApplicationDefinition({
     optionValues: newDefinition.optionsValues,
@@ -43,7 +44,7 @@ export const createRuntime = (definition: JDLApplicationConfig): JDLRuntime => {
   let parser: JDLParser;
 
   return {
-    get tokens() {
+    get tokens(): Record<string, TokenType> {
       if (!tokens) {
         const applicationTokens = buildApplicationTokens(newDefinition.tokenConfigs);
         tokens = buildTokens({ applicationTokens, deploymentTokens });
@@ -52,13 +53,13 @@ export const createRuntime = (definition: JDLApplicationConfig): JDLRuntime => {
       }
       return tokens;
     },
-    get lexer() {
+    get lexer(): Lexer {
       if (!lexer) {
         lexer = createJDLLexer(this.tokens);
       }
       return lexer;
     },
-    get parser() {
+    get parser(): JDLParser {
       if (!parser) {
         parser = new JDLParser(this.tokens);
         parser.parse();
@@ -71,13 +72,4 @@ export const createRuntime = (definition: JDLApplicationConfig): JDLRuntime => {
     applicationDefinition,
     propertyValidations,
   };
-};
-
-let defaultRuntime: JDLRuntime;
-export const getDefaultRuntime = (): JDLRuntime => {
-  if (!defaultRuntime) {
-    defaultRuntime = createRuntime(getDefaultJDLApplicationConfig());
-  }
-
-  return defaultRuntime;
 };

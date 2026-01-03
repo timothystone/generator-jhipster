@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,17 +17,19 @@
  * limitations under the License.
  */
 
-import logger from '../../core/utils/objects/logger.js';
-import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.js';
-import type JDLObject from '../../core/models/jdl-object.js';
-import type JDLApplication from '../../core/models/jdl-application.js';
-import type AbstractJDLOption from '../../core/models/abstract-jdl-option.js';
-import type JDLBinaryOption from '../../core/models/jdl-binary-option.js';
+import { APPLICATION_TYPE_MICROSERVICE } from '../../../core/application-types.ts';
+import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.ts';
+import type AbstractJDLOption from '../../core/models/abstract-jdl-option.ts';
+import type JDLApplication from '../../core/models/jdl-application.ts';
+import type JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+import type { ParsedJDLAnnotation } from '../../core/types/parsed.ts';
+import logger from '../../core/utils/objects/logger.ts';
 
 const { FILTER, NO_FLUENT_METHOD, READ_ONLY, EMBEDDED, SKIP_CLIENT, SKIP_SERVER } = unaryOptions;
 
 const {
-  Options: { ANGULAR_SUFFIX, MICROSERVICE, SEARCH, DTO },
+  Options: { ANGULAR_SUFFIX, SEARCH, DTO },
 } = binaryOptions;
 const serviceClassOptionValue = binaryOptions.Values.service.SERVICE_CLASS;
 
@@ -74,16 +76,16 @@ function setOptionsToEachEntityName(jdlOption: AbstractJDLOption): void {
   const { key, value } = getJSONOptionKeyAndValue(jdlOption);
 
   jdlOption.entityNames.forEach(entityName => {
-    setOptionToEntityName({ optionName: key, optionValue: value }, entityName);
+    setOptionToEntityName({ optionName: key, type: 'BINARY', optionValue: value }, entityName);
   });
   jdlOption.entityNames.forEach(entityName => {
     const serviceOptionValue = convertedOptionContent.get(entityName).service;
-    if ((!serviceOptionValue || serviceOptionValue === 'no') && [DTO, FILTER].includes(jdlOption.name)) {
+    if ((!serviceOptionValue || serviceOptionValue === 'no') && ([DTO, FILTER] as string[]).includes(jdlOption.name)) {
       logger.info(
         `The ${jdlOption.name} option is set for ${entityName}, the '${serviceClassOptionValue}' value for the ` +
           "'service' is gonna be set for this entity if no other value has been set.",
       );
-      setOptionToEntityName({ optionName: 'service', optionValue: serviceClassOptionValue }, entityName);
+      setOptionToEntityName({ optionName: 'service', type: 'BINARY', optionValue: serviceClassOptionValue }, entityName);
     }
   });
 
@@ -99,7 +101,7 @@ function getJSONOptionKeyAndValue(jdlOption: AbstractJDLOption): { key: string; 
     case READ_ONLY:
     case EMBEDDED:
       return { key: jdlOption.name, value: true };
-    case MICROSERVICE:
+    case APPLICATION_TYPE_MICROSERVICE:
       return { key: 'microserviceName', value: (jdlOption as JDLBinaryOption).value };
     case NO_FLUENT_METHOD:
       return { key: 'fluentMethods', value: false };
@@ -116,11 +118,11 @@ function getJSONOptionKeyAndValue(jdlOption: AbstractJDLOption): { key: string; 
 
 function preventEntitiesFromBeingSearched(entityNames: Set<string>) {
   entityNames.forEach(entityName => {
-    setOptionToEntityName({ optionName: 'searchEngine', optionValue: 'no' }, entityName);
+    setOptionToEntityName({ optionName: 'searchEngine', type: 'BINARY', optionValue: 'no' }, entityName);
   });
 }
 
-function setOptionToEntityName(option, entityName: string): void {
+function setOptionToEntityName(option: ParsedJDLAnnotation, entityName: string): void {
   const { optionName, optionValue } = option;
   const optionContentForEntity = convertedOptionContent.get(entityName) ?? {};
   optionContentForEntity[optionName] = optionValue;

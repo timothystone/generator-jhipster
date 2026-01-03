@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,19 +17,16 @@
  * limitations under the License.
  */
 
-import { createJDLApplication } from '../../core/models/jdl-application-factory.js';
-import { applicationOptions as ApplicationOptions } from '../../../jhipster/index.js';
-import type JDLUnaryOption from '../../core/models/jdl-unary-option.js';
-import type JDLBinaryOption from '../../core/models/jdl-binary-option.js';
-import type AbstractJDLOption from '../../core/models/abstract-jdl-option.js';
-import type JDLApplication from '../../core/models/jdl-application.js';
-import type { JDLRuntime } from '../../core/types/runtime.js';
-import type { ParsedJDLApplication } from '../../core/types/parsed.js';
-import { convertOptions } from './option-converter.js';
+import { BASE_NAME_KEY } from '../../core/built-in-options/index.ts';
+import type AbstractJDLOption from '../../core/models/abstract-jdl-option.ts';
+import { createJDLApplication } from '../../core/models/jdl-application-factory.ts';
+import type JDLApplication from '../../core/models/jdl-application.ts';
+import type JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import type JDLUnaryOption from '../../core/models/jdl-unary-option.ts';
+import type { ParsedJDLApplication } from '../../core/types/parsed.ts';
+import type { JDLRuntime } from '../../core/types/runtime.ts';
 
-const {
-  OptionNames: { BASE_NAME },
-} = ApplicationOptions;
+import { convertOptions } from './option-converter.ts';
 
 export default { convertApplications };
 
@@ -43,10 +40,10 @@ export function convertApplications(parsedApplications: ParsedJDLApplication[], 
     throw new Error('Applications have to be passed so as to be converted.');
   }
   return parsedApplications.map(parsedApplication => {
-    const jdlApplication = createJDLApplication(parsedApplication.config, parsedApplication.namespaceConfigs, runtime);
+    const jdlApplication = createJDLApplication(parsedApplication.config, runtime, parsedApplication.namespaceConfigs);
     jdlApplication.addEntityNames(parsedApplication.entities);
     const entityOptions = getEntityOptionsInApplication(parsedApplication);
-    checkEntityNamesInOptions(jdlApplication.getConfigurationOptionValue(BASE_NAME), entityOptions, parsedApplication.entities);
+    checkEntityNamesInOptions(jdlApplication.getConfigurationOptionValue(BASE_NAME_KEY), entityOptions, parsedApplication.entities);
     entityOptions.forEach(option => jdlApplication.addOption(option));
     return jdlApplication;
   });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,14 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import BaseApplicationGenerator from '../../../base-application/index.js';
-import { mutateData } from '../../../base/support/index.js';
-import { javaBeanCase, javaTestPackageTemplatesBlock } from '../../../server/support/index.js';
-import { getEnumInfo } from '../../../base-application/support/index.js';
-import { isReservedJavaKeyword } from '../../support/reserved-keywords.js';
-import { entityServerFiles, enumFiles } from './entity-files.js';
+import { mutateData } from '../../../../lib/utils/index.ts';
+import { getEnumInfo } from '../../../base-application/support/index.ts';
+import type { Source as CommonSource } from '../../../common/types.d.ts';
+import { JavaApplicationGenerator } from '../../generator.ts';
+import { javaBeanCase, javaTestPackageTemplatesBlock } from '../../support/index.ts';
+import { isReservedJavaKeyword } from '../../support/reserved-keywords.ts';
 
-export default class DomainGenerator extends BaseApplicationGenerator {
+import { entityServerFiles, enumFiles } from './entity-files.ts';
+
+export default class DomainGenerator extends JavaApplicationGenerator {
   generateEntities!: boolean;
   useJakartaValidation!: boolean;
   useJacksonIdentityInfo!: boolean;
@@ -35,8 +37,7 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
-      await this.dependsOnJHipster('jhipster:java:bootstrap');
+      await this.dependsOnBootstrap('java');
     }
   }
 
@@ -55,7 +56,7 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY]() {
+  get [JavaApplicationGenerator.PREPARING_EACH_ENTITY]() {
     return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
   }
 
@@ -69,13 +70,13 @@ export default class DomainGenerator extends BaseApplicationGenerator {
       prepareEntity({ entity, field }) {
         field.propertyJavaBeanName = javaBeanCase(field.propertyName);
         if (entity.dtoMapstruct || entity.builtIn) {
-          field.propertyDtoJavaType = field.blobContentTypeText ? 'String' : field.fieldType;
+          field.propertyDtoJavaType = field.fieldTypeBlobContent === 'text' ? 'String' : field.fieldType;
         }
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY_FIELD]() {
+  get [JavaApplicationGenerator.PREPARING_EACH_ENTITY_FIELD]() {
     return this.delegateTasksToBlueprint(() => this.preparingEachEntityField);
   }
 
@@ -97,7 +98,7 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY_RELATIONSHIP]() {
+  get [JavaApplicationGenerator.PREPARING_EACH_ENTITY_RELATIONSHIP]() {
     return this.delegateTasksToBlueprint(() => this.preparingEachEntityRelationship);
   }
 
@@ -109,7 +110,7 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
+  get [JavaApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
     return this.delegateTasksToBlueprint(() => this.postPreparingEachEntity);
   }
 
@@ -128,7 +129,7 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING]() {
+  get [JavaApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
@@ -153,12 +154,12 @@ export default class DomainGenerator extends BaseApplicationGenerator {
           for (const field of entity.fields.filter(field => field.fieldIsEnum)) {
             const enumInfo = {
               ...application,
-              ...getEnumInfo(field, (entity as any).clientRootFolder),
+              ...getEnumInfo(field, entity.clientRootFolder),
               frontendAppName: application.frontendAppName,
               packageName: application.packageName,
               javaPackageSrcDir: application.javaPackageSrcDir,
-              entityJavaPackageFolder: (entity as any).entityJavaPackageFolder,
-              entityAbsolutePackage: (entity as any).entityAbsolutePackage || application.packageName,
+              entityJavaPackageFolder: entity.entityJavaPackageFolder,
+              entityAbsolutePackage: entity.entityAbsolutePackage || application.packageName,
             };
             await this.writeFiles({
               sections: enumFiles,
@@ -170,7 +171,32 @@ export default class DomainGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING_ENTITIES]() {
+  get [JavaApplicationGenerator.WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.writingEntities);
+  }
+
+  get postWriting() {
+    return this.asPostWritingTaskGroup({
+      sonar({ application, source }) {
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S7027-domain',
+          ruleKey: 'javaarchitecture:S7027',
+          resourceKey: `${application.javaPackageSrcDir}domain/**/*`,
+          comment: 'Rule https://rules.sonarsource.com/java/RSPEC-7027 is ignored for entities',
+        });
+
+        // TODO improve comment
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S3437',
+          ruleKey: 'squid:S3437',
+          resourceKey: `${application.javaPackageSrcDir}**/*`,
+          comment: 'Rule https://rules.sonarsource.com/java/RSPEC-3437 is ignored',
+        });
+      },
+    });
+  }
+
+  get [JavaApplicationGenerator.POST_WRITING]() {
+    return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 }

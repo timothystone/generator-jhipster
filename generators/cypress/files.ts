@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,14 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CLIENT_TEST_SRC_DIR } from '../generator-constants.js';
-
-import type { WriteFileSection } from '../base/api.js';
-import { clientRootTemplatesBlock } from '../client/support/index.js';
+import { asWriteFilesSection } from '../base-application/support/task-type-inference.ts';
+import { clientRootTemplatesBlock } from '../client/support/index.ts';
+import { CLIENT_TEST_SRC_DIR } from '../generator-constants.ts';
 
 const CYPRESS_TEMPLATE_SOURCE_DIR = `${CLIENT_TEST_SRC_DIR}cypress/`;
 
-export const cypressFiles: WriteFileSection = {
+export const cypressFiles = asWriteFilesSection({
   common: [
     {
       templates: ['README.md.jhi.cypress'],
@@ -32,8 +31,7 @@ export const cypressFiles: WriteFileSection = {
       templates: ['cypress.config.ts'],
     }),
     clientRootTemplatesBlock({
-      condition: ctx => Boolean(ctx.eslintConfigFile),
-      templates: [{ sourceFile: 'eslint.config.js.jhi.cypress', destinationFile: ctx => `${ctx.eslintConfigFile}.jhi.cypress` }],
+      templates: ['eslint.config.ts.jhi.cypress'],
     }),
   ],
   clientTestFw: [
@@ -103,9 +101,9 @@ export const cypressFiles: WriteFileSection = {
       templates: ['plugins/global.d.ts'],
     },
   ],
-};
+});
 
-export const cypressEntityFiles: WriteFileSection = {
+export const cypressEntityFiles = asWriteFilesSection({
   testsCypress: [
     {
       path: CYPRESS_TEMPLATE_SOURCE_DIR,
@@ -113,4 +111,4 @@ export const cypressEntityFiles: WriteFileSection = {
       templates: ['e2e/entity/_entity_.cy.ts'],
     },
   ],
-};
+});

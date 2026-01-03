@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,27 +17,32 @@
  * limitations under the License.
  */
 
-import { createFaker, stringHashCode } from '../base/support/index.js';
-import BaseApplicationGenerator from '../base-application/index.js';
-import { clientFrameworkTypes } from '../../lib/jhipster/index.js';
-import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.js';
+import { clientFrameworkTypes } from '../../lib/jhipster/index.ts';
+import { mutateData, stringHashCode } from '../../lib/utils/index.ts';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { createFaker } from '../base-application/support/index.ts';
+import { generateTestEntity } from '../client/support/index.ts';
+import type { Source as ClientSource } from '../client/types.ts';
+import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.ts';
+import type { Source as JavaSource } from '../java/types.d.ts';
 
-import { generateTestEntity as entityWithFakeValues } from '../client/support/index.js';
-import { cypressEntityFiles, cypressFiles } from './files.js';
+import { cypressEntityFiles, cypressFiles } from './files.ts';
+import type { Application as CypressApplication, Entity as CypressEntity, Field as CypressField } from './types.ts';
 
 const { ANGULAR } = clientFrameworkTypes;
 
 const WAIT_TIMEOUT = 3 * 60000;
 
-export default class CypressGenerator extends BaseApplicationGenerator {
+export default class CypressGenerator extends BaseApplicationGenerator<CypressEntity, CypressApplication> {
+  angularSchematic = false;
+
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      // TODO depend on GENERATOR_BOOTSTRAP_APPLICATION_CLIENT.
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('client');
     }
   }
 
@@ -45,10 +50,10 @@ export default class CypressGenerator extends BaseApplicationGenerator {
     return this.asPromptingTaskGroup({
       async askForCypressOptions({ control }) {
         if (control.existingProject && !this.options.askAnswered) return;
-        await (this.prompt as any)(
+        await this.prompt(
           [
             {
-              when: this.jhipsterConfig?.clientFramework === ANGULAR,
+              when: (this.jhipsterConfig as any).clientFramework === ANGULAR,
               type: 'confirm',
               name: 'cypressCoverage',
               message: 'Would you like to generate code coverage for Cypress tests? [Experimental]',
@@ -92,14 +97,17 @@ export default class CypressGenerator extends BaseApplicationGenerator {
 
   get preparing() {
     return this.asPreparingTaskGroup({
-      prepareForTemplates({ application }) {
-        application.cypressDir = (application.cypressDir ?? application.clientTestDir) ? `${application.clientTestDir}cypress/` : 'cypress';
-        application.cypressTemporaryDir =
-          (application.cypressTemporaryDir ?? application.temporaryDir) ? `${application.temporaryDir}cypress/` : '.cypress/';
-        application.cypressBootstrapEntities = application.cypressBootstrapEntities ?? true;
+      prepareForTemplates({ applicationDefaults }) {
+        applicationDefaults({
+          cypressDir: ({ clientTestDir }) => (clientTestDir ? `${clientTestDir}cypress/` : 'cypress/'),
+          cypressTemporaryDir: ({ temporaryDir }) => (temporaryDir ? `${temporaryDir}cypress/` : '.cypress/'),
+          cypressBootstrapEntities: true,
+          cypressCoverageWebpack: data => Boolean(data.cypressCoverage && data.clientFrameworkAngular && data.clientBundlerWebpack),
+        });
       },
       npmScripts({ application }) {
         const { devServerPort, devServerPortProxy: devServerPortE2e = devServerPort } = application;
+        this.angularSchematic = Boolean(application.clientFrameworkAngular && application.clientBundlerEsbuild);
 
         Object.assign(application.clientPackageJsonScripts, {
           cypress: 'cypress open --e2e',
@@ -115,7 +123,9 @@ export default class CypressGenerator extends BaseApplicationGenerator {
           'ci:e2e:run': 'concurrently -k -s first -n application,e2e -c red,blue npm:ci:e2e:server:start npm:e2e:headless',
           'ci:e2e:dev': `concurrently -k -s first -n application,e2e -c red,blue npm:app:start npm:e2e:headless`,
           'e2e:dev': `concurrently -k -s first -n application,e2e -c red,blue npm:app:start npm:e2e`,
-          'e2e:devserver': `concurrently -k -s first -n backend,frontend,e2e -c red,yellow,blue npm:backend:start npm:start "wait-on -t ${WAIT_TIMEOUT} http-get://127.0.0.1:${devServerPortE2e} && npm run e2e:headless -- -c baseUrl=http://localhost:${devServerPortE2e}"`,
+          'e2e:devserver': this.angularSchematic
+            ? `concurrently -k -s first -n backend,e2e -c red,blue npm:backend:start "npm run ci:server:await && ng e2e --configuration ${application.cypressCoverage ? 'coverage' : 'run'}"`
+            : `concurrently -k -s first -n backend,frontend,e2e -c red,yellow,blue npm:backend:start npm:start "wait-on -t ${WAIT_TIMEOUT} http-get://127.0.0.1:${devServerPortE2e} && npm run e2e:headless -- -c baseUrl=http://localhost:${devServerPortE2e}"`,
         });
 
         if (application.clientRootDir) {
@@ -136,26 +146,29 @@ export default class CypressGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
-  get preparingEachEntity() {
+  get postPreparingEachEntity() {
     return this.asPreparingEachEntityTaskGroup({
       prepareForTemplates({ entity }) {
-        this._.defaults(entity, { workaroundEntityCannotBeEmpty: false, workaroundInstantReactiveMariaDB: false });
+        mutateData(entity, {
+          workaroundEntityCannotBeEmpty: false,
+          workaroundInstantReactiveMariaDB: false,
+        });
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY]() {
-    return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
+  get [BaseApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
+    return this.delegateTasksToBlueprint(() => this.postPreparingEachEntity);
   }
 
   get writing() {
     return this.asWritingTaskGroup({
       async cleanup({ control, application: { authenticationTypeOauth2, generateUserManagement, cypressDir } }) {
-        if (this.isJhipsterVersionLessThan('7.0.0-beta.1')) {
+        if (control.isJhipsterVersionLessThan('7.0.0-beta.1')) {
           this.removeFile(`${cypressDir}support/keycloak-oauth2.ts`);
           this.removeFile(`${cypressDir}fixtures/users/user.json`);
         }
-        if (this.isJhipsterVersionLessThan('7.8.2')) {
+        if (control.isJhipsterVersionLessThan('7.8.2')) {
           this.removeFile('cypress.json');
           this.removeFile('cypress-audits.json');
 
@@ -177,7 +190,7 @@ export default class CypressGenerator extends BaseApplicationGenerator {
       async writeFiles({ application }) {
         const faker = await createFaker();
         faker.seed(stringHashCode(application.baseName));
-        const context = { ...application, faker } as any;
+        const context = { ...application, faker };
         return this.writeFiles({
           sections: cypressFiles,
           context,
@@ -192,9 +205,9 @@ export default class CypressGenerator extends BaseApplicationGenerator {
 
   get writingEntities() {
     return this.asWritingEntitiesTaskGroup({
-      cleanupCypressEntityFiles({ application: { cypressDir }, entities }) {
+      cleanupCypressEntityFiles({ application: { cypressDir }, control, entities }) {
         for (const entity of entities) {
-          if (this.isJhipsterVersionLessThan('7.8.2')) {
+          if (control.isJhipsterVersionLessThan('7.8.2')) {
             this.removeFile(`${cypressDir}integration/entity/${entity.entityFileName}.spec.ts`);
           }
         }
@@ -204,7 +217,7 @@ export default class CypressGenerator extends BaseApplicationGenerator {
         for (const entity of entities.filter(
           entity => !entity.skipClient && !entity.embedded && !entity.builtInUser && !entity.entityClientModelOnly,
         )) {
-          const context = { ...application, ...entity } as any;
+          const context = { ...application, ...entity };
           await this.writeFiles({
             sections: cypressEntityFiles,
             context,
@@ -224,9 +237,21 @@ export default class CypressGenerator extends BaseApplicationGenerator {
         const clientPackageJson = this.createStorage(this.destinationPath(application.clientRootDir!, 'package.json'));
         clientPackageJson.merge({
           devDependencies: {
+            cypress: application.nodeDependencies.cypress,
             'eslint-plugin-cypress': application.nodeDependencies['eslint-plugin-cypress'],
           },
         });
+        if (application.cypressCoverage && this.angularSchematic) {
+          clientPackageJson.merge({
+            devDependencies: {
+              'cypress-monocart-coverage': null,
+            },
+            scripts: {
+              'pree2e:cypress:coverage': 'npm run ci:server:await',
+              'e2e:cypress:coverage': 'ng e2e --configuration coverage',
+            },
+          });
+        }
       },
       configureAudits({ application }) {
         if (!application.cypressAudit) return;
@@ -243,9 +268,9 @@ export default class CypressGenerator extends BaseApplicationGenerator {
           },
         });
       },
-      configureCoverage({ application, source }) {
-        const { cypressCoverage, clientFrameworkAngular, clientRootDir, dasherizedBaseName } = application;
-        if (!cypressCoverage) return;
+      configureWebpackCoverage({ application, source }) {
+        const { cypressCoverageWebpack, clientFrameworkAngular, clientRootDir, dasherizedBaseName } = application;
+        if (!cypressCoverageWebpack) return;
         const clientPackageJson = this.createStorage(this.destinationPath(application.clientRootDir!, 'package.json'));
         clientPackageJson.merge({
           devDependencies: {
@@ -269,7 +294,7 @@ export default class CypressGenerator extends BaseApplicationGenerator {
             `projects.${dasherizedBaseName}.architect.build.configurations.instrumenter`,
             {},
           );
-          source.addWebpackConfig?.({
+          (source as ClientSource).addWebpackConfig?.({
             config: `targetOptions.configuration === 'instrumenter'
       ? {
           module: {
@@ -295,6 +320,90 @@ export default class CypressGenerator extends BaseApplicationGenerator {
           });
         }
       },
+      cypressSchematics({ application, source }) {
+        const { applicationTypeMicroservice, dasherizedBaseName, clientRootDir, gatewayServerPort, serverPort } = application;
+        if (!this.angularSchematic) return;
+
+        (source as ClientSource).mergeClientPackageJson?.({
+          devDependencies: {
+            '@cypress/schematic': null,
+          },
+        });
+        this.mergeDestinationJson(`${clientRootDir}angular.json`, {
+          projects: {
+            [application.dasherizedBaseName]: {
+              architect: {
+                e2e: {
+                  builder: '@cypress/schematic:cypress',
+                  options: { browser: 'chrome' },
+                  configurations: {
+                    baseHref: {
+                      headless: true,
+                      baseUrl: `http://localhost:${applicationTypeMicroservice ? gatewayServerPort : serverPort}`,
+                    },
+                    open: {
+                      watch: true,
+                      devServerTarget: `${dasherizedBaseName}:serve`,
+                    },
+                    openProduction: {
+                      watch: true,
+                      devServerTarget: `${dasherizedBaseName}:serve:production`,
+                    },
+                    run: {
+                      headless: true,
+                      devServerTarget: `${dasherizedBaseName}:serve`,
+                    },
+                    runProduction: {
+                      headless: true,
+                      devServerTarget: `${dasherizedBaseName}:serve:production`,
+                    },
+                  },
+                  defaultConfiguration: 'open',
+                },
+              },
+            },
+          },
+        });
+      },
+      configureV8Coverage({ application }) {
+        const { cypressCoverage, clientRootDir, dasherizedBaseName } = application;
+        if (!cypressCoverage || !this.angularSchematic) return;
+        this.mergeDestinationJson(`${clientRootDir}angular.json`, {
+          projects: {
+            [dasherizedBaseName]: {
+              architect: {
+                e2e: {
+                  configurations: {
+                    coverage: {
+                      headless: true,
+                      devServerTarget: `${dasherizedBaseName}:serve:development`,
+                      env: { CYPRESS_COVERAGE: true },
+                    },
+                    openCoverage: {
+                      watch: true,
+                      devServerTarget: `${dasherizedBaseName}:serve:development`,
+                      env: { CYPRESS_COVERAGE: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+      },
+      mavenProfile({ source }) {
+        (source as JavaSource).addMavenProfile?.({
+          id: 'e2e',
+          content: `
+            <properties>
+                <profile.e2e>,e2e</profile.e2e>
+            </properties>
+            <build>
+                <finalName>e2e</finalName>
+            </build>
+          `,
+        });
+      },
     });
   }
 
@@ -302,7 +411,7 @@ export default class CypressGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 
-  generateTestEntity(references) {
-    return entityWithFakeValues(references);
+  generateTestEntity(fields: CypressField[]) {
+    return generateTestEntity(fields);
   }
 }

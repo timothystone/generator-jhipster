@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,46 +17,52 @@
  * limitations under the License.
  */
 import assert from 'node:assert';
+
 import chalk from 'chalk';
 import { isFileStateModified } from 'mem-fs-editor/state';
-import { camelCase, startCase } from 'lodash-es';
 
-import BaseApplicationGenerator from '../base-application/index.js';
-import { clientFrameworkTypes, fieldTypes } from '../../lib/jhipster/index.js';
-import { GENERATOR_CLIENT, GENERATOR_LANGUAGES, GENERATOR_VUE } from '../generator-list.js';
+import { clientFrameworkTypes, fieldTypes } from '../../lib/jhipster/index.ts';
+import type { Field } from '../base-application/types.ts';
+import { createNeedleCallback } from '../base-core/support/index.ts';
+import { ClientApplicationGenerator } from '../client/generator.ts';
 import {
-  generateEntityClientImports as formatEntityClientImports,
   generateEntityClientEnumImports as getClientEnumImportsFormat,
   generateEntityClientFields as getHydratedEntityClientFields,
-} from '../client/support/index.js';
-import { createNeedleCallback } from '../base/support/index.js';
-import { writeEslintClientRootConfigFile } from '../javascript/generators/eslint/support/tasks.js';
-import { cleanupEntitiesFiles, postWriteEntityFiles, writeEntityFiles } from './entity-files-vue.js';
-import cleanupOldFilesTask from './cleanup.js';
-import { writeEntitiesFiles, writeFiles } from './files-vue.js';
-import { convertTranslationsSupport, isTranslatedVueFile, translateVueFilesTransform } from './support/index.js';
+  generateEntityClientImports as formatEntityClientImports,
+} from '../client/support/index.ts';
+import type { Field as ClientField } from '../client/types.ts';
+import { JAVA_WEBAPP_SOURCES_DIR } from '../index.ts';
+import { writeEslintClientRootConfigFile } from '../javascript-simple-application/generators/eslint/support/tasks.ts';
+import type { Config as SpringBootConfig } from '../spring-boot/types.d.ts';
+
+import cleanupOldFilesTask from './cleanup.ts';
+import { cleanupEntitiesFiles, postWriteEntityFiles, writeEntityFiles } from './entity-files-vue.ts';
+import { writeEntitiesFiles, writeFiles } from './files-vue.ts';
+import { convertTranslationsSupport, isTranslatedVueFile, translateVueFilesTransform } from './support/index.ts';
 
 const { CommonDBTypes } = fieldTypes;
 const { VUE } = clientFrameworkTypes;
 const TYPE_BOOLEAN = CommonDBTypes.BOOLEAN;
 
-export default class VueGenerator extends BaseApplicationGenerator {
+export default class VueGenerator extends ClientApplicationGenerator {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
+    await this.dependsOnBootstrap('vue');
     if (!this.delegateToBlueprint) {
-      await this.dependsOnJHipster(GENERATOR_CLIENT);
-      await this.dependsOnJHipster(GENERATOR_LANGUAGES);
+      await this.dependsOnJHipster('jhipster:client:i18n');
+      await this.dependsOnJHipster('client');
+      await this.dependsOnJHipster('languages');
     }
   }
 
   get configuring() {
     return this.asConfiguringTaskGroup({
-      configureDevServerPort() {
+      configureDevServerPort({ control }) {
         if (this.jhipsterConfig.devServerPort === undefined) return;
-        if (this.isJhipsterVersionLessThan('8.7.4')) {
+        if (control.isJhipsterVersionLessThan('8.7.4')) {
           // Migrate old devServerPort with new one
           const { applicationIndex = 0 } = this.jhipsterConfigWithDefaults;
           this.jhipsterConfig.devServerPort = 9000 + applicationIndex;
@@ -65,8 +71,23 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.CONFIGURING]() {
+  get [ClientApplicationGenerator.CONFIGURING]() {
     return this.delegateTasksToBlueprint(() => this.configuring);
+  }
+
+  get composing() {
+    return this.asComposingTaskGroup({
+      async composing() {
+        await this.composeWithJHipster('jhipster:client:common');
+        if ((this.jhipsterConfigWithDefaults as SpringBootConfig).websocket === 'spring-websocket') {
+          await this.composeWithJHipster('jhipster:client:encode-csrf-token');
+        }
+      },
+    });
+  }
+
+  get [ClientApplicationGenerator.COMPOSING]() {
+    return this.delegateTasksToBlueprint(() => this.composing);
   }
 
   get loading() {
@@ -74,10 +95,10 @@ export default class VueGenerator extends BaseApplicationGenerator {
       loadPackageJson({ application }) {
         this.loadNodeDependenciesFromPackageJson(
           application.nodeDependencies,
-          this.fetchFromInstalledJHipster(GENERATOR_VUE, 'resources', 'package.json'),
+          this.fetchFromInstalledJHipster('vue', 'resources', 'package.json'),
         );
       },
-      applicationDefauts({ applicationDefaults }) {
+      applicationDefaults({ applicationDefaults }) {
         applicationDefaults({
           __override__: true,
           typescriptEslint: true,
@@ -86,19 +107,25 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.LOADING]() {
+  get [ClientApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
   }
 
   get preparing() {
     return this.asPreparingTaskGroup({
-      applicationDefauts({ applicationDefaults }) {
+      applicationDefaults({ application, applicationDefaults }) {
         applicationDefaults({
           __override__: true,
-          eslintConfigFile: app => `eslint.config.${app.packageJsonType === 'module' ? 'js' : 'mjs'}`,
-          clientWebappDir: app => `${app.clientSrcDir}app/`,
-          webappEnumerationsDir: app => `${app.clientWebappDir}shared/model/enumerations/`,
+          webappEnumerationsDir: app => `${app.clientSrcDir}app/shared/model/enumerations/`,
         });
+
+        if (application.clientBundlerWebpack) {
+          application.prettierFolders.push('webpack/');
+        }
+        if (!application.backendTypeJavaAny && application.clientSrcDir !== JAVA_WEBAPP_SOURCES_DIR) {
+          // When we have a java backend, 'src/**' is already added by java:bootstrap
+          application.prettierFolders.push(`${application.clientSrcDir}**/`);
+        }
       },
       async javaNodeBuildPaths({ application }) {
         const { clientBundlerVite, clientBundlerWebpack, microfrontend, javaNodeBuildPaths } = application;
@@ -114,14 +141,14 @@ export default class VueGenerator extends BaseApplicationGenerator {
         }
       },
       prepareForTemplates({ application, source }) {
-        application.addPrettierExtensions?.(['html', 'vue', 'css', 'scss']);
+        application.prettierExtensions.push('html', 'vue', 'css', 'scss');
 
         source.addWebpackConfig = args => {
           if (!application.clientBundlerWebpack) {
             throw new Error('This application is not webpack based');
           }
           const webpackPath = `${application.clientRootDir}webpack/webpack.common.js`;
-          const ignoreNonExisting = this.sharedData.getControl().ignoreNeedlesError && 'Webpack configuration file not found';
+          const ignoreNonExisting = this.ignoreNeedlesError && 'Webpack configuration file not found';
           this.editFile(
             webpackPath,
             { ignoreNonExisting },
@@ -131,19 +158,109 @@ export default class VueGenerator extends BaseApplicationGenerator {
             }),
           );
         };
+
+        source.addEntitiesToClient = ({ application, entities }) => {
+          const { enableTranslation } = application;
+          for (const entity of entities) {
+            const {
+              entityInstance,
+              entityFolderName,
+              entityFileName,
+              entityNameHumanized,
+              entityPage,
+              entityTranslationKeyMenu,
+              entityAngularName,
+              readOnly,
+            } = entity;
+
+            this.editFile(
+              `${application.clientSrcDir}/app/router/entities.ts`,
+              createNeedleCallback({
+                needle: 'jhipster-needle-add-entity-to-router-import',
+                contentToAdd: `const ${entityAngularName} = () => import('@/entities/${entityFolderName}/${entityFileName}.vue');
+const ${entityAngularName}Details = () => import('@/entities/${entityFolderName}/${entityFileName}-details.vue');${
+                  readOnly
+                    ? ''
+                    : `
+const ${entityAngularName}Update = () => import('@/entities/${entityFolderName}/${entityFileName}-update.vue');`
+                }`,
+                contentToCheck: `import('@/entities/${entityFolderName}/${entityFileName}.vue');`,
+              }),
+            );
+
+            this.editFile(
+              `${application.clientSrcDir}/app/router/entities.ts`,
+              createNeedleCallback({
+                needle: 'jhipster-needle-add-entity-to-router',
+                contentToAdd: `{
+  path: '${entityPage}',
+  name: '${entityAngularName}',
+  component: ${entityAngularName},
+  meta: { authorities: [Authority.USER] }
+},
+{
+  path: '${entityPage}/:${entityInstance}Id/view',
+  name: '${entityAngularName}View',
+  component: ${entityAngularName}Details,
+  meta: { authorities: [Authority.USER] }
+},${
+                  readOnly
+                    ? ''
+                    : `
+{
+  path: '${entityPage}/new',
+  name: '${entityAngularName}Create',
+  component: ${entityAngularName}Update,
+  meta: { authorities: [Authority.USER] }
+},
+{
+  path: '${entityPage}/:${entityInstance}Id/edit',
+  name: '${entityAngularName}Edit',
+  component: ${entityAngularName}Update,
+  meta: { authorities: [Authority.USER] }
+},`
+                }`,
+                contentToCheck: `path: '${entityFileName}'`,
+              }),
+            );
+
+            this.editFile(
+              `${application.clientSrcDir}/app/entities/entities.component.ts`,
+              createNeedleCallback({
+                needle: 'jhipster-needle-add-entity-service-to-entities-component-import',
+                contentToAdd: `import ${entityAngularName}Service from './${entityFolderName}/${entityFileName}.service';`,
+              }),
+              createNeedleCallback({
+                needle: 'add-entity-service-to-entities-component',
+                contentToAdd: `provide('${entityInstance}Service', () => new ${entityAngularName}Service());`,
+              }),
+            );
+
+            this.editFile(
+              `${application.clientSrcDir}/app/entities/entities-menu.vue`,
+              createNeedleCallback({
+                needle: 'add-entity-to-menu',
+                contentToAdd: `<b-dropdown-item to="/${entityPage}">
+  <font-awesome-icon icon="asterisk" />
+  <span>${enableTranslation ? `{{ $t('global.menu.entities.${entityTranslationKeyMenu}') }}` : entityNameHumanized}</span>
+</b-dropdown-item>`,
+                contentToCheck: `<b-dropdown-item to="/${entityPage}">`,
+              }),
+            );
+          }
+        };
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING]() {
+  get [ClientApplicationGenerator.PREPARING]() {
     return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
   get default() {
     return this.asDefaultTaskGroup({
-      async queueTranslateTransform({ control, application }) {
-        const { enableTranslation, clientSrcDir } = application;
-        const { getWebappTranslation } = control;
+      async queueTranslateTransform({ application }) {
+        const { clientI18nDir, enableTranslation, getWebappTranslation } = application;
 
         assert.ok(getWebappTranslation, 'getWebappTranslation is required');
 
@@ -156,7 +273,7 @@ export default class VueGenerator extends BaseApplicationGenerator {
           translateVueFilesTransform.call(this, { enableTranslation, getWebappTranslation }),
         );
         if (enableTranslation) {
-          const { transform, isTranslationFile } = convertTranslationsSupport({ clientSrcDir });
+          const { transform, isTranslationFile } = convertTranslationsSupport({ clientI18nDir });
           this.queueTransformStream(
             {
               name: 'converting vue translations',
@@ -170,7 +287,7 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.DEFAULT]() {
+  get [ClientApplicationGenerator.DEFAULT]() {
     return this.delegateTasksToBlueprint(() => this.default);
   }
 
@@ -187,6 +304,12 @@ export default class VueGenerator extends BaseApplicationGenerator {
               `${application.srcMainWebapp}microfrontends/entities-router-test.ts`,
             ],
           ],
+          '9.0.0-alpha.0': [
+            '.postcssrc.js',
+            // Try to remove possibles old eslint config files
+            'eslint.config.js',
+            'eslint.config.mjs',
+          ],
         });
       },
       cleanupOldFilesTask,
@@ -195,7 +318,7 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING]() {
+  get [ClientApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
@@ -207,21 +330,21 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING_ENTITIES]() {
+  get [ClientApplicationGenerator.WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.writingEntities);
   }
 
   get postWriting() {
     return this.asPostWritingTaskGroup({
       addPackageJsonScripts({ application, source }) {
-        const { clientBundlerVite, clientBundlerWebpack, clientPackageManager } = application;
+        const { clientBundlerVite, clientBundlerWebpack, nodePackageManager } = application;
         if (clientBundlerVite) {
           source.mergeClientPackageJson!({
             scripts: {
-              'webapp:build:dev': `${clientPackageManager} run vite-build`,
-              'webapp:build:prod': `${clientPackageManager} run vite-build`,
-              'webapp:dev': `${clientPackageManager} run vite-serve`,
-              'webapp:serve': `${clientPackageManager} run vite-serve`,
+              'webapp:build:dev': `${nodePackageManager} run vite-build`,
+              'webapp:build:prod': `${nodePackageManager} run vite-build`,
+              'webapp:dev': `${nodePackageManager} run vite-serve`,
+              'webapp:serve': `${nodePackageManager} run vite-serve`,
               'vite-serve': 'vite',
               'vite-build': 'vite build',
             },
@@ -229,9 +352,9 @@ export default class VueGenerator extends BaseApplicationGenerator {
         } else if (clientBundlerWebpack) {
           source.mergeClientPackageJson!({
             scripts: {
-              'webapp:build:dev': `${clientPackageManager} run webpack -- --mode development --env stats=minimal`,
-              'webapp:build:prod': `${clientPackageManager} run webpack -- --mode production --env stats=minimal`,
-              'webapp:dev': `${clientPackageManager} run webpack-dev-server -- --mode development --env stats=normal`,
+              'webapp:build:dev': `${nodePackageManager} run webpack -- --mode development --env stats=minimal`,
+              'webapp:build:prod': `${nodePackageManager} run webpack -- --mode production --env stats=minimal`,
+              'webapp:dev': `${nodePackageManager} run webpack-dev-server -- --mode development --env stats=normal`,
               'webpack-dev-server': 'webpack serve --config webpack/webpack.common.js',
               webpack: 'webpack --config webpack/webpack.common.js',
             },
@@ -290,10 +413,23 @@ export default class VueGenerator extends BaseApplicationGenerator {
           comment: 'Load vue main',
         });
       },
+      sonar({ application, source }) {
+        const { clientI18nDir, clientDistDir, clientSrcDir, temporaryDir } = application;
+        source.addSonarProperties?.([
+          { key: 'sonar.test.inclusions', value: `${clientSrcDir}app/**/*.spec.ts`, valueSep: ', ' },
+          { key: 'sonar.testExecutionReportPaths', value: `${temporaryDir}test-results/jest/TESTS-results-sonar.xml` },
+          { key: 'sonar.javascript.lcov.reportPaths', value: `${temporaryDir}test-results/lcov.info` },
+          {
+            key: 'sonar.exclusions',
+            value: `${clientSrcDir}content/**/*.*, ${clientI18nDir}*.ts, ${clientDistDir}**/*.*`,
+            valueSep: ', ',
+          },
+        ]);
+      },
     });
   }
 
-  get [BaseApplicationGenerator.POST_WRITING]() {
+  get [ClientApplicationGenerator.POST_WRITING]() {
     return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 
@@ -303,14 +439,14 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.POST_WRITING_ENTITIES]() {
+  get [ClientApplicationGenerator.POST_WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.postWritingEntities);
   }
 
   get end() {
     return this.asEndTaskGroup({
       end({ application }) {
-        this.log.ok('Vue application generated successfully.');
+        this.log.ok(`Vue ${application.nodeDependencies.vue} application generated successfully.`);
         this.log.log(
           chalk.green(`  Start your Webpack development server with:
   ${chalk.yellow.bold(`${application.nodePackageManager} start`)}
@@ -320,60 +456,18 @@ export default class VueGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.END]() {
+  get [ClientApplicationGenerator.END]() {
     return this.delegateTasksToBlueprint(() => this.end);
   }
 
   /**
    * @private
-   * Add a new entity in the "entities" menu.
-   *
-   * @param {string} routerName - The name of the Angular router (which by default is the name of the entity).
-   * @param {boolean} enableTranslation - If translations are enabled or not
-   * @param {string} entityTranslationKeyMenu - i18n key for entity entry in menu
-   * @param {string} entityTranslationValue - i18n value for entity entry in menu
-   */
-  addEntityToMenu(
-    routerName,
-    enableTranslation,
-    entityTranslationKeyMenu = camelCase(routerName),
-    entityTranslationValue = startCase(routerName),
-  ) {
-    this.needleApi.clientVue.addEntityToMenu(routerName, enableTranslation, entityTranslationKeyMenu, entityTranslationValue);
-  }
-
-  /**
-   * @private
-   * Add a new entity in the TS modules file.
-   *
-   * @param {string} entityInstance - Entity Instance
-   * @param {string} entityClass - Entity Class
-   * @param {string} entityName - Entity Name
-   * @param {string} entityFolderName - Entity Folder Name
-   * @param {string} entityFileName - Entity File Name
-   * @param {string} entityUrl - Entity router URL
-   * @param {string} microserviceName - Microservice Name
-   * @param {boolean} readOnly - If the entity is read-only or not
-   */
-  addEntityToModule(entityInstance, entityClass, entityName, entityFolderName, entityFileName, _entityUrl, _microserviceName, readOnly?) {
-    this.needleApi.clientVue.addEntityToRouterImport(entityName, entityFileName, entityFolderName, readOnly);
-    this.needleApi.clientVue.addEntityToRouter(entityInstance, entityName, entityFileName, readOnly);
-    this.needleApi.clientVue.addEntityServiceToEntitiesComponentImport(entityName, entityClass, entityFileName, entityFolderName);
-    this.needleApi.clientVue.addEntityServiceToEntitiesComponent(entityInstance, entityName);
-  }
-
-  /**
-   * @private
    * Generate Entity Client Field Default Values
-   *
-   * @param {Array|Object} fields - array of fields
-   * @returns {Array} defaultVariablesValues
    */
-  generateEntityClientFieldDefaultValues(fields) {
-    const defaultVariablesValues = {};
+  generateEntityClientFieldDefaultValues(fields: ClientField[]): Record<string, string> {
+    const defaultVariablesValues: Record<string, string> = {};
     fields.forEach(field => {
-      const fieldType = field.fieldType;
-      const fieldName = field.fieldName;
+      const { fieldType, fieldName } = field;
       if (fieldType === TYPE_BOOLEAN) {
         defaultVariablesValues[fieldName] = `this.${fieldName} = this.${fieldName} ?? false;`;
       }
@@ -381,15 +475,25 @@ export default class VueGenerator extends BaseApplicationGenerator {
     return defaultVariablesValues;
   }
 
-  generateEntityClientFields(primaryKey, fields, relationships, dto, customDateType = 'dayjs.Dayjs', embedded = false) {
+  generateEntityClientFields(
+    primaryKey: Parameters<typeof getHydratedEntityClientFields>[0],
+    fields: Parameters<typeof getHydratedEntityClientFields>[1],
+    relationships: Parameters<typeof getHydratedEntityClientFields>[2],
+    dto: Parameters<typeof getHydratedEntityClientFields>[3],
+    customDateType: Parameters<typeof getHydratedEntityClientFields>[4] = 'dayjs.Dayjs',
+    embedded: Parameters<typeof getHydratedEntityClientFields>[5] = false,
+  ) {
     return getHydratedEntityClientFields(primaryKey, fields, relationships, dto, customDateType, embedded, VUE);
   }
 
-  generateEntityClientImports(relationships, dto) {
+  generateEntityClientImports(
+    relationships: Parameters<typeof formatEntityClientImports>[0],
+    dto: Parameters<typeof formatEntityClientImports>[1],
+  ) {
     return formatEntityClientImports(relationships, dto, VUE);
   }
 
-  generateEntityClientEnumImports(fields) {
+  generateEntityClientEnumImports(fields: Field[]): Map<string, string> {
     return getClientEnumImportsFormat(fields, VUE);
   }
 }

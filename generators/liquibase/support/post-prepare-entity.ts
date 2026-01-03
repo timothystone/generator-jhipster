@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,14 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { fieldTypes } from '../../../lib/jhipster/index.js';
-import type { LiquibaseEntity } from '../types.js';
-import { asPostPreparingEachEntityTask } from '../../base-application/support/task-type-inference.js';
+import { fieldTypes } from '../../../lib/jhipster/index.ts';
+import { asPostPreparingEachEntityTask } from '../../base-application/support/task-type-inference.ts';
+import type { Application as LiquibaseApplication, Entity as LiquibaseEntity } from '../types.ts';
 
 const { CommonDBTypes } = fieldTypes;
 const { LONG: TYPE_LONG, INTEGER: TYPE_INTEGER } = CommonDBTypes;
 
-export default asPostPreparingEachEntityTask(function postPrepareEntity({ application, entity }) {
+export default asPostPreparingEachEntityTask<LiquibaseEntity, LiquibaseApplication<LiquibaseEntity>>(function postPrepareEntity({
+  application,
+  entity,
+}) {
   const { relationships, builtIn, name, primaryKey } = entity;
   if (builtIn && name === 'User' && primaryKey) {
     const userIdType = primaryKey.type;
@@ -31,13 +34,13 @@ export default asPostPreparingEachEntityTask(function postPrepareEntity({ applic
     const idFieldName = idField.fieldName ?? 'id';
     const liquibaseFakeData = application.generateUserManagement
       ? [
-          { [idFieldName]: [TYPE_INTEGER, TYPE_LONG].includes(userIdType) ? 1 : idField.generateFakeData!() },
-          { [idFieldName]: [TYPE_INTEGER, TYPE_LONG].includes(userIdType) ? 2 : idField.generateFakeData!() },
+          { [idFieldName]: ([TYPE_INTEGER, TYPE_LONG] as string[]).includes(userIdType) ? 1 : idField.generateFakeData!() },
+          { [idFieldName]: ([TYPE_INTEGER, TYPE_LONG] as string[]).includes(userIdType) ? 2 : idField.generateFakeData!() },
         ]
       : [];
-    (entity as LiquibaseEntity).liquibaseFakeData = liquibaseFakeData;
-    (entity as LiquibaseEntity).fakeDataCount = liquibaseFakeData.length;
+    entity.liquibaseFakeData = liquibaseFakeData;
+    entity.fakeDataCount = liquibaseFakeData.length;
   }
 
-  (entity as LiquibaseEntity).anyRelationshipIsOwnerSide = relationships.some(relationship => relationship.ownerSide);
+  entity.anyRelationshipIsOwnerSide = relationships.some(relationship => relationship.ownerSide);
 });

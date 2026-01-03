@@ -1,5 +1,5 @@
-import { removeFieldsWithNullishValues } from '../../base/support/index.js';
-import { GENERATOR_JHIPSTER } from '../../generator-constants.js';
+import { removeFieldsWithNullishValues } from '../../../lib/utils/index.ts';
+import { GENERATOR_JHIPSTER } from '../../generator-constants.ts';
 
 export type InfoFile = { filename: string; content: string; type: 'jdl' | 'yo-rc' | 'entity-jdl' | 'json' };
 
@@ -9,7 +9,7 @@ export type InfoData = {
   jdlApplications: number | undefined;
   jdlEntitiesDefinitions: string | undefined;
   yoRcBlank: boolean;
-  yoRcValid: boolean;
+  yoRcValid?: boolean;
   files: InfoFile[];
   workspacesFolders: string[] | undefined;
 };
@@ -40,7 +40,7 @@ export const extractDataFromInfo = (info: string): InfoData => {
         jdlEntitiesDefinitions = body.trim();
         files.push({ filename: 'entities.jdl', content: jdlEntitiesDefinitions, type: 'entity-jdl' });
       } else if (title.includes('JDL definitions')) {
-        // JDL definitions can be be a placehoder
+        // JDL definitions can be be a placeholder
         if ((body.match(/application\s*\{/g) || []).length > 0) {
           const jdlCount = files.filter(file => file.type === 'jdl').length;
           files.push({ filename: jdlCount === 0 ? 'app.jdl' : `app-${jdlCount}.jdl`, content: body.trim(), type: 'jdl' });
@@ -52,7 +52,7 @@ export const extractDataFromInfo = (info: string): InfoData => {
   }
 
   let yoRcBlank = true;
-  let yoRcValid;
+  let yoRcValid: boolean | undefined;
   if (yoRcContent) {
     yoRcBlank = false;
     try {

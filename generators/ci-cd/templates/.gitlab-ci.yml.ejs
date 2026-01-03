@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -71,7 +71,7 @@ before_script:
     <%_ } _%>
     - export GRADLE_USER_HOME=`pwd`/.gradle
     <%_ if (!skipClient) { _%>
-    - ./gradlew <%= clientPackageManager %>_install -PnodeInstall --no-daemon
+    - ./gradlew <%- nodePackageManager %>_install -PnodeInstall --no-daemon
     <%_ } _%>
 gradle-nohttp:
     stage: .pre
@@ -141,7 +141,7 @@ gradle-integration-test:
 gradle-frontend-test:
     stage: test
     script:
-        - ./gradlew <%= clientPackageManager %>_run_<%= frontTestCommand %> -PnodeInstall --no-daemon
+        - ./gradlew <%- nodePackageManager %>_run_test -PnodeInstall --no-daemon
     artifacts:
         reports:
             junit: build/test-results/TESTS-results-jest.xml
@@ -309,8 +309,8 @@ stages:
 webapp-build:
     stage: build
     script:
-        - <%= clientPackageManager %> install
-        - <%= clientPackageManager %> run webapp:build
+        - <%- nodePackageManager %> install
+        - <%- nodePackageManager %> run webapp:build
     artifacts:
         paths:
             - build/
@@ -319,7 +319,7 @@ webapp-test:
     dependencies:
         - webapp-build
     script:
-        - <%= clientPackageManager %> run webapp:test
+        - <%- nodePackageManager %> run webapp:test
     artifacts:
         reports:
             junit: build/test-results/TESTS-results-jest.xml
@@ -341,7 +341,7 @@ sonar-analyze:
 webapp-prod:
     stage: packaging
     script:
-        - <%= clientPackageManager %> run webapp:prod
+        - <%- nodePackageManager %> run webapp:prod
         # - add cmd to zip the app folder build/resources/main/static
     artifacts:
         paths:

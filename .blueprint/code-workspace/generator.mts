@@ -1,24 +1,20 @@
 import { join } from 'path';
 import { merge } from 'lodash-es';
-import BaseGenerator from '../../generators/base/index.js';
+import BaseGenerator from '../../generators/base-core/index.js';
 import { getPackageRoot } from '../../lib/index.js';
-import { defaultSamplesFolder, promptSamplesFolder, samplesFolderConfig } from '../support.mjs';
+import { defaultSamplesFolder, promptSamplesFolder, samplesFolderConfig } from '../support.ts';
 
 export default class extends BaseGenerator {
-  samplePath;
-
-  constructor(args, options, features) {
-    super(args, options, { queueCommandTasks: true, ...features });
-  }
+  samplePath?: string;
 
   get [BaseGenerator.PROMPTING]() {
-    return this.asPromptingTaskGroup({
+    return this.asAnyTaskGroup({
       promptSamplesFolder,
     });
   }
 
   get [BaseGenerator.WRITING]() {
-    return this.asEndTaskGroup({
+    return this.asAnyTaskGroup({
       async generateCodeWorkspace() {
         this.addSampleToCodeWorkspace(this.samplePath);
       },
@@ -32,9 +28,9 @@ export default class extends BaseGenerator {
   /**
    * Merge value to an existing JSON and write to destination
    */
-  addSampleToCodeWorkspace(samplePath) {
+  addSampleToCodeWorkspace(samplePath?: string) {
     this.editFile(this.getCodeWorkspacePath(), { create: true }, content => {
-      const data = content ? JSON.parse(content) : {};
+      const data: { folders: { path: string }[]; settings: any; launch: any } = content ? JSON.parse(content) : {};
       merge(data, {
         folders: [
           {

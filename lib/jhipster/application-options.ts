@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,25 +17,25 @@
  * limitations under the License.
  */
 
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../core/application-types.ts';
 import type {
   JDLApplicationConfig,
   JDLApplicationOptionType,
   JDLApplicationOptionTypeValue,
   JDLApplicationOptionValue,
-} from '../jdl/core/types/parsing.js';
-import applicationTypes from './application-types.js';
-import authenticationTypes from './authentication-types.js';
-import databaseTypes from './database-types.js';
-import cacheTypes from './cache-types.js';
-import serviceDiscoveryTypes from './service-discovery-types.js';
-import clientFrameworkTypes from './client-framework-types.js';
-import buildToolTypes from './build-tool-types.js';
-import searchEngineTypes from './search-engine-types.js';
-import testFrameworkTypes from './test-framework-types.js';
-import websocketTypes from './websocket-types.js';
-import { builtInConfigPropsValidations } from './jdl-validator-definition.js';
+} from '../jdl/core/types/parsing.ts';
 
-const { GATEWAY, MONOLITH, MICROSERVICE } = applicationTypes;
+import authenticationTypes from './authentication-types.ts';
+import buildToolTypes from './build-tool-types.ts';
+import cacheTypes from './cache-types.ts';
+import clientFrameworkTypes from './client-framework-types.ts';
+import databaseTypes from './database-types.ts';
+import { builtInConfigPropsValidations } from './jdl-validator-definition.ts';
+import searchEngineTypes from './search-engine-types.ts';
+import serviceDiscoveryTypes from './service-discovery-types.ts';
+import testFrameworkTypes from './test-framework-types.ts';
+import websocketTypes from './websocket-types.ts';
+
 const { CASSANDRA, COUCHBASE, MARIADB, MONGODB, MSSQL, MYSQL, NEO4J, ORACLE, POSTGRESQL, SQL, H2_DISK, H2_MEMORY } = databaseTypes;
 
 const NO_DATABASE = databaseTypes.NO;
@@ -76,7 +76,6 @@ const optionNames = {
   BUILD_TOOL: 'buildTool',
   CACHE_PROVIDER: 'cacheProvider',
   CLIENT_FRAMEWORK: 'clientFramework',
-  CLIENT_PACKAGE_MANAGER: 'clientPackageManager',
   CLIENT_THEME: 'clientTheme',
   CLIENT_THEME_VARIANT: 'clientThemeVariant',
   WITH_ADMIN_UI: 'withAdminUi',
@@ -84,7 +83,6 @@ const optionNames = {
   DATABASE_TYPE: 'databaseType',
   DEV_DATABASE_TYPE: 'devDatabaseType',
   DTO_SUFFIX: 'dtoSuffix',
-  EMBEDDABLE_LAUNCH_SCRIPT: 'embeddableLaunchScript',
   ENABLE_HIBERNATE_CACHE: 'enableHibernateCache',
   ENABLE_SWAGGER_CODEGEN: 'enableSwaggerCodegen',
   ENABLE_TRANSLATION: 'enableTranslation',
@@ -100,7 +98,7 @@ const optionNames = {
   MICROFRONTEND: 'microfrontend',
   MICROFRONTENDS: 'microfrontends',
   NATIVE_LANGUAGE: 'nativeLanguage',
-  NPM: 'npm',
+  NODE_PACKAGE_MANAGER: 'nodePackageManager',
   PACKAGE_NAME: 'packageName',
   PACKAGE_FOLDER: 'packageFolder',
   PROD_DATABASE_TYPE: 'prodDatabaseType',
@@ -116,16 +114,16 @@ const optionNames = {
   SKIP_USER_MANAGEMENT: 'skipUserManagement',
   TEST_FRAMEWORKS: 'testFrameworks',
   WEBSOCKET: 'websocket',
-  ENABLE_GRADLE_ENTERPRISE: 'enableGradleEnterprise',
-  GRADLE_ENTERPRISE_HOST: 'gradleEnterpriseHost',
-};
+  ENABLE_GRADLE_DEVELOCITY: 'enableGradleDevelocity',
+  GRADLE_DEVELOCITY_HOST: 'gradleDevelocityHost',
+} as const;
 
-export const jhipsterOptionValues: Record<string, JDLApplicationOptionValue> = {
+export const jhipsterOptionValues = {
   // TODO refactor it mixes default values (e.g. BaseName=Jhipster) and element list (e.g. application types)
   [optionNames.APPLICATION_TYPE]: {
-    [MONOLITH]: MONOLITH,
-    [MICROSERVICE]: MICROSERVICE,
-    [GATEWAY]: GATEWAY,
+    [APPLICATION_TYPE_MONOLITH]: APPLICATION_TYPE_MONOLITH,
+    [APPLICATION_TYPE_MICROSERVICE]: APPLICATION_TYPE_MICROSERVICE,
+    [APPLICATION_TYPE_GATEWAY]: APPLICATION_TYPE_GATEWAY,
   },
   [optionNames.AUTHENTICATION_TYPE]: {
     [JWT]: JWT,
@@ -155,9 +153,6 @@ export const jhipsterOptionValues: Record<string, JDLApplicationOptionValue> = {
     [SVELTE]: SVELTE,
     [NO]: NO,
   },
-  [optionNames.CLIENT_PACKAGE_MANAGER]: {
-    npm: 'npm',
-  },
   [optionNames.CLIENT_THEME]: 'none',
   [optionNames.DATABASE_TYPE]: {
     [SQL]: SQL,
@@ -178,7 +173,6 @@ export const jhipsterOptionValues: Record<string, JDLApplicationOptionValue> = {
     [MSSQL]: MSSQL,
   },
   [optionNames.DTO_SUFFIX]: 'DTO',
-  [optionNames.EMBEDDABLE_LAUNCH_SCRIPT]: true,
   [optionNames.ENABLE_HIBERNATE_CACHE]: true,
   [optionNames.ENABLE_SWAGGER_CODEGEN]: false,
   [optionNames.ENABLE_TRANSLATION]: true,
@@ -192,8 +186,9 @@ export const jhipsterOptionValues: Record<string, JDLApplicationOptionValue> = {
   [optionNames.LANGUAGES]: [],
   [optionNames.MICROFRONTEND]: false,
   [optionNames.MICROFRONTENDS]: [],
-  [optionNames.NPM]: true,
-  [optionNames.PACKAGE_FOLDER]: 'com/mycompany/myapp',
+  [optionNames.NODE_PACKAGE_MANAGER]: {
+    npm: 'npm',
+  },
   [optionNames.PACKAGE_NAME]: 'com.mycompany.myapp',
   [optionNames.PROD_DATABASE_TYPE]: {
     [MYSQL]: MYSQL,
@@ -231,9 +226,9 @@ export const jhipsterOptionValues: Record<string, JDLApplicationOptionValue> = {
     no: NO_WEBSOCKET,
   },
   [optionNames.WITH_ADMIN_UI]: true,
-  [optionNames.ENABLE_GRADLE_ENTERPRISE]: false,
-  [optionNames.GRADLE_ENTERPRISE_HOST]: '',
-};
+  [optionNames.ENABLE_GRADLE_DEVELOCITY]: false,
+  [optionNames.GRADLE_DEVELOCITY_HOST]: '',
+} as const satisfies Record<string, JDLApplicationOptionValue>;
 
 export const jhipsterOptionTypes: Record<string, JDLApplicationOptionType> = {
   [optionNames.APPLICATION_TYPE]: { type: ApplicationOptionTypes.STRING },
@@ -244,14 +239,12 @@ export const jhipsterOptionTypes: Record<string, JDLApplicationOptionType> = {
   [optionNames.BUILD_TOOL]: { type: ApplicationOptionTypes.STRING },
   [optionNames.CACHE_PROVIDER]: { type: ApplicationOptionTypes.STRING },
   [optionNames.CLIENT_FRAMEWORK]: { type: ApplicationOptionTypes.STRING },
-  [optionNames.CLIENT_PACKAGE_MANAGER]: { type: ApplicationOptionTypes.STRING },
   [optionNames.CLIENT_THEME]: { type: ApplicationOptionTypes.STRING },
   [optionNames.CLIENT_THEME_VARIANT]: { type: ApplicationOptionTypes.STRING },
   [optionNames.CREATION_TIMESTAMP]: { type: ApplicationOptionTypes.INTEGER },
   [optionNames.DATABASE_TYPE]: { type: ApplicationOptionTypes.STRING },
   [optionNames.DEV_DATABASE_TYPE]: { type: ApplicationOptionTypes.STRING },
   [optionNames.DTO_SUFFIX]: { type: ApplicationOptionTypes.STRING },
-  [optionNames.EMBEDDABLE_LAUNCH_SCRIPT]: { type: ApplicationOptionTypes.BOOLEAN },
   [optionNames.ENABLE_HIBERNATE_CACHE]: { type: ApplicationOptionTypes.BOOLEAN },
   [optionNames.ENABLE_SWAGGER_CODEGEN]: { type: ApplicationOptionTypes.BOOLEAN },
   [optionNames.ENABLE_TRANSLATION]: { type: ApplicationOptionTypes.BOOLEAN },
@@ -267,7 +260,7 @@ export const jhipsterOptionTypes: Record<string, JDLApplicationOptionType> = {
   [optionNames.MICROFRONTEND]: { type: ApplicationOptionTypes.BOOLEAN },
   [optionNames.MICROFRONTENDS]: { type: ApplicationOptionTypes.LIST },
   [optionNames.NATIVE_LANGUAGE]: { type: ApplicationOptionTypes.STRING },
-  [optionNames.NPM]: { type: ApplicationOptionTypes.BOOLEAN },
+  [optionNames.NODE_PACKAGE_MANAGER]: { type: ApplicationOptionTypes.STRING },
   [optionNames.PACKAGE_NAME]: { type: ApplicationOptionTypes.STRING },
   [optionNames.PACKAGE_FOLDER]: { type: ApplicationOptionTypes.STRING },
   [optionNames.PROD_DATABASE_TYPE]: { type: ApplicationOptionTypes.STRING },
@@ -284,15 +277,15 @@ export const jhipsterOptionTypes: Record<string, JDLApplicationOptionType> = {
   [optionNames.TEST_FRAMEWORKS]: { type: ApplicationOptionTypes.LIST },
   [optionNames.WEBSOCKET]: { type: ApplicationOptionTypes.STRING },
   [optionNames.WITH_ADMIN_UI]: { type: ApplicationOptionTypes.BOOLEAN },
-  [optionNames.ENABLE_GRADLE_ENTERPRISE]: { type: ApplicationOptionTypes.BOOLEAN },
-  [optionNames.GRADLE_ENTERPRISE_HOST]: { type: ApplicationOptionTypes.STRING },
+  [optionNames.ENABLE_GRADLE_DEVELOCITY]: { type: ApplicationOptionTypes.BOOLEAN },
+  [optionNames.GRADLE_DEVELOCITY_HOST]: { type: ApplicationOptionTypes.STRING },
 };
 
 export const jhipsterQuotedOptionNames: string[] = [
   optionNames.JHIPSTER_VERSION,
   optionNames.REMEMBER_ME_KEY,
   optionNames.JWT_SECRET_KEY,
-  optionNames.GRADLE_ENTERPRISE_HOST,
+  optionNames.GRADLE_DEVELOCITY_HOST,
 ];
 
 export const builtInJDLApplicationConfig: JDLApplicationConfig = {
@@ -304,10 +297,9 @@ export const builtInJDLApplicationConfig: JDLApplicationConfig = {
   tokenConfigs: [],
 };
 
-const OptionNames = optionNames;
-const OptionValues = jhipsterOptionValues;
+export { optionNames as OptionNames };
 export default {
-  OptionNames,
-  OptionValues,
+  OptionNames: optionNames,
+  OptionValues: jhipsterOptionValues,
   QuotedOptionNames: jhipsterQuotedOptionNames,
 };

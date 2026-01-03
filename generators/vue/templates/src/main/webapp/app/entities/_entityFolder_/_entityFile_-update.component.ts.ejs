@@ -16,7 +16,7 @@ import { useAlertService } from '@/shared/alert/alert.service';
     .values(relationshipsByOtherEntity)
     .map(relationships => relationships.filter(rel => rel.persistableRelationship))
     .filter(relationships => relationships.length > 0);
-  const relationshipsContainManyToOne = relationships.some(rel => !rel.otherEntityIsEmbedded && rel.collection && rel.persistableRelationship);
+  const relationshipsContainManyToOne = relationships.some(rel => !rel.otherEntity.embedded && rel.collection && rel.persistableRelationship);
 _%>
 
 <%_ for (const [relationship] of Object.values(allRelationshipsThatNeedSelectOptions)) { _%>
@@ -24,7 +24,7 @@ _%>
 import UserService from '@/entities/user/user.service';
   <%_ } else if (relationship.otherEntity.entityAngularName !== entityAngularName) { _%>
 import <%= relationship.otherEntity.entityAngularName %>Service from '@/entities/<%= relationship.otherEntity.entityClientRootFolder %><%= relationship.otherEntity.entityFolderName %>/<%= relationship.otherEntity.entityFileName %>.service';
-import { type I<%= relationship.otherEntity.entityAngularName %> } from '@/shared/model/<%= relationship.otherEntityModelName %>.model';
+import { type I<%= relationship.otherEntity.entityAngularName %> } from '@/shared/model/<%= relationship.otherEntity.entityModelFileName %>.model';
   <%_ } _%>
 <%_ } _%>
 import { type I<%= entityAngularName %>, <%= entityAngularName %> } from '@/shared/model/<%= entityModelFileName %>.model';
@@ -35,7 +35,6 @@ import { <%- importedType %> } from '<%- importedPath %>';
 <%_ }); _%>
 
 export default defineComponent({
-  compatConfig: { MODE: 3 },
   name: '<%= entityAngularName %>Update',
   setup() {
     const <%= entityInstance %>Service = inject('<%= entityInstance %>Service', () => new <%= entityAngularName %>Service());

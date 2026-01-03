@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,31 +17,75 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
+
 import chalk from 'chalk';
 import { upperFirst } from 'lodash-es';
-
 import type { Storage } from 'yeoman-generator';
-import BaseApplicationGenerator from '../base-application/index.js';
-import { JHIPSTER_CONFIG_DIR } from '../generator-constants.js';
-import { applicationTypes, reservedKeywords } from '../../lib/jhipster/index.js';
-import { GENERATOR_ENTITIES } from '../generator-list.js';
-import { getDBTypeFromDBValue, hibernateSnakeCase } from '../server/support/index.js';
-import type { Entity } from '../../lib/types/application/entity.js';
-import prompts from './prompts.js';
 
-const { GATEWAY, MICROSERVICE } = applicationTypes;
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE } from '../../lib/core/application-types.ts';
+import { reservedKeywords } from '../../lib/jhipster/index.ts';
+import type { Features } from '../base/types.ts';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { JHIPSTER_CONFIG_DIR } from '../generator-constants.ts';
+import { getDBTypeFromDBValue, hibernateSnakeCase } from '../server/support/index.ts';
+
+import {
+  askForDTO,
+  askForFields,
+  askForFieldsToRemove,
+  askForFiltering,
+  askForMicroserviceJson,
+  askForPagination,
+  askForReadOnly,
+  askForRelationsToRemove,
+  askForRelationships,
+  askForService,
+  askForUpdate,
+} from './prompts.ts';
+import type {
+  Application as EntityApplication,
+  Config as EntityConfig,
+  Entity as EntityEntity,
+  Options as EntityOptions,
+} from './types.ts';
+
 const { isReservedClassName } = reservedKeywords;
 
-export default class EntityGenerator extends BaseApplicationGenerator {
+export default class EntityGenerator extends BaseApplicationGenerator<EntityEntity, EntityApplication, EntityConfig, EntityOptions> {
   name!: string;
   application: any = {};
+  microserviceConfig?: any;
   entityStorage!: Storage;
-  entityConfig!: Entity;
-  entityData!: { name: string; filename: string; configExisted: any; entityExisted: boolean; configurationFileExists: boolean };
+  entityConfig!: EntityEntity;
+  entityData!: {
+    name: string;
+    filename: string;
+    configExisted: boolean;
+    entityExisted: boolean;
+    configurationFileExists: boolean;
 
-  constructor(args, options, features) {
+    useMicroserviceJson?: boolean;
+    skipUiGrouping?: boolean;
+    useConfigurationFile?: boolean;
+    microserviceName?: string;
+    microserviceFileName?: string;
+    microservicePath?: string;
+    clientRootFolder?: string;
+    databaseType?: string;
+    skipClient?: boolean;
+    skipServer?: boolean;
+    skipDbChangelog?: boolean;
+    updateEntity?: 'add' | 'remove' | 'none' | 'regenerate';
+    regenerate?: boolean;
+    clientFramework?: string;
+    reactive?: boolean;
+    enums?: string[];
+    existingEnum?: boolean;
+  };
+
+  constructor(args?: string[], options?: EntityOptions, features?: Features) {
     super(args, options, { unique: 'argument', ...features });
   }
 
@@ -52,7 +95,7 @@ export default class EntityGenerator extends BaseApplicationGenerator {
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('app');
     }
   }
 
@@ -62,7 +105,7 @@ export default class EntityGenerator extends BaseApplicationGenerator {
       parseOptions() {
         const name = upperFirst(this.name).replace('.json', '');
         this.entityStorage = this.getEntityConfig(name, true)!;
-        this.entityConfig = this.entityStorage.createProxy() as Entity;
+        this.entityConfig = this.entityStorage.createProxy() as EntityEntity;
 
         const configExisted = this.entityStorage.existed;
         const filename = path.join(JHIPSTER_CONFIG_DIR, `${name}.json`);
@@ -77,7 +120,7 @@ export default class EntityGenerator extends BaseApplicationGenerator {
           configurationFileExists: this.fs.exists(this.destinationPath(filename)),
         };
 
-        this._setupEntityOptions(this, this, this.entityData);
+        this._setupEntityOptions();
       },
 
       loadOptions() {
@@ -85,7 +128,6 @@ export default class EntityGenerator extends BaseApplicationGenerator {
           this.entityConfig.databaseType = getDBTypeFromDBValue(this.options.db);
           if (this.entityConfig.databaseType === 'sql') {
             this.entityConfig.prodDatabaseType = this.options.db;
-            this.entityConfig.devDatabaseType = this.options.db;
           }
         }
 
@@ -109,7 +151,7 @@ export default class EntityGenerator extends BaseApplicationGenerator {
   get prompting() {
     return this.asPromptingTaskGroup({
       /* Use need microservice path to load the entity file */
-      askForMicroserviceJson: prompts.askForMicroserviceJson,
+      askForMicroserviceJson,
     });
   }
 
@@ -117,10 +159,13 @@ export default class EntityGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.prompting);
   }
 
-  get loading() {
-    return this.asLoadingTaskGroup({
-      isBuiltInEntity() {
-        if (this.isBuiltInUser(this.entityData.name) || this.isBuiltInAuthority(this.entityData.name)) {
+  get postPreparing() {
+    return this.asPostPreparingTaskGroup({
+      isBuiltInEntity({ application }) {
+        if (
+          (application.generateBuiltInUserEntity && this.entityData.name.toLowerCase() === 'user)') ||
+          (application.generateBuiltInAuthorityEntity && this.entityData.name.toLowerCase() === 'authority')
+        ) {
           throw new Error(`Is not possible to override built in ${this.entityData.name}`);
         }
       },
@@ -128,23 +173,23 @@ export default class EntityGenerator extends BaseApplicationGenerator {
       setupMicroServiceEntity({ application }) {
         const context = this.entityData;
 
-        if (application.applicationType === MICROSERVICE) {
-          context.microserviceName = this.entityConfig.microserviceName = this.jhipsterConfig.baseName;
+        if (application.applicationType === APPLICATION_TYPE_MICROSERVICE) {
+          context.microserviceName = this.entityConfig.microserviceName = this.jhipsterConfig.baseName!;
           if (!this.entityConfig.clientRootFolder) {
             context.clientRootFolder = this.entityConfig.clientRootFolder = this.entityConfig.microserviceName;
           }
-        } else if (application.applicationType === GATEWAY) {
+        } else if (application.applicationType === APPLICATION_TYPE_GATEWAY) {
           // If microservicePath is set we are loading the entity from the microservice side.
           context.useMicroserviceJson = !!this.entityConfig.microservicePath;
           if (context.useMicroserviceJson) {
-            context.microserviceFileName = this.destinationPath(this.entityConfig.microservicePath, context.filename);
+            context.microserviceFileName = this.destinationPath(this.entityConfig.microservicePath!, context.filename);
             context.useConfigurationFile = true;
 
             this.log.verboseInfo(`
 The entity ${context.name} is being updated.
 `);
             try {
-              // We are generating a entity from a microservice.
+              // We are generating an entity from a microservice.
               // Load it directly into our entity configuration.
               this.microserviceConfig = this.fs.readJSON(context.microserviceFileName);
               if (this.microserviceConfig) {
@@ -178,10 +223,8 @@ The entity ${context.name} is being updated.
       bootstrapConfig({ application }) {
         const context = this.entityData;
         const entityName = context.name;
-        if ([MICROSERVICE, GATEWAY].includes(application.applicationType)) {
-          if (this.entityConfig.databaseType === undefined) {
-            this.entityConfig.databaseType = context.databaseType;
-          }
+        if ([APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_GATEWAY].includes(application.applicationType as any)) {
+          this.entityConfig.databaseType ??= context.databaseType!;
         }
         context.useConfigurationFile = context.configurationFileExists || context.useConfigurationFile;
         if (context.configurationFileExists) {
@@ -201,34 +244,26 @@ The entity ${entityName} is being created.
 `);
         }
       },
-    });
-  }
-
-  get [BaseApplicationGenerator.LOADING]() {
-    return this.delegateTasksToBlueprint(() => this.loading);
-  }
-
-  get postPreparing() {
-    return this.asPostPreparingTaskGroup({
       /* ask question to user if s/he wants to update entity */
-      askForUpdate: prompts.askForUpdate,
-      askForFields: prompts.askForFields,
-      askForFieldsToRemove: prompts.askForFieldsToRemove,
-      askForRelationships: prompts.askForRelationships,
-      askForRelationsToRemove: prompts.askForRelationsToRemove,
-      askForService: prompts.askForService,
-      askForDTO: prompts.askForDTO,
-      askForFiltering: prompts.askForFiltering,
-      askForReadOnly: prompts.askForReadOnly,
-      askForPagination: prompts.askForPagination,
+      askForUpdate,
+      askForFields,
+      askForFieldsToRemove,
+      askForRelationships,
+      askForRelationsToRemove,
+      askForService,
+      askForDTO,
+      askForFiltering,
+      askForReadOnly,
+      askForPagination,
       async composeEntities() {
+        if (!this.jhipsterConfig.entities) {
+          this.jhipsterConfig.entities = [];
+        }
+        this.jhipsterConfig.entities = [...this.jhipsterConfig.entities, this.entityData.name];
+
         // We need to compose with others entities to update relationships.
-        await this.composeWithJHipster(GENERATOR_ENTITIES, {
+        await this.composeWithJHipster('entities', {
           generatorArgs: this.options.singleEntity ? [this.entityData.name] : [],
-          generatorOptions: {
-            skipDbChangelog: this.options.skipDbChangelog,
-            skipInstall: this.options.skipInstall,
-          },
         });
       },
     });
@@ -242,7 +277,7 @@ The entity ${entityName} is being created.
   get end() {
     return this.asEndTaskGroup({
       end() {
-        this.log.log(chalk.bold.green(`Entity ${this.entityData.entityNameCapitalized} generated successfully.`));
+        this.log.log(chalk.bold.green(`Entity ${this.entityData.name} generated successfully.`));
       },
     });
   }
@@ -257,38 +292,35 @@ The entity ${entityName} is being created.
    * all variables should be set to dest,
    * all variables should be referred from context,
    * all methods should be called on generator,
-   * @param {any} generator - generator instance
-   * @param {any} context - context to use default is generator instance
-   * @param {any} dest - destination context to use default is context
    */
-  _setupEntityOptions(generator, context = generator, dest = context) {
-    dest.regenerate = context.options.regenerate;
+  _setupEntityOptions() {
+    this.entityData.regenerate = this.options.regenerate;
 
-    if (context.options.skipCheckLengthOfIdentifier !== undefined) {
-      this.entityConfig.skipCheckLengthOfIdentifier = context.options.skipCheckLengthOfIdentifier;
+    if (this.options.skipCheckLengthOfIdentifier !== undefined) {
+      this.entityConfig.skipCheckLengthOfIdentifier = this.options.skipCheckLengthOfIdentifier;
     }
-    if (context.options.angularSuffix !== undefined) {
-      this.entityConfig.angularJSSuffix = context.options.angularSuffix;
+    if (this.options.angularSuffix !== undefined) {
+      this.entityConfig.angularJSSuffix = this.options.angularSuffix;
     }
-    if (context.options.skipUiGrouping !== undefined) {
-      this.entityConfig.skipUiGrouping = context.options.skipUiGrouping;
+    if (this.options.skipUiGrouping !== undefined) {
+      this.entityConfig.skipUiGrouping = this.options.skipUiGrouping;
     }
-    if (context.options.clientRootFolder !== undefined) {
+    if (this.options.clientRootFolder !== undefined) {
       if (this.entityConfig.skipUiGrouping) {
-        this.warn('Ignoring client-root-folder due to skip-ui-grouping configuration');
+        this.log.warn('Ignoring client-root-folder due to skip-ui-grouping configuration');
       } else {
-        this.entityConfig.clientRootFolder = context.options.clientRootFolder;
+        this.entityConfig.clientRootFolder = this.options.clientRootFolder;
       }
     }
-    if (context.options.skipClient !== undefined) {
-      this.entityConfig.skipClient = context.options.skipClient;
+    if (this.options.skipClient !== undefined) {
+      this.entityConfig.skipClient = this.options.skipClient;
     }
-    if (context.options.skipServer !== undefined) {
-      this.entityConfig.skipServer = context.options.skipServer;
+    if (this.options.skipServer !== undefined) {
+      this.entityConfig.skipServer = this.options.skipServer;
     }
 
-    if (context.options.tableName) {
-      this.entityConfig.entityTableName = hibernateSnakeCase(context.options.tableName);
+    if (this.options.tableName) {
+      this.entityConfig.entityTableName = hibernateSnakeCase(this.options.tableName);
     }
   }
 
@@ -297,62 +329,22 @@ The entity ${entityName} is being created.
    * Validate the entityName
    * @return {true|string} true for a valid value or error message.
    */
-  _validateEntityName(entityName) {
+  _validateEntityName(entityName: string): true | string {
     if (!/^([a-zA-Z0-9]*)$/.test(entityName)) {
       return 'The entity name must be alphanumeric only';
     }
-    if (/^[0-9].*$/.test(entityName)) {
+    if (/^\d.*$/.test(entityName)) {
       return 'The entity name cannot start with a number';
     }
     if (entityName === '') {
       return 'The entity name cannot be empty';
     }
-    if (entityName.indexOf('Detail', entityName.length - 'Detail'.length) !== -1) {
+    if (entityName.endsWith('Detail')) {
       return "The entity name cannot end with 'Detail'";
     }
     if (!this.entityData.skipServer && isReservedClassName(entityName)) {
       return 'The entity name cannot contain a Java or JHipster reserved keyword';
     }
     return true;
-  }
-
-  /**
-   * @private
-   * Verify if the entity is a built-in User.
-   * @param {String} entityName - Entity name to verify.
-   * @return {boolean} true if the entity is User and is built-in.
-   */
-  isBuiltInUser(entityName) {
-    return this.generateBuiltInUserEntity && this.isUserEntity(entityName);
-  }
-
-  /**
-   * @private
-   * Verify if the entity is a User entity.
-   * @param {String} entityName - Entity name to verify.
-   * @return {boolean} true if the entity is User.
-   */
-  isUserEntity(entityName) {
-    return upperFirst(entityName) === 'User';
-  }
-
-  /**
-   * @private
-   * Verify if the entity is a Authority entity.
-   * @param {String} entityName - Entity name to verify.
-   * @return {boolean} true if the entity is Authority.
-   */
-  isAuthorityEntity(entityName) {
-    return upperFirst(entityName) === 'Authority';
-  }
-
-  /**
-   * @private
-   * Verify if the entity is a built-in Authority.
-   * @param {String} entityName - Entity name to verify.
-   * @return {boolean} true if the entity is Authority and is built-in.
-   */
-  isBuiltInAuthority(entityName) {
-    return this.generateBuiltInAuthorityEntity && this.isAuthorityEntity(entityName);
   }
 }

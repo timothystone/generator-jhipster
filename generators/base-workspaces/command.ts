@@ -1,7 +1,7 @@
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
 
-const command: JHipsterCommandDefinition = {
-  options: {},
-};
+const command = {
+  configs: {},
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

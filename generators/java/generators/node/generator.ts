@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,35 +18,22 @@
  */
 import chalk from 'chalk';
 import type { ExecaError } from 'execa';
-import BaseApplicationGenerator from '../../../base-application/index.js';
 
-export default class NodeGenerator extends BaseApplicationGenerator {
+import { isWin32 } from '../../../base-core/support/os.ts';
+import { GRADLE_BUILD_SRC_MAIN_DIR } from '../../../generator-constants.ts';
+import { JavaApplicationGenerator } from '../../generator.ts';
+
+// TODO adjust type
+export default class NodeGenerator extends JavaApplicationGenerator {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
-      await this.dependsOnJHipster('jhipster:java:build-tool');
+      await this.dependsOnBootstrap('java');
+      await this.dependsOnJHipster('jhipster:java-simple-application:build-tool');
     }
-  }
-
-  get composing() {
-    return this.asComposingTaskGroup({
-      async compose() {
-        const { buildTool } = this.jhipsterConfigWithDefaults;
-        if (buildTool === 'maven') {
-          await this.composeWithJHipster('jhipster:maven:frontend-plugin');
-        } else if (buildTool === 'gradle') {
-          await this.composeWithJHipster('jhipster:gradle:node-gradle');
-        }
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.COMPOSING]() {
-    return this.delegateTasksToBlueprint(() => this.composing);
   }
 
   get preparing() {
@@ -63,7 +50,7 @@ export default class NodeGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING]() {
+  get [JavaApplicationGenerator.PREPARING]() {
     return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
@@ -84,7 +71,7 @@ export default class NodeGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.POST_PREPARING]() {
+  get [JavaApplicationGenerator.POST_PREPARING]() {
     return this.delegateTasksToBlueprint(() => this.postPreparing);
   }
 
@@ -97,6 +84,10 @@ export default class NodeGenerator extends BaseApplicationGenerator {
               condition: (ctx: any) => ctx.useNpmWrapper,
               templates: ['npmw', 'npmw.cmd'],
             },
+            {
+              condition: () => application.buildToolGradle,
+              templates: [`${GRADLE_BUILD_SRC_MAIN_DIR}/jhipster.node-gradle-conventions.gradle`],
+            },
           ],
           context: application,
         });
@@ -104,7 +95,7 @@ export default class NodeGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING]() {
+  get [JavaApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
@@ -112,14 +103,18 @@ export default class NodeGenerator extends BaseApplicationGenerator {
     this.setFeatures({
       customInstallTask: async (preferredPm, defaultInstallTask) => {
         const buildTool = this.jhipsterConfigWithDefaults.buildTool;
-        if ((preferredPm && preferredPm !== 'npm') || this.jhipsterConfig.skipClient || (buildTool !== 'gradle' && buildTool !== 'maven')) {
+        if (
+          (preferredPm && preferredPm !== 'npm') ||
+          (this.jhipsterConfig as any).skipClient ||
+          (buildTool !== 'gradle' && buildTool !== 'maven')
+        ) {
           await defaultInstallTask();
           return;
         }
 
-        const npmCommand = process.platform === 'win32' ? 'npmw' : './npmw';
+        const npmCommand = isWin32 ? 'npmw' : './npmw';
         try {
-          await this.spawn(npmCommand, ['install'], { preferLocal: true });
+          await this.spawn(npmCommand, ['install'], { preferLocal: true, stdio: 'inherit' });
         } catch (error: unknown) {
           this.log.error(
             chalk.red(`Error executing '${npmCommand} install', please execute it yourself. (${(error as ExecaError).shortMessage})`),
@@ -127,5 +122,236 @@ export default class NodeGenerator extends BaseApplicationGenerator {
         }
       },
     });
+  }
+
+  get postWriting() {
+    return this.asPostWritingTaskGroup({
+      nodeGradlePlugin({ application, source }) {
+        if (!application.buildToolGradle) return;
+        source.addGradlePlugin!({ id: 'jhipster.node-gradle-conventions' });
+        source.addGradleBuildSrcDependencyCatalogLibraries!([
+          {
+            libraryName: 'node-gradle',
+            module: 'com.github.node-gradle:gradle-node-plugin',
+            version: application.javaDependencies!['node-gradle'],
+            scope: 'implementation',
+          },
+        ]);
+
+        source.addGradleProperty!({ property: 'nodeInstall', comment: 'Install and use a local version of node and npm.' });
+      },
+      frontendMavenPlugin({ application, source }) {
+        if (!application.buildToolMaven) return;
+        const { javaDependencies, nodeDependencies, nodeVersion } = application;
+
+        source.addMavenDefinition!({
+          properties: [
+            { property: 'node.version', value: `v${nodeVersion}` },
+            { property: 'npm.version', value: nodeDependencies.npm },
+            {
+              property: 'frontend-maven-plugin.version',
+              value: javaDependencies!['frontend-maven-plugin'],
+            },
+            {
+              property: 'checksum-maven-plugin.version',
+              value: javaDependencies!['checksum-maven-plugin'],
+            },
+            {
+              property: 'maven-antrun-plugin.version',
+              value: javaDependencies!['maven-antrun-plugin'],
+            },
+          ],
+          pluginManagement: [
+            {
+              groupId: 'com.github.eirslett',
+              artifactId: 'frontend-maven-plugin',
+              // eslint-disable-next-line no-template-curly-in-string
+              version: '${frontend-maven-plugin.version}',
+              additionalContent: `<configuration>
+    <installDirectory>target</installDirectory>
+    <nodeVersion>\${node.version}</nodeVersion>
+    <npmVersion>\${npm.version}</npmVersion>
+</configuration>`,
+            },
+            {
+              groupId: 'net.nicoulaj.maven.plugins',
+              artifactId: 'checksum-maven-plugin',
+              // eslint-disable-next-line no-template-curly-in-string
+              version: '${checksum-maven-plugin.version}',
+            },
+            {
+              groupId: 'org.apache.maven.plugins',
+              artifactId: 'maven-antrun-plugin',
+              // eslint-disable-next-line no-template-curly-in-string
+              version: '${maven-antrun-plugin.version}',
+            },
+          ],
+          plugins: [
+            {
+              inProfile: 'webapp',
+              groupId: 'net.nicoulaj.maven.plugins',
+              artifactId: 'checksum-maven-plugin',
+              additionalContent: `
+                  <executions>
+                      <execution>
+                          <id>create-pre-compiled-webapp-checksum</id>
+                          <goals>
+                              <goal>files</goal>
+                          </goals>
+                          <phase>generate-resources</phase>
+                      </execution>
+                      <execution>
+                          <id>create-compiled-webapp-checksum</id>
+                          <goals>
+                              <goal>files</goal>
+                          </goals>
+                          <phase>compile</phase>
+                          <configuration>
+                              <csvSummaryFile>checksums.csv.old</csvSummaryFile>
+                          </configuration>
+                      </execution>
+                  </executions>
+                  <configuration>
+                      <fileSets>
+                          <fileSet>
+                              <directory>\${project.basedir}</directory>
+                              <includes>${application.javaNodeBuildPaths
+                                ?.map(
+                                  file => `
+                                  <include>${file.endsWith('/') ? `${file}**/*.*` : file}</include>`,
+                                )
+                                .join('')}
+                              </includes>
+                              <excludes>
+                                  <exclude>**/app/**/service-worker.js</exclude>
+                                  <exclude>**/app/**/vendor.css</exclude>
+                              </excludes>
+                          </fileSet>
+                      </fileSets>
+                      <failOnError>false</failOnError>
+                      <failIfNoFiles>false</failIfNoFiles>
+                      <individualFiles>false</individualFiles>
+                      <algorithms>
+                          <algorithm>SHA-1</algorithm>
+                      </algorithms>
+                      <includeRelativePath>true</includeRelativePath>
+                      <quiet>true</quiet>
+                  </configuration>`,
+            },
+            {
+              inProfile: 'webapp',
+              groupId: 'org.apache.maven.plugins',
+              artifactId: 'maven-antrun-plugin',
+              additionalContent: `
+                  <executions>
+                      <execution>
+                          <id>eval-frontend-checksum</id>
+                          <phase>generate-resources</phase>
+                          <goals>
+                              <goal>run</goal>
+                          </goals>
+                          <configuration>
+                              <target>
+                                  <condition property="skip.npm" value="true" else="false" >
+                                      <and>
+                                          <available file="checksums.csv" filepath="\${project.build.directory}" />
+                                          <available file="checksums.csv.old" filepath="\${project.build.directory}" />
+                                          <filesmatch file1="\${project.build.directory}/checksums.csv" file2="\${project.build.directory}/checksums.csv.old" />
+                                      </and>
+                                  </condition>
+                              </target>
+                              <exportAntProperties>true</exportAntProperties>
+                          </configuration>
+                      </execution>
+                  </executions>
+`,
+            },
+            {
+              inProfile: 'webapp',
+              groupId: 'com.github.eirslett',
+              artifactId: 'frontend-maven-plugin',
+              additionalContent: `
+                  <executions>
+                      <execution>
+                          <id>install-node-and-npm</id>
+                          <goals>
+                              <goal>install-node-and-npm</goal>
+                          </goals>
+                      </execution>
+                      <execution>
+                          <id>npm install</id>
+                          <goals>
+                              <goal>npm</goal>
+                          </goals>
+                      </execution>
+                      <execution>
+                          <id>webapp build dev</id>
+                          <goals>
+                              <goal>npm</goal>
+                          </goals>
+                          <phase>generate-resources</phase>
+                          <configuration>
+                              <arguments>run webapp:build</arguments>
+                              <environmentVariables>
+                                  <APP_VERSION>\${project.version}</APP_VERSION>
+                              </environmentVariables>
+                              <npmInheritsProxyConfigFromMaven>false</npmInheritsProxyConfigFromMaven>
+                          </configuration>
+                      </execution>
+                  </executions>`,
+            },
+            {
+              inProfile: 'prod',
+              groupId: 'com.github.eirslett',
+              artifactId: 'frontend-maven-plugin',
+              additionalContent: `
+                  <executions>
+                      <execution>
+                          <id>install-node-and-npm</id>
+                          <goals>
+                              <goal>install-node-and-npm</goal>
+                          </goals>
+                      </execution>
+                      <execution>
+                          <id>npm install</id>
+                          <goals>
+                              <goal>npm</goal>
+                          </goals>
+                      </execution>
+                      <execution>
+                          <id>webapp build test</id>
+                          <goals>
+                              <goal>npm</goal>
+                          </goals>
+                          <phase>test</phase>
+                          <configuration>
+                              <arguments>run webapp:test</arguments>
+                              <npmInheritsProxyConfigFromMaven>false</npmInheritsProxyConfigFromMaven>
+                          </configuration>
+                      </execution>
+                      <execution>
+                          <id>webapp build prod</id>
+                          <goals>
+                              <goal>npm</goal>
+                          </goals>
+                          <phase>generate-resources</phase>
+                          <configuration>
+                              <arguments>run webapp:prod</arguments>
+                              <environmentVariables>
+                                  <APP_VERSION>\${project.version}</APP_VERSION>
+                              </environmentVariables>
+                              <npmInheritsProxyConfigFromMaven>false</npmInheritsProxyConfigFromMaven>
+                          </configuration>
+                      </execution>
+                  </executions>`,
+            },
+          ],
+        });
+      },
+    });
+  }
+
+  get [JavaApplicationGenerator.POST_WRITING]() {
+    return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 }

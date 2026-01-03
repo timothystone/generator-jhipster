@@ -1,26 +1,23 @@
-import { fileURLToPath } from 'url';
-import { basename, dirname } from 'path';
 import { before, describe, it } from 'esmocha';
-import { basicHelpers, defaultHelpers as helpers, result as runResult } from '../../lib/testing/index.js';
+import { basename } from 'node:path';
 
-import { CLIENT_MAIN_SRC_DIR, SERVER_MAIN_RES_DIR } from '../generator-constants.js';
-import { supportedLanguages } from './support/index.js';
+import { basicHelpers, defaultHelpers as helpers, result as runResult } from '../../lib/testing/index.ts';
+import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { supportedLanguages } from './support/index.ts';
 
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
-const createClientProject = (options?) =>
+const createClientProject = (options?: Parameters<ReturnType<typeof basicHelpers.runJHipster>['withOptions']>[0]) =>
   basicHelpers
     .runJHipster('app')
-    .withMockedGenerators(['jhipster:liquibase'])
+    .withMockedGenerators(['jhipster:server'])
     .withJHipsterConfig()
     .withOptions({
       ...options,
     });
 
-const containsLanguageFiles = languageValue => {
+const containsLanguageFiles = (languageValue: string) => {
   it(`creates expected files for ${languageValue}`, () => {
     runResult.assertFile([
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/activate.json`,
@@ -38,7 +35,7 @@ const containsLanguageFiles = languageValue => {
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/user-management.json`,
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/global.json`,
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/health.json`,
-      `${SERVER_MAIN_RES_DIR}i18n/messages_${languageValue.replace(/-/g, '_').replace(/_[a-z]+$/g, lang => lang.toUpperCase())}.properties`,
+      // `${SERVER_MAIN_RES_DIR}i18n/messages_${languageValue.replace(/-/g, '_').replace(/_[a-z]+$/g, lang => lang.toUpperCase())}.properties`,
     ]);
     runResult.assertNoFile([`${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/gateway.json`]);
   });
@@ -58,7 +55,7 @@ const containsLanguageFiles = languageValue => {
   });
 };
 
-const noLanguageFiles = languageValue => {
+const noLanguageFiles = (languageValue: string) => {
   it(`should not create files for ${languageValue}`, () => {
     runResult.assertNoFile([
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/activate.json`,
@@ -76,7 +73,7 @@ const noLanguageFiles = languageValue => {
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/user-management.json`,
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/global.json`,
       `${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/health.json`,
-      `${SERVER_MAIN_RES_DIR}i18n/messages_${languageValue.replace(/-/g, '_').replace(/_[a-z]+$/g, lang => lang.toUpperCase())}.properties`,
+      // `${SERVER_MAIN_RES_DIR}i18n/messages_${languageValue.replace(/-/g, '_').replace(/_[a-z]+$/g, lang => lang.toUpperCase())}.properties`,
     ]);
     runResult.assertNoFile([`${CLIENT_MAIN_SRC_DIR}i18n/${languageValue}/gateway.json`]);
   });
@@ -85,7 +82,7 @@ const noLanguageFiles = languageValue => {
   });
 };
 
-const containsLanguageInVueStore = languageValue => {
+const containsLanguageInVueStore = (languageValue: string) => {
   it(`add language ${languageValue} into translation-store.ts`, () => {
     const langKey = languageValue.includes('-') ? `'${languageValue}'` : `${languageValue}`;
     runResult.assertFileContent(`${CLIENT_MAIN_SRC_DIR}app/shared/config/languages.ts`, `${langKey}: { name:`);
@@ -168,7 +165,7 @@ describe('generator - languages', () => {
           .runJHipster(generator)
           .withLocalConfig({ enableTranslation: true, nativeLanguage: 'fr', languages: ['fr'] })
           .withOptions({ ignoreNeedlesError: true })
-          .withOptions({ skipPrompts: true, regenerate: true, baseName: 'jhipster' }),
+          .withOptions({ regenerateLanguages: true, baseName: 'jhipster' }),
       );
       containsLanguageFiles('fr');
     });
@@ -219,7 +216,7 @@ describe('generator - languages', () => {
           .runJHipster(generator)
           .withJHipsterConfig({ enableTranslation: true, nativeLanguage: 'fr', languages: ['en', 'fr'] })
           .withOptions({ ignoreNeedlesError: true })
-          .withOptions({ skipPrompts: true, regenerate: true, baseName: 'jhipster' }),
+          .withOptions({ regenerateLanguages: true, baseName: 'jhipster' }),
       );
       it('creates expected configuration values', () => {
         runResult.assertJsonFileContent('.yo-rc.json', {
@@ -317,9 +314,15 @@ describe('generator - languages', () => {
           enableTranslation: true,
           nativeLanguage: 'en',
         });
-        await helpers.runJHipsterInApplication('jhipster:languages').withArguments(['fr', 'de']).withOptions({
-          baseName: 'jhipster',
-        });
+        await helpers
+          .runJHipsterInApplication('jhipster:languages')
+          .withArguments(['fr', 'de'])
+          .withOptions({
+            baseName: 'jhipster',
+          })
+          .withOptions({
+            commandName: 'languages',
+          });
       });
       it('creates expected configuration values', () => {
         runResult.assertJsonFileContent('.yo-rc.json', {

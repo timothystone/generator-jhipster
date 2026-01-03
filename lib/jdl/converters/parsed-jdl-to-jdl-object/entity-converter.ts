@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,10 +18,11 @@
  */
 
 import { lowerFirst } from 'lodash-es';
-import { JDLEntity } from '../../core/models/index.js';
-import { formatComment } from '../../core/utils/format-utils.js';
-import type JDLField from '../../core/models/jdl-field.js';
-import type { ParsedJDLEntity } from '../../core/types/parsed.js';
+
+import { JDLEntity } from '../../core/models/index.ts';
+import type JDLField from '../../core/models/jdl-field.ts';
+import type { ParsedJDLEntity } from '../../core/types/parsed.ts';
+import { formatComment } from '../../core/utils/format-utils.ts';
 
 export default { convertEntities };
 

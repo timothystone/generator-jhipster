@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { Field } from '../../../lib/types/application/field.js';
-import type { Relationship } from '../../../lib/types/application/relationship.js';
-import type { Entity } from '../../base-application/index.js';
+import type { RelationshipWithEntity } from '../../base-application/types.ts';
+import type { Entity as ClientEntity, Field as ClientField, Relationship as ClientRelationship } from '../types.ts';
 
-export const isClientField = (field: Field) => !field.skipClient;
+export const isClientField = (field: ClientField) => !field.skipClient;
 
-export const isClientRelationship = (rel: Relationship) =>
-  !!(rel.skipClient ?? !(rel.persistableRelationship || rel.relationshipEagerLoad || (rel.otherEntity as any)?.jpaMetamodelFiltering));
+export const isClientRelationship = (rel: RelationshipWithEntity<ClientRelationship, ClientEntity>) =>
+  !!(rel.skipClient ?? !(rel.persistableRelationship || rel.relationshipEagerLoad || rel.otherEntity.jpaMetamodelFiltering));
 
 /**
  * Clone entity properties for frontend templates.
  * To be used in writing operations.
  */
-export const filterEntityPropertiesForClient = (entity: Entity): Entity => ({
+export const filterEntityPropertiesForClient = <const E extends ClientEntity>(entity: E): E => ({
   ...entity,
   fields: entity.fields.filter(field => isClientField(field)),
   relationships: entity.relationships.filter(rel => isClientRelationship(rel)),
@@ -38,10 +37,10 @@ export const filterEntityPropertiesForClient = (entity: Entity): Entity => ({
 /**
  * Filter entities for frontend templates.
  */
-export const filterEntitiesForClient = (entities: Entity[]): Entity[] => entities.filter(entity => !entity.skipClient);
+export const filterEntitiesForClient = <const E extends ClientEntity>(entities: E[]): E[] => entities.filter(entity => !entity.skipClient);
 
 /**
  * Filter entities and properties for frontend templates.
  */
-export const filterEntitiesAndPropertiesForClient = (entities: Entity[]): Entity[] =>
+export const filterEntitiesAndPropertiesForClient = <const E extends ClientEntity>(entities: E[]): E[] =>
   entities.filter(entity => !entity.skipClient).map(filterEntityPropertiesForClient);

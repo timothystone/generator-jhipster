@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,12 +18,15 @@
  */
 
 import { beforeEach, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { formatDateForChangelog } from '../../base/support/index.js';
-import BaseGenerator from '../../base/index.js';
-import { getConfigWithDefaults } from '../../../lib/jhipster/index.js';
-import prepareFieldForTemplates, { getEnumValuesWithCustomValues } from './prepare-field.js';
-import prepareEntityForTemplates, { loadRequiredConfigIntoEntity } from './prepare-entity.js';
+
+import { getConfigWithDefaults } from '../../../lib/jhipster/default-application-options.ts';
+import BaseGenerator from '../../base/index.ts';
+import { formatDateForChangelog } from '../../base/support/index.ts';
+
+import prepareEntityForTemplates, { loadRequiredConfigIntoEntity } from './prepare-entity.ts';
+import { getEnumValuesWithCustomValues, prepareCommonFieldForTemplates } from './prepare-field.ts';
 
 const defaultConfig = getConfigWithDefaults();
 
@@ -33,37 +36,17 @@ describe('generator - base-application - support - prepareField', () => {
 
   const defaultEntity = prepareEntityForTemplates(
     loadRequiredConfigIntoEntity({ changelogDate: formatDateForChangelog(new Date()), name: 'Entity' } as any, defaultConfig as any),
-    defaultGenerator,
-    defaultConfig as any,
+    defaultGenerator as BaseGenerator,
   );
 
   describe('prepareFieldForTemplates', () => {
     describe('when called', () => {
       let field: any = { fieldName: 'name', fieldType: 'String' };
       beforeEach(() => {
-        field = prepareFieldForTemplates(defaultEntity, field, defaultGenerator);
+        field = prepareCommonFieldForTemplates(defaultEntity, field, defaultGenerator as any);
       });
-      it('should prepare path and relationshipsPath correctly', () => {
+      it('should prepare path correctly', () => {
         expect(field.path).to.deep.eq(['name']);
-        expect(field.relationshipsPath).to.deep.eq([]);
-      });
-    });
-    describe('with dto != mapstruct and @MapstructExpression', () => {
-      const field = { fieldName: 'name', fieldType: 'String', mapstructExpression: 'java()' };
-      it('should fail', () => {
-        expect(() => prepareFieldForTemplates(defaultEntity, field, defaultGenerator)).to.throw(
-          /^@MapstructExpression requires an Entity with mapstruct dto \[Entity.name\].$/,
-        );
-      });
-    });
-    describe('with dto == mapstruct and @MapstructExpression', () => {
-      let field: any = { fieldName: 'name', fieldType: 'String', mapstructExpression: 'java()' };
-      beforeEach(() => {
-        field = prepareFieldForTemplates({ ...defaultEntity, dto: 'mapstruct' }, field, defaultGenerator);
-      });
-      it('should set field as transient and readonly', () => {
-        expect(field.transient).to.be.true;
-        expect(field.readonly).to.be.true;
       });
     });
   });

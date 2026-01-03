@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,16 +17,17 @@
  * limitations under the License.
  */
 
-import { binaryOptions } from '../built-in-options/index.js';
-import JDLEnums from './jdl-enums.js';
-import JDLRelationships from './jdl-relationships.js';
-import JDLOptions from './jdl-options.js';
-import type JDLEntity from './jdl-entity.js';
-import type JDLRelationship from './jdl-relationship.js';
-import type AbstractJDLOption from './abstract-jdl-option.js';
-import type JDLEnum from './jdl-enum.js';
-import type JDLDeployment from './jdl-deployment.js';
-import type JDLApplication from './jdl-application.js';
+import { binaryOptions } from '../built-in-options/index.ts';
+
+import type AbstractJDLOption from './abstract-jdl-option.ts';
+import type JDLApplication from './jdl-application.ts';
+import type JDLDeployment from './jdl-deployment.ts';
+import type JDLEntity from './jdl-entity.ts';
+import type JDLEnum from './jdl-enum.ts';
+import JDLEnums from './jdl-enums.ts';
+import JDLOptions from './jdl-options.ts';
+import type JDLRelationship from './jdl-relationship.ts';
+import JDLRelationships from './jdl-relationships.ts';
 
 /**
  * The JDL object class, containing applications, entities etc.
@@ -227,11 +228,11 @@ export default class JDLObject {
     this.options.addOption(option);
   }
 
-  getOptionsForName(optionName: string): any[] {
+  getOptionsForName(optionName: string): AbstractJDLOption[] {
     return this.options.getOptionsForName(optionName);
   }
 
-  forEachOption(passedFunction: (option: any) => void) {
+  forEachOption(passedFunction: (option: AbstractJDLOption) => void) {
     if (!passedFunction) {
       return;
     }

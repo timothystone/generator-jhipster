@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,18 +18,21 @@
  */
 
 import { before, describe, expect, it } from 'esmocha';
-import createApplicationConfigurationFromObject from '../models/jdl-application-configuration-factory.js';
-import { applicationOptions } from '../built-in-options/index.js';
-import { getDefaultRuntime } from '../runtime.js';
+
+import applicationOptions from '../../../jhipster/application-options.ts';
+import { createRuntime } from '../runtime.ts';
+
+import createApplicationConfigurationFromObject from './jdl-application-configuration-factory.ts';
+import type JDLApplicationConfiguration from './jdl-application-configuration.ts';
 
 const { OptionNames } = applicationOptions;
 
-const runtime = getDefaultRuntime();
+const runtime = createRuntime();
 
 describe('jdl - JDLApplicationConfigurationFactory', () => {
   describe('createApplicationConfigurationFromObject', () => {
     describe('when passing no configuration', () => {
-      let createdConfiguration;
+      let createdConfiguration: JDLApplicationConfiguration;
 
       before(() => {
         createdConfiguration = createApplicationConfigurationFromObject(undefined, runtime);
@@ -46,7 +49,7 @@ JDLApplicationConfiguration {
     });
     describe('when passing a configuration', () => {
       describe('containing a string option', () => {
-        let createdConfiguration;
+        let createdConfiguration: JDLApplicationConfiguration;
 
         before(() => {
           createdConfiguration = createApplicationConfigurationFromObject(
@@ -73,7 +76,7 @@ JDLApplicationConfiguration {
         });
       });
       describe('containing a integer option', () => {
-        let createdConfiguration;
+        let createdConfiguration: JDLApplicationConfiguration;
 
         before(() => {
           createdConfiguration = createApplicationConfigurationFromObject(
@@ -99,7 +102,7 @@ JDLApplicationConfiguration {
         });
       });
       describe('containing a boolean option', () => {
-        let createdConfiguration;
+        let createdConfiguration: JDLApplicationConfiguration;
 
         before(() => {
           createdConfiguration = createApplicationConfigurationFromObject(
@@ -125,7 +128,7 @@ JDLApplicationConfiguration {
         });
       });
       describe('containing a list-based option', () => {
-        let createdConfiguration;
+        let createdConfiguration: JDLApplicationConfiguration;
 
         before(() => {
           createdConfiguration = createApplicationConfigurationFromObject(

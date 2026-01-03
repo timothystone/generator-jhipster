@@ -1,16 +1,19 @@
 import { before, describe, expect, it } from 'esmocha';
-import { defaultHelpers as helpers, runResult } from './helpers.js';
+
+import type CoreGenerator from '../../generators/base-core/index.ts';
+
+import { defaultHelpers as helpers, runResult } from './helpers.ts';
 
 const DUMMY_NAMESPACE = 'jhipster:dummy';
 
 describe('helpers', () => {
   describe('run defaults', () => {
     before(async () => {
-      await helpers.run(helpers.createDummyGenerator(), { namespace: DUMMY_NAMESPACE });
+      await helpers.run(helpers.createDummyGenerator<typeof CoreGenerator>(), { namespace: DUMMY_NAMESPACE });
     });
     it('should register not jhipster generators namespaces', () => {
       expect(
-        Object.keys((runResult.env as any).store._meta)
+        Object.keys(runResult.env.getGeneratorsMeta())
           .filter(ns => ns !== DUMMY_NAMESPACE)
           .sort(),
       ).toHaveLength(0);
@@ -22,7 +25,7 @@ describe('helpers', () => {
     });
     it('should register jhipster generators namespaces', () => {
       expect(
-        Object.keys((runResult.env as any).store._meta)
+        Object.keys(runResult.env.getGeneratorsMeta())
           .filter(ns => ns !== DUMMY_NAMESPACE)
           .sort(),
       ).toMatchSnapshot();
@@ -30,11 +33,11 @@ describe('helpers', () => {
   });
   describe('run using withJHipsterGenerators', () => {
     before(async () => {
-      await helpers.run(helpers.createDummyGenerator(), { namespace: DUMMY_NAMESPACE }).withJHipsterGenerators();
+      await helpers.run(helpers.createDummyGenerator<typeof CoreGenerator>(), { namespace: DUMMY_NAMESPACE }).withJHipsterGenerators();
     });
     it('should register jhipster generators namespaces', () => {
       expect(
-        Object.keys((runResult.env as any).store._meta)
+        Object.keys(runResult.env.getGeneratorsMeta())
           .filter(ns => ns !== DUMMY_NAMESPACE)
           .sort(),
       ).toMatchSnapshot();
@@ -48,7 +51,7 @@ describe('helpers', () => {
     });
     it('should register jhipster generators namespaces', () => {
       expect(
-        Object.keys((runResult.env as any).store._meta)
+        Object.keys(runResult.env.getGeneratorsMeta())
           .filter(ns => ns !== DUMMY_NAMESPACE)
           .sort(),
       ).toMatchSnapshot();

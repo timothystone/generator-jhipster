@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type File from 'vinyl';
-import sortKeys from 'sort-keys';
 import { transformContents } from '@yeoman/transform';
 import type { MemFsEditorFile } from 'mem-fs-editor';
+import sortKeys from 'sort-keys';
+import type File from 'vinyl';
 
 const sortJsonFileContent = (contents: Exclude<File['contents'], null>) =>
   Buffer.from(`${JSON.stringify(sortKeys(JSON.parse(contents.toString('utf8')), { deep: true }), null, 2)}\n`);

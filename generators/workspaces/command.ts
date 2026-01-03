@@ -1,39 +1,48 @@
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_APP, GENERATOR_GIT } from '../generator-list.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
 
-const command: JHipsterCommandDefinition = {
-  options: {
+const command = {
+  configs: {
     appsFolders: {
-      name: 'workspacesFolders',
-      type: Array,
+      cli: {
+        name: 'workspacesFolders',
+        type: Array,
+        default: [],
+      },
       description: 'Folders to use as monorepository workspace',
-      default: [],
-      scope: 'generator',
+      scope: 'storage',
     },
     entrypointGenerator: {
       description: 'Entrypoint generator to be used',
-      type: String,
+      cli: {
+        type: String,
+        hide: true,
+      },
       scope: 'generator',
-      hide: true,
     },
     workspaces: {
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       description: 'Generate workspaces for multiples applications',
       scope: 'generator',
     },
     generateApplications: {
-      type: Function,
+      cli: {
+        type: Function,
+        hide: true,
+      },
       scope: 'generator',
-      hide: true,
     },
     generateWith: {
-      type: String,
-      default: GENERATOR_APP,
+      cli: {
+        type: String,
+        default: 'app',
+        hide: true,
+      },
       scope: 'generator',
-      hide: true,
     },
   },
-  import: [GENERATOR_GIT],
-};
+  import: ['git'],
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

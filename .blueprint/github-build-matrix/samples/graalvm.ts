@@ -1,22 +1,20 @@
-import type { GitHubMatrixGroup } from '../../../lib/testing/index.js';
-import { extendMatrix, fromMatrix } from '../../../lib/testing/index.js';
-import { convertOptionsToJDL } from '../support/jdl.js';
+import type { GitHubMatrixGroup } from '../../../lib/testing/github-matrix.ts';
+import { extendMatrix, fromMatrix } from '../../../lib/testing/support/matrix-utils.ts';
+import { convertOptionsToJDL } from '../support/jdl.ts';
 
 export default Object.fromEntries(
-  [
-    ...Object.entries(
-      extendMatrix(
-        fromMatrix({
-          buildTool: ['maven', 'gradle'],
-          reactive: [undefined, true],
-        }),
-        {},
-      ),
+  Object.entries(
+    extendMatrix(
+      fromMatrix({
+        buildTool: ['maven', 'gradle'],
+        reactive: [undefined, true],
+      }),
+      {},
     ),
-  ].map(([key, value]) => [
+  ).map(([key, value]) => [
     key,
     {
-      'java-version': '21',
+      'java-version': '25',
       jdl: convertOptionsToJDL({ ...value, graalvmSupport: true }),
     },
   ]),

@@ -1,0 +1,79 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`generator - javascript-simple-application:bootstrap bootstrapping default config should prepare application 1`] = `
+{
+  "baseName": "jhipster",
+  "camelizedBaseName": "jhipster",
+  "capitalizedBaseName": "Jhipster",
+  "clientPackageJsonScripts": Any<Object>,
+  "clientRootDir": "",
+  "clientSrcDir": "src/main/webapp/",
+  "creationTimestamp": 1577836800000,
+  "customizeTemplatePaths": Any<Array>,
+  "dasherizedBaseName": "jhipster",
+  "documentationArchiveUrl": "https://www.jhipster.tech/documentation-archive/vJHIPSTER_VERSION",
+  "hipster": "jhipster_family_member_3",
+  "hipsterBugTrackerLink": "https://github.com/jhipster/generator-jhipster/issues?state=open",
+  "hipsterBugTrackerProductName": "JHipster",
+  "hipsterChatLink": "https://gitter.im/jhipster/generator-jhipster",
+  "hipsterChatProductName": "JHipster",
+  "hipsterDocumentationLink": "https://www.jhipster.tech/",
+  "hipsterHomePageProductName": "JHipster",
+  "hipsterName": "Java Hipster",
+  "hipsterProductName": "JHipster",
+  "hipsterProjectLink": "https://github.com/jhipster/generator-jhipster",
+  "hipsterStackOverflowProductName": "JHipster",
+  "hipsterStackoverflowLink": "https://stackoverflow.com/tags/jhipster/info",
+  "hipsterTwitterLink": "https://twitter.com/jhipster",
+  "hipsterTwitterUsername": "@jhipster",
+  "humanizedBaseName": "JHipster",
+  "jhiPrefix": "jhi",
+  "jhiPrefixCapitalized": "Jhi",
+  "jhiPrefixDashed": "jhi",
+  "jhipsterPackageJson": Any<Object>,
+  "jhipsterVersion": "JHIPSTER_VERSION",
+  "lowercaseBaseName": "jhipster",
+  "nodeDependencies": Any<Object>,
+  "nodePackageManager": "npm",
+  "nodePackageManagerCommand": "npm",
+  "nodeVersion": "NODE_VERSION",
+  "packageJsonNodeEngine": undefined,
+  "packageJsonScripts": Any<Object>,
+  "prettierExtensions": Any<Array>,
+  "prettierFolders": Any<Array>,
+  "projectDescription": "Description for JHipster",
+  "skipJhipsterDependencies": undefined,
+  "upperFirstCamelCaseBaseName": "Jhipster",
+  "user": undefined,
+}
+`;
+
+exports[`generator - javascript-simple-application:bootstrap customVersion should call source snapshot 1`] = `{}`;
+
+exports[`generator - javascript-simple-application:bootstrap customVersion should match files snapshot 1`] = `
+{
+  ".yo-rc.json": ObjectContaining {
+    "contents": Any<String>,
+  },
+}
+`;
+
+exports[`generator - javascript-simple-application:bootstrap packageJsonNodeEngine(false) should call source snapshot 1`] = `{}`;
+
+exports[`generator - javascript-simple-application:bootstrap packageJsonNodeEngine(false) should match files snapshot 1`] = `
+{
+  ".yo-rc.json": ObjectContaining {
+    "contents": Any<String>,
+  },
+}
+`;
+
+exports[`generator - javascript-simple-application:bootstrap packageJsonNodeEngine(true) should call source snapshot 1`] = `{}`;
+
+exports[`generator - javascript-simple-application:bootstrap packageJsonNodeEngine(true) should match files snapshot 1`] = `
+{
+  ".yo-rc.json": ObjectContaining {
+    "contents": Any<String>,
+  },
+}
+`;

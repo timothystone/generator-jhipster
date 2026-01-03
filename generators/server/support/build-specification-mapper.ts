@@ -1,5 +1,5 @@
-import type { FieldType } from '../../../lib/application/field-types.js';
-import { fieldTypes } from '../../../lib/jhipster/index.js';
+import type { FieldType } from '../../../lib/jhipster/field-types.ts';
+import { fieldTypes } from '../../../lib/jhipster/index.ts';
 
 const {
   STRING: TYPE_STRING,
@@ -21,18 +21,20 @@ const {
  */
 export const getSpecificationBuildForType = (fieldType: FieldType) => {
   if (
-    [
-      TYPE_INTEGER,
-      TYPE_LONG,
-      TYPE_FLOAT,
-      TYPE_DOUBLE,
-      TYPE_BIG_DECIMAL,
-      TYPE_LOCAL_DATE,
-      TYPE_ZONED_DATE_TIME,
-      TYPE_INSTANT,
-      TYPE_DURATION,
-      TYPE_LOCAL_TIME,
-    ].includes(fieldType)
+    (
+      [
+        TYPE_INTEGER,
+        TYPE_LONG,
+        TYPE_FLOAT,
+        TYPE_DOUBLE,
+        TYPE_BIG_DECIMAL,
+        TYPE_LOCAL_DATE,
+        TYPE_ZONED_DATE_TIME,
+        TYPE_INSTANT,
+        TYPE_DURATION,
+        TYPE_LOCAL_TIME,
+      ] as string[]
+    ).includes(fieldType)
   ) {
     return 'buildRangeSpecification';
   }

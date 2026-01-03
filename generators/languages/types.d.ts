@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,17 +16,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { Language } from './support/languages.js';
 
-export type LanguagesSource = {
-  addEntityTranslationKey: (arg: { translationKey: string; translationValue: string; language: string }) => void;
-};
+import type { HandleCommandTypes } from '../../lib/command/types.ts';
+import type {
+  Application as BaseApplicationApplication,
+  Config as BaseApplicationConfig,
+  Entity as BaseApplicationEntity,
+  Options as BaseApplicationOptions,
+  Source as BaseApplicationSource,
+} from '../base-application/types.d.ts';
 
-export type I18nApplication = {
-  enableTranslation: boolean;
-  enableI18nRTL: boolean;
-  nativeLanguage: string;
-  nativeLanguageDefinition: Language;
-  languages: string[];
-  languagesDefinition: readonly Language[];
-};
+import type { LanguagesAddedApplicationProperties } from './application.ts';
+import type command from './command.ts';
+
+type Command = HandleCommandTypes<typeof command>;
+
+export type Config = BaseApplicationConfig & Command['Config'];
+
+export type Options = BaseApplicationOptions & Omit<Command['Options'], 'languages' | 'languagesDefinition'>;
+
+export type Source = BaseApplicationSource & {};
+
+export type Application<E extends BaseApplicationEntity = BaseApplicationEntity> = BaseApplicationApplication<E> &
+  Omit<Command['Application'], 'languages' | 'languagesDefinition'> &
+  LanguagesAddedApplicationProperties;
+
+export * from './entity.ts';

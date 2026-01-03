@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,32 +17,29 @@
  * limitations under the License.
  */
 
-import type JDLObject from '../../core/models/jdl-object.js';
-import type JDLApplication from '../../core/models/jdl-application.js';
-import type JSONEntity from '../../core/basic-types/json-entity.js';
-import type { JdlObjectWrapper } from '../../core/models/jdl-object-wrapper.js';
-import BasicEntityConverter from './jdl-to-json-basic-entity-converter.js';
-import FieldConverter from './jdl-to-json-field-converter.js';
-import RelationshipConverter from './jdl-to-json-relationship-converter.js';
-import OptionConverter from './jdl-to-json-option-converter.js';
+import type JSONEntity from '../../core/basic-types/json-entity.ts';
+import type JDLApplication from '../../core/models/jdl-application.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+
+import BasicEntityConverter from './jdl-to-json-basic-entity-converter.ts';
+import FieldConverter from './jdl-to-json-field-converter.ts';
+import OptionConverter from './jdl-to-json-option-converter.ts';
+import RelationshipConverter from './jdl-to-json-relationship-converter.ts';
 
 let entities: Record<string, JSONEntity> | null | undefined;
-let jdlObject: JDLObject;
+let jdlObject: JDLObject | null;
 let entitiesPerApplication: Map<string, string[]>;
 
 export default { convert };
 
 /**
  * Converts a JDLObject to ready-to-be exported JSON entities.
- * @param {Object} args - the configuration object, keys:
- * @param {JDLObject} args.jdlObject - the JDLObject to convert to JSON
- * @returns {Map} entities that can be exported to JSON
  */
-export function convert(args: JdlObjectWrapper) {
-  if (!args?.jdlObject) {
+export function convert(jdlObjectArg: JDLObject) {
+  if (!jdlObjectArg) {
     throw new Error('The JDL object is mandatory.');
   }
-  init(args);
+  init(jdlObjectArg);
   setEntitiesPerApplication();
   if (entitiesPerApplication.size === 0 && jdlObject) {
     const applicationNames = jdlObject.getApplications().map(jdlApplication => jdlApplication.getConfigurationOptionValue('baseName'));
@@ -52,24 +49,24 @@ export function convert(args: JdlObjectWrapper) {
   setFields();
   setRelationships();
   setApplicationToEntities();
-  const entitiesForEachApplication = getEntitiesForEachApplicationMap();
-  setOptions(entitiesForEachApplication);
-  formatEntitiesForEachApplication(entitiesForEachApplication);
+  const entitiesForEachApplicationMap = getEntitiesForEachApplicationMap();
+  setOptions(entitiesForEachApplicationMap);
+  const entitiesForEachApplication = formatEntitiesForEachApplication(entitiesForEachApplicationMap);
   addApplicationsWithoutEntities(entitiesForEachApplication);
   return entitiesForEachApplication;
 }
 
-function init(args: JdlObjectWrapper): void {
+function init(jdlObjectArg: JDLObject): void {
   if (jdlObject) {
     resetState();
   }
-  jdlObject = args.jdlObject;
+  jdlObject = jdlObjectArg;
   entities = {};
   entitiesPerApplication = new Map();
 }
 
 function resetState(): void {
-  jdlObject = null as any;
+  jdlObject = null;
   entities = null;
 }
 
@@ -85,14 +82,14 @@ function setEntitiesPerApplication(): void {
 }
 
 function setBasicEntityInformation(): void {
-  const convertedEntities = BasicEntityConverter.convert(jdlObject.getEntities());
+  const convertedEntities = BasicEntityConverter.convert(jdlObject!.getEntities());
   convertedEntities.forEach((jsonEntity, entityName) => {
     entities![entityName] = jsonEntity;
   });
 }
 
 function setFields(): void {
-  const convertedFields = FieldConverter.convert(jdlObject);
+  const convertedFields = FieldConverter.convert(jdlObject!);
   convertedFields.forEach((entityFields, entityName) => {
     entities![entityName].addFields(entityFields);
   });
@@ -117,15 +114,15 @@ function setApplicationToEntities(): void {
   });
 }
 
-function setOptions(entitiesForEachApplication) {
-  const convertedOptionContents = OptionConverter.convert(jdlObject);
+function setOptions(entitiesForEachApplication: Map<string, Record<string, JSONEntity>>) {
+  const convertedOptionContents = OptionConverter.convert(jdlObject!);
   convertedOptionContents.forEach((optionContent, entityName) => {
     entities![entityName].setOptions(optionContent);
   });
   jdlObject?.forEachApplication(jdlApplication => {
     const convertedOptionContentsForApplication = OptionConverter.convert(jdlApplication);
     const applicationName = jdlApplication.getConfigurationOptionValue('baseName');
-    const applicationEntities = entitiesForEachApplication.get(applicationName);
+    const applicationEntities = entitiesForEachApplication.get(applicationName)!;
     convertedOptionContentsForApplication.forEach((optionContent, entityName) => {
       if (!applicationEntities[entityName]) {
         return;
@@ -135,31 +132,36 @@ function setOptions(entitiesForEachApplication) {
   });
 }
 
-function getEntitiesForEachApplicationMap(): Map<string, any> {
-  const entitiesForEachApplication = new Map();
+function getEntitiesForEachApplicationMap(): Map<string, Record<string, JSONEntity>> {
+  const entitiesForEachApplication = new Map<string, Record<string, JSONEntity>>();
   entitiesPerApplication.forEach((entityNames, applicationName) => {
     const entitiesInObject = entityNames
       .filter(entityName => !!entities![entityName])
       .map(entityName => entities![entityName])
-      .reduce((accumulator, currentEntity) => {
-        return {
-          ...accumulator,
-          [currentEntity.name]: currentEntity,
-        };
-      }, {});
+      .reduce(
+        (accumulator, currentEntity) => {
+          return {
+            ...accumulator,
+            [currentEntity.name]: currentEntity,
+          };
+        },
+        {} as Record<string, JSONEntity>,
+      );
 
     entitiesForEachApplication.set(applicationName, entitiesInObject);
   });
   return entitiesForEachApplication;
 }
 
-function formatEntitiesForEachApplication(entitiesForEachApplication) {
+function formatEntitiesForEachApplication(entitiesForEachApplication: Map<string, Record<string, JSONEntity>>): Map<string, JSONEntity[]> {
+  const map = new Map<string, JSONEntity[]>();
   entitiesForEachApplication.forEach((applicationEntities, applicationName) => {
-    entitiesForEachApplication.set(applicationName, Object.values(applicationEntities));
+    map.set(applicationName, Object.values(applicationEntities));
   });
+  return map;
 }
 
-function addApplicationsWithoutEntities(entitiesForEachApplication: Map<string, string[]>) {
+function addApplicationsWithoutEntities(entitiesForEachApplication: Map<string, JSONEntity[]>): void {
   jdlObject?.forEachApplication(jdlApplication => {
     if (jdlApplication.getEntityNames().length === 0) {
       entitiesForEachApplication.set(jdlApplication.getConfigurationOptionValue('baseName'), []);

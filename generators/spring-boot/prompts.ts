@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,20 +20,15 @@
 import chalk from 'chalk';
 import { intersection } from 'lodash-es';
 
-import {
-  applicationOptions,
-  applicationTypes,
-  authenticationTypes,
-  cacheTypes,
-  databaseTypes,
-  testFrameworkTypes,
-} from '../../lib/jhipster/index.js';
-import { R2DBC_DB_OPTIONS, SQL_DB_OPTIONS } from '../server/support/database.js';
-import type CoreGenerator from '../base-core/generator.js';
-import { asPromptingTask } from '../base-application/support/task-type-inference.js';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MONOLITH } from '../../lib/core/application-types.ts';
+import { applicationOptions, authenticationTypes, cacheTypes, databaseTypes, testFrameworkTypes } from '../../lib/jhipster/index.ts';
+import { asPromptingTask } from '../base-application/support/task-type-inference.ts';
+import { R2DBC_DB_OPTIONS, SQL_DB_OPTIONS } from '../server/support/database.ts';
+import type { Config as SpringDataRelationalConfig } from '../spring-data/generators/relational/types.ts';
+
+import type SpringBootGenerator from './generator.ts';
 
 const { OptionNames } = applicationOptions;
-const { GATEWAY, MONOLITH } = applicationTypes;
 const { CAFFEINE, EHCACHE, HAZELCAST, INFINISPAN, MEMCACHED, REDIS } = cacheTypes;
 const { OAUTH2 } = authenticationTypes;
 const { CASSANDRA, H2_DISK, H2_MEMORY, MONGODB, NEO4J, SQL, COUCHBASE } = databaseTypes;
@@ -42,7 +37,7 @@ const NO_DATABASE = databaseTypes.NO;
 const NO_CACHE_PROVIDER = cacheTypes.NO;
 const { GATLING, CUCUMBER } = testFrameworkTypes;
 
-export const askForServerSideOpts = asPromptingTask(async function ({ control }) {
+export const askForServerSideOpts = asPromptingTask(async function (this: SpringBootGenerator, { control }) {
   if (control.existingProject && !this.options.askAnswered) return;
 
   const { applicationType, authenticationType, reactive } = this.jhipsterConfigWithDefaults;
@@ -50,11 +45,11 @@ export const askForServerSideOpts = asPromptingTask(async function ({ control })
   await this.prompt(
     [
       {
-        type: 'list',
+        type: 'select',
         name: 'databaseType',
         message: `Which ${chalk.yellow('*type*')} of database would you like to use?`,
         choices: () => {
-          const opts: any[] = [];
+          const opts: Array<{ value: string; name: string }> = [];
           if (!reactive) {
             opts.push({
               value: SQL,
@@ -94,15 +89,15 @@ export const askForServerSideOpts = asPromptingTask(async function ({ control })
       },
       {
         when: response => response.databaseType === SQL,
-        type: 'list',
+        type: 'select',
         name: 'prodDatabaseType',
         message: `Which ${chalk.yellow('*production*')} database would you like to use?`,
         choices: reactive ? R2DBC_DB_OPTIONS : SQL_DB_OPTIONS,
-        default: this.jhipsterConfigWithDefaults.prodDatabaseType,
+        default: (this.jhipsterConfigWithDefaults as SpringDataRelationalConfig).prodDatabaseType,
       },
       {
         when: response => response.databaseType === SQL,
-        type: 'list',
+        type: 'select',
         name: 'devDatabaseType',
         message: `Which ${chalk.yellow('*development*')} database would you like to use?`,
         choices: response => {
@@ -117,11 +112,11 @@ export const askForServerSideOpts = asPromptingTask(async function ({ control })
             { value: H2_MEMORY, name: `H2 with in-memory persistence` },
           ]);
         },
-        default: this.jhipsterConfigWithDefaults.devDatabaseType,
+        default: (this.jhipsterConfigWithDefaults as SpringDataRelationalConfig).devDatabaseType,
       },
       {
         when: !reactive,
-        type: 'list',
+        type: 'select',
         name: 'cacheProvider',
         message: 'Which cache do you want to use? (Spring cache abstraction)',
         choices: [
@@ -158,7 +153,8 @@ export const askForServerSideOpts = asPromptingTask(async function ({ control })
       },
       {
         when: answers =>
-          ((answers.cacheProvider !== NO_CACHE_PROVIDER && answers.cacheProvider !== MEMCACHED) || applicationType === GATEWAY) &&
+          ((answers.cacheProvider !== NO_CACHE_PROVIDER && answers.cacheProvider !== MEMCACHED) ||
+            applicationType === APPLICATION_TYPE_GATEWAY) &&
           answers.databaseType === SQL &&
           !reactive,
         type: 'confirm',
@@ -171,13 +167,13 @@ export const askForServerSideOpts = asPromptingTask(async function ({ control })
   );
 });
 
-export const askForOptionalItems = asPromptingTask(async function askForOptionalItems(this: CoreGenerator, { control }) {
+export const askForOptionalItems = asPromptingTask(async function askForOptionalItems(this: SpringBootGenerator, { control }) {
   if (control.existingProject && !this.options.askAnswered) return;
 
   const { applicationType, reactive, databaseType } = this.jhipsterConfigWithDefaults;
 
-  const choices: any[] = [];
-  if ([SQL, MONGODB, NEO4J].includes(databaseType)) {
+  const choices: Array<{ name: string; value: string; checked?: boolean }> = [];
+  if (([SQL, MONGODB, NEO4J] as string[]).includes(databaseType as string)) {
     choices.push({
       name: 'Elasticsearch as search engine',
       value: 'searchEngine:elasticsearch',
@@ -190,7 +186,7 @@ export const askForOptionalItems = asPromptingTask(async function askForOptional
     });
   }
   if (!reactive) {
-    if (applicationType === MONOLITH || applicationType === GATEWAY) {
+    if (applicationType === APPLICATION_TYPE_MONOLITH || applicationType === APPLICATION_TYPE_GATEWAY) {
       choices.push({
         name: 'WebSockets using Spring Websocket',
         value: 'websocket:spring-websocket',
@@ -214,7 +210,7 @@ export const askForOptionalItems = asPromptingTask(async function askForOptional
 
   if (choices.length > 0) {
     const selectedChoices: string[] = [WEBSOCKET, SEARCH_ENGINE, 'messageBroker', ENABLE_SWAGGER_CODEGEN]
-      .map(property => [property, this.jhipsterConfig[property]])
+      .map(property => [property, (this.jhipsterConfig as any)[property]] as [string, any])
       .filter(([, value]) => value !== undefined)
       .map(([key, value]) => `${key}:${value}`)
       .filter(Boolean) as string[];
@@ -234,7 +230,7 @@ export const askForOptionalItems = asPromptingTask(async function askForOptional
     Object.assign(
       this.jhipsterConfig,
       Object.fromEntries(
-        answers.serverSideOptions
+        (answers.serverSideOptions as string[])
           .map(it => it.split(':'))
           .map(([key, value]) => [key, ['true', 'false'].includes(value) ? value === 'true' : value]),
       ),
@@ -242,7 +238,7 @@ export const askForOptionalItems = asPromptingTask(async function askForOptional
   }
 });
 
-export const askForServerTestOpts = asPromptingTask(async function (this: CoreGenerator, { control }) {
+export const askForServerTestOpts = asPromptingTask(async function (this: SpringBootGenerator, { control }) {
   if (control.existingProject && this.options.askAnswered !== true) return;
 
   const testFrameworks = this.jhipsterConfigWithDefaults.testFrameworks ?? [];

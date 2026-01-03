@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,58 +17,43 @@
  * limitations under the License.
  */
 
-import { kebabCase } from 'lodash-es';
 import chalk from 'chalk';
-import { glob } from 'glob';
+import type { Options as ExecaOptions } from 'execa';
+import { kebabCase } from 'lodash-es';
+import { globSync } from 'tinyglobby';
 
-import BaseGenerator from '../base-application/index.js';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { JAVA_COMPATIBLE_VERSIONS, RECOMMENDED_JAVA_VERSION, SERVER_MAIN_RES_DIR } from '../generator-constants.ts';
+import { addGradlePluginCallback, applyFromGradleCallback } from '../java-simple-application/generators/gradle/internal/needles.ts';
+import { createPomStorage } from '../java-simple-application/generators/maven/support/pom-store.ts';
+import { prepareSqlApplicationProperties } from '../spring-data/generators/relational/support/index.ts';
 
-import { JAVA_COMPATIBLE_VERSIONS, JAVA_VERSION, SERVER_MAIN_RES_DIR } from '../generator-constants.js';
-import { createPomStorage } from '../maven/support/pom-store.js';
-import { addGradlePluginCallback, applyFromGradleCallback } from '../gradle/internal/needles.js';
-import { mavenProfileContent } from './templates.js';
+import { mavenProfileContent } from './templates.ts';
+import type {
+  Application as HerokuApplication,
+  Config as HerokuConfig,
+  Entity as HerokuEntity,
+  Options as HerokuOptions,
+} from './types.ts';
 
-export default class HerokuGenerator extends BaseGenerator {
-  hasHerokuCli;
+export default class HerokuGenerator extends BaseApplicationGenerator<HerokuEntity, HerokuApplication, HerokuConfig, HerokuOptions> {
+  hasHerokuCli!: boolean;
 
-  herokuAppName;
-  herokuDeployType;
-  herokuJavaVersion;
-  herokuRegion;
-  herokuAppExists;
-  herokuSkipDeploy;
-  herokuSkipBuild;
-  dynoSize;
-
-  constructor(args, options, features) {
-    super(args, options, features);
-
-    this.option('skip-build', {
-      description: 'Skips building the application',
-      type: Boolean,
-      default: false,
-    });
-
-    this.option('skip-deploy', {
-      description: 'Skips deployment to Heroku',
-      type: Boolean,
-      default: false,
-    });
-
-    if (this.options.help) {
-      return;
-    }
-
-    this.herokuSkipBuild = this.options.skipBuild;
-    this.herokuSkipDeploy = this.options.skipDeploy || this.options.skipBuild;
-  }
+  herokuAppName?: string;
+  herokuDeployType!: string;
+  herokuJavaVersion!: string;
+  herokuRegion!: string;
+  herokuAppExists!: boolean;
+  herokuSkipDeploy!: boolean;
+  herokuSkipBuild!: boolean;
+  dynoSize!: string;
 
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('app');
     }
   }
 
@@ -103,11 +87,13 @@ export default class HerokuGenerator extends BaseGenerator {
         this.log.log(chalk.bold('Heroku configuration is starting'));
         this.dynoSize = 'Basic';
         this.herokuAppExists = Boolean(this.jhipsterConfig.herokuAppName);
+        this.herokuSkipBuild = this.options.skipBuild;
+        this.herokuSkipDeploy = this.options.skipDeploy || this.options.skipBuild;
       },
     });
   }
 
-  get [BaseGenerator.INITIALIZING]() {
+  get [BaseApplicationGenerator.INITIALIZING]() {
     return this.delegateTasksToBlueprint(() => this.initializing);
   }
 
@@ -115,12 +101,12 @@ export default class HerokuGenerator extends BaseGenerator {
     return this.asPromptingTaskGroup({
       async askForApp() {
         if (this.hasHerokuCli && this.herokuAppExists) {
-          const { stdout, exitCode } = await this.spawnHeroku(['apps:info', '--json', this.jhipsterConfig.herokuAppName], {
+          const { stdout, exitCode } = await this.spawnHeroku(['apps:info', '--json', this.jhipsterConfig.herokuAppName!], {
             verboseInfo: false,
           });
           if (exitCode !== 0) {
             this.log.error(`Could not find application: ${chalk.cyan(this.jhipsterConfig.herokuAppName)}`);
-            this.herokuAppName = null;
+            this.herokuAppName = undefined;
             throw new Error('Run the generator again to create a new application.');
           } else {
             const json = JSON.parse(stdout);
@@ -148,7 +134,7 @@ export default class HerokuGenerator extends BaseGenerator {
 
           const answers = await this.prompt([
             {
-              type: 'list',
+              type: 'select',
               name: 'herokuRegion',
               message: 'On which region do you want to deploy?',
               choices: ['us', 'eu'],
@@ -162,7 +148,7 @@ export default class HerokuGenerator extends BaseGenerator {
         await this.prompt(
           [
             {
-              type: 'list',
+              type: 'select',
               name: 'herokuDeployType',
               message: 'Which type of deployment do you want?',
               choices: [
@@ -180,11 +166,11 @@ export default class HerokuGenerator extends BaseGenerator {
         await this.prompt(
           [
             {
-              type: 'list',
+              type: 'select',
               name: 'herokuJavaVersion',
               message: 'Which Java version would you like to use to build and run your app?',
               choices: JAVA_COMPATIBLE_VERSIONS.map(version => ({ value: version })),
-              default: JAVA_VERSION,
+              default: RECOMMENDED_JAVA_VERSION,
             },
           ],
           this.config,
@@ -193,28 +179,42 @@ export default class HerokuGenerator extends BaseGenerator {
     });
   }
 
-  get [BaseGenerator.PROMPTING]() {
+  get [BaseApplicationGenerator.PROMPTING]() {
     return this.delegateTasksToBlueprint(() => this.prompting);
   }
 
   get loading() {
-    return this.asConfiguringTaskGroup({
+    return this.asLoadingTaskGroup({
       saveConfig() {
         this.herokuAppName = kebabCase(this.jhipsterConfig.herokuAppName);
-        this.herokuJavaVersion = this.jhipsterConfig.herokuJavaVersion;
-        this.herokuDeployType = this.jhipsterConfig.herokuDeployType;
+        this.herokuJavaVersion = this.jhipsterConfig.herokuJavaVersion!;
+        this.herokuDeployType = this.jhipsterConfig.herokuDeployType!;
       },
     });
   }
 
-  get [BaseGenerator.LOADING]() {
+  get [BaseApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
+  }
+
+  get preparing() {
+    return this.asPreparingTaskGroup({
+      properties({ application }) {
+        if (application.databaseTypeSql) {
+          prepareSqlApplicationProperties({ application: application as any });
+        }
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.PREPARING]() {
+    return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
   get default() {
     return this.asDefaultTaskGroup({
       async gitInit() {
-        if (!this.herokuDeployType === 'git') return;
+        if (this.jhipsterConfig.herokuDeployType !== 'git') return;
 
         const git = this.createGit();
         if (await git.checkIsRepo()) {
@@ -250,7 +250,7 @@ export default class HerokuGenerator extends BaseGenerator {
         const regionParams = this.herokuRegion !== 'us' ? ['--region', this.herokuRegion] : [];
 
         this.log.log(chalk.bold('\nCreating Heroku application and setting up Node environment'));
-        const { stdout, stderr, exitCode } = await this.spawnHeroku(['create', this.herokuAppName, ...regionParams]);
+        const { stdout, stderr, exitCode } = await this.spawnHeroku(['create', this.herokuAppName!, ...regionParams]);
 
         if (stdout.includes('Heroku credentials')) {
           throw new Error("Error: Not authenticated. Run 'heroku login' to log in to your Heroku account and try again.");
@@ -258,9 +258,10 @@ export default class HerokuGenerator extends BaseGenerator {
 
         if (exitCode !== 0) {
           if (stderr.includes('is already taken')) {
-            const prompts = [
+            this.log.log('');
+            const props = await this.prompt([
               {
-                type: 'list',
+                type: 'select',
                 name: 'herokuForceName',
                 message: `The Heroku application "${chalk.cyan(this.herokuAppName)}" already exists! Use it anyways?`,
                 choices: [
@@ -275,18 +276,15 @@ export default class HerokuGenerator extends BaseGenerator {
                 ],
                 default: 0,
               },
-            ];
-
-            this.log.log('');
-            const props = await this.prompt(prompts);
+            ]);
             if (props.herokuForceName === 'Yes') {
-              await this.spawnHeroku(['git:remote', '--app', this.herokuAppName], { reject: true });
+              await this.spawnHeroku(['git:remote', '--app', this.herokuAppName!], { reject: true });
             } else {
               const { stdout } = await this.spawnHeroku(['create', ...regionParams]);
               // Extract from "Created random-app-name-1234... done"
               this.herokuAppName = stdout.substring(stdout.lastIndexOf('/') + 1, stdout.indexOf('.git'));
               // ensure that the git remote is the same as the appName
-              await this.spawnHeroku(['git:remote', '--app', this.herokuAppName]);
+              await this.spawnHeroku(['git:remote', '--app', this.herokuAppName!]);
               this.jhipsterConfig.herokuAppName = this.herokuAppName;
             }
           } else if (stderr.includes('Invalid credentials')) {
@@ -303,14 +301,14 @@ export default class HerokuGenerator extends BaseGenerator {
         this.log.log(chalk.bold('\nProvisioning addons'));
         if (application.searchEngineElasticsearch) {
           this.log.log(chalk.bold('\nProvisioning bonsai elasticsearch addon'));
-          const { stdout, stderr } = await this.spawn('heroku', [
+          const { stdout, stderr } = (await this.spawn('heroku', [
             'addons:create',
             'bonsai:sandbox-6',
             '--as',
             'BONSAI',
             '--app',
-            this.herokuAppName,
-          ]);
+            this.herokuAppName!,
+          ])) as { stdout: string; stderr: string };
           this.checkAddOnReturn({ addOn: 'Elasticsearch', stdout, stderr });
         }
 
@@ -325,17 +323,17 @@ export default class HerokuGenerator extends BaseGenerator {
 
         if (dbAddOn) {
           this.log.log(chalk.bold(`\nProvisioning database addon ${dbAddOn}`));
-          const { stdout, stderr } = await this.spawn('heroku', [
+          const { stdout, stderr } = (await this.spawn('heroku', [
             'addons:create',
             dbAddOn,
             '--as',
             'DATABASE',
             '--app',
-            this.herokuAppName,
-          ]);
+            this.herokuAppName!,
+          ])) as { stdout: string; stderr: string };
           this.checkAddOnReturn({ addOn: 'Database', stdout, stderr });
         } else {
-          this.log.log(chalk.bold(`\nNo suitable database addon for database ${this.prodDatabaseType} available.`));
+          this.log.log(chalk.bold(`\nNo suitable database addon for database ${application.prodDatabaseType} available.`));
         }
 
         let cacheAddOn;
@@ -348,7 +346,10 @@ export default class HerokuGenerator extends BaseGenerator {
         if (cacheAddOn) {
           this.log.log(chalk.bold(`\nProvisioning cache addon '${cacheAddOn}'`));
 
-          const { stdout, stderr } = await this.spawn('heroku', ['addons:create', ...cacheAddOn, '--app', this.herokuAppName]);
+          const { stdout, stderr } = (await this.spawn('heroku', ['addons:create', ...cacheAddOn, '--app', this.herokuAppName!])) as {
+            stdout: string;
+            stderr: string;
+          };
           this.checkAddOnReturn({ addOn: 'Cache', stdout, stderr });
         }
       },
@@ -382,13 +383,13 @@ export default class HerokuGenerator extends BaseGenerator {
         const herokuJHipsterRegistryUsername = encodeURIComponent(answers.herokuJHipsterRegistryUsername);
         const herokuJHipsterRegistryPassword = encodeURIComponent(answers.herokuJHipsterRegistryPassword);
         const herokuJHipsterRegistry = `https://${herokuJHipsterRegistryUsername}:${herokuJHipsterRegistryPassword}@${answers.herokuJHipsterRegistryApp}.herokuapp.com`;
-        const configSetCmd = ['config:set', 'JHIPSTER_REGISTRY_URL', herokuJHipsterRegistry, '--app', this.herokuAppName];
+        const configSetCmd = ['config:set', 'JHIPSTER_REGISTRY_URL', herokuJHipsterRegistry, '--app', this.herokuAppName!];
         await this.spawnHeroku(configSetCmd, { stdio: 'pipe' });
       },
     });
   }
 
-  get [BaseGenerator.DEFAULT]() {
+  get [BaseApplicationGenerator.DEFAULT]() {
     return this.delegateTasksToBlueprint(() => this.default);
   }
 
@@ -429,7 +430,7 @@ export default class HerokuGenerator extends BaseGenerator {
     });
   }
 
-  get [BaseGenerator.WRITING]() {
+  get [BaseApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
@@ -469,14 +470,14 @@ export default class HerokuGenerator extends BaseGenerator {
             }
 
             this.log.log(chalk.bold('\nConfiguring Heroku'));
-            const { stdout: configData } = await this.spawnHeroku(['config:get', configName, '--app', this.herokuAppName]);
+            const { stdout: configData } = await this.spawnHeroku(['config:get', configName, '--app', this.herokuAppName!]);
             if (!configData) {
-              await this.spawnHeroku(['config:set', `${configName}=${configValues}`, '--app', this.herokuAppName]);
+              await this.spawnHeroku(['config:set', `${configName}=${configValues}`, '--app', this.herokuAppName!]);
             }
 
-            const { stdout: buildpackData } = await this.spawnHeroku(['buildpacks', '--app', this.herokuAppName]);
-            if (!buildpackData.includes(buildpack)) {
-              await this.spawnHeroku(['buildpacks:add', buildpack, '--app', this.herokuAppName]);
+            const { stdout: buildpackData } = await this.spawnHeroku(['buildpacks', '--app', this.herokuAppName!]);
+            if (!(buildpackData as string).includes(buildpack)) {
+              await this.spawnHeroku(['buildpacks:add', buildpack, '--app', this.herokuAppName!]);
             }
 
             this.log.log(chalk.bold('\nDeploying application...'));
@@ -496,7 +497,7 @@ export default class HerokuGenerator extends BaseGenerator {
             jarFileWildcard = 'build/libs/*.jar';
           }
 
-          const files = glob.sync(jarFileWildcard, {});
+          const files = globSync(jarFileWildcard, {});
           const jarFile = files[0];
 
           this.log.log(
@@ -505,7 +506,7 @@ export default class HerokuGenerator extends BaseGenerator {
             ),
           );
           try {
-            await this.spawnHeroku(['deploy:jar', jarFile, '--app', this.herokuAppName], { stdio: 'pipe' });
+            await this.spawnHeroku(['deploy:jar', jarFile, '--app', this.herokuAppName!], { stdio: 'pipe' });
             await this.spawnHerokuCommand('buildpacks:set heroku/jvm', { stdio: 'pipe' });
             this.log.log(chalk.green(`\nYour app should now be live. To view it run\n\t${chalk.bold('heroku open')}`));
             this.log.log(chalk.yellow(`And you can view the logs with this command\n\t${chalk.bold('heroku logs --tail')}`));
@@ -518,7 +519,7 @@ export default class HerokuGenerator extends BaseGenerator {
     });
   }
 
-  get [BaseGenerator.END]() {
+  get [BaseApplicationGenerator.END]() {
     return this.delegateTasksToBlueprint(() => this.end);
   }
 
@@ -530,60 +531,51 @@ export default class HerokuGenerator extends BaseGenerator {
    * @param {string} profileId - profile ID
    * @param {string} other - explicit other thing: build, dependencies...
    */
-  addMavenProfile(profileId, other) {
+  addMavenProfile(profileId: string, other: string) {
     createPomStorage(this, { sortFile: false }).addProfile({ id: profileId, content: other });
   }
 
-  /**
-   * @param  {string} command
-   * @param  {import('execa').Options} opt
-   * @returns {ReturnType<BaseGenerator['spawnCommand']>}
-   */
-  spawnHerokuCommand(command, opt) {
-    opt = { stdio: 'pipe', reject: false, ...opt };
+  async spawnHerokuCommand(
+    command: string,
+    opt: ExecaOptions & { verboseInfo?: boolean } = {},
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     const { verboseInfo, ...spawnOptions } = opt;
-    const child = this.spawnCommand(`heroku ${command}`, spawnOptions);
+    const child = this.spawnCommand(`heroku ${command}`, { stdio: 'pipe', reject: false, ...spawnOptions });
     if (opt.stdio !== 'pipe' || verboseInfo === false) {
-      return child;
+      return (await child) as any;
     }
-    return this.printChildOutput(child);
+    return (await this.printChildOutput(child)) as any;
   }
 
-  /**
-   * @param  {string[]} args
-   * @param  {import('execa').Options} opt
-   * @returns {ReturnType<BaseGenerator['spawn']>}
-   */
-  spawnHeroku(args, opt) {
-    opt = { stdio: 'pipe', reject: false, ...opt };
+  async spawnHeroku(
+    args: string[],
+    opt: ExecaOptions & { verboseInfo?: boolean } = {},
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     const { verboseInfo, ...spawnOptions } = opt;
-    const child = this.spawn('heroku', args, spawnOptions);
+    const child = this.spawn('heroku', args, { stdio: 'pipe', reject: false, ...spawnOptions });
     if (spawnOptions.stdio !== 'pipe' || verboseInfo === false) {
-      return child;
+      return (await child) as any;
     }
-    return this.printChildOutput(child);
+    return (await this.printChildOutput(child)) as any;
   }
 
-  /**
-   * @template {{stdout: any; stderr: any}} T
-   * @param {T} child
-   * @param {(chunk: any) => void} child
-   * @returns {T}
-   */
-  printChildOutput(child, log = data => this.log.verboseInfo(data)) {
+  printChildOutput<const T extends { stdout?: NodeJS.ReadableStream | null; stderr?: NodeJS.ReadableStream | null }>(
+    child: T,
+    log = (data: any) => this.log.verboseInfo(data),
+  ): T {
     const { stdout, stderr } = child;
-    stdout.on('data', data => {
+    stdout!.on('data', (data: any) => {
       data.toString().split(/\r?\n/).filter(Boolean).forEach(log);
     });
-    stderr.on('data', data => {
+    stderr!.on('data', (data: any) => {
       data.toString().split(/\r?\n/).filter(Boolean).forEach(log);
     });
     return child;
   }
 
-  checkAddOnReturn({ addOn, stdout, stderr }) {
+  checkAddOnReturn({ addOn, stdout, stderr }: { addOn: string; stdout: string; stderr: string }) {
     if (stdout) {
-      this.log.ok(`Created ${addOn.valueOf()} add-on`);
+      this.log.ok(`Created ${addOn} add-on`);
       this.log.ok(stdout);
     } else if (stderr) {
       const verifyAccountUrl = 'https://heroku.com/verify';

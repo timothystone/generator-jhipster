@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -28,7 +28,7 @@
 # ===================================================================
 # Standard Spring Boot properties.
 # Full reference is available at:
-# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# https://docs.spring.io/spring-boot/appendix/application-properties/index.html
 # ===================================================================
 
 <%_ if (databaseTypeNeo4j && !databaseMigrationLiquibase) { _%>
@@ -119,7 +119,7 @@ spring:
   liquibase:
     contexts: test
 <%_ } _%>
-  jackson:
+  jackson<%= springBoot4 ? '2' : '' %>:
     serialization:
       write-durations-as-timestamps: false
 <%_ if (databaseTypeCassandra) { _%>
@@ -183,8 +183,10 @@ server:
 # Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 jhipster:
+<%_ if (!skipClient) { _%>
   clientApp:
-    name: "<%= frontendAppName %>"
+    name: "<%= locals.frontendAppName %>"
+<%_ } _%>
   mail:
     from: <%= baseName %>@localhost.com
     base-url: http://127.0.0.1:8080

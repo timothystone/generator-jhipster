@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { ApplicationWithEntities } from '../../../lib/jdl/jdl-importer.js';
+import type { ApplicationWithEntities } from '../../../lib/jdl/jdl-importer.ts';
 
 export const addApplicationIndex = (applicationsWithEntities: ApplicationWithEntities[]) => {
   applicationsWithEntities.forEach((applicationWithEntities, applicationIndex) => {
@@ -38,11 +38,11 @@ export const customizeForMicroservices = (applicationsWithEntities: Record<strin
       }
     }
 
-    const relatedBaseNames = [...microfrontends.map(mf => mf.baseName)];
+    const relatedBaseNames = microfrontends.map(mf => mf.baseName);
     gateway.entities
       .map(entity => entity.microserviceName)
       .filter(Boolean)
-      .forEach(basename => !relatedBaseNames.includes(basename) && relatedBaseNames.push(basename));
+      .forEach(basename => !relatedBaseNames.includes(basename!) && relatedBaseNames.push(basename!));
 
     if (relatedBaseNames.length > 0) {
       gateway.config.applications = Object.fromEntries(

@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,12 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import BaseApplicationGenerator from '../base-application/index.js';
-import { GENERATOR_APP } from '../generator-list.js';
-import command from './command.js';
+import BaseApplicationGenerator from '../base-application/index.ts';
 
 export default class EntitiesGenerator extends BaseApplicationGenerator {
-  entities;
+  entities?: string[];
 
   async beforeQueue() {
     if (!this.fromBlueprint) {
@@ -35,7 +32,6 @@ export default class EntitiesGenerator extends BaseApplicationGenerator {
       loadArguments() {
         this.jhipsterConfig.entities = this.jhipsterConfig.entities || [];
 
-        this.parseJHipsterArguments(command.arguments);
         if (!this.entities || this.entities.length === 0) {
           this.entities = this.getExistingEntityNames();
         } else {
@@ -57,13 +53,13 @@ export default class EntitiesGenerator extends BaseApplicationGenerator {
   }
 
   get composing() {
-    return {
+    return this.asComposingTaskGroup({
       async composeApp() {
-        await this.composeWithJHipster(GENERATOR_APP, {
+        await this.composeWithJHipster('app', {
           generatorOptions: { skipPriorities: ['writing', 'postWriting'], entities: this.entities },
         });
       },
-    };
+    });
   }
 
   get [BaseApplicationGenerator.COMPOSING]() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,16 +16,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import assert from 'assert';
+import assert from 'node:assert';
+
 import { snakeCase, upperFirst } from 'lodash-es';
 
-import { databaseTypes, entityOptions, fieldTypes, reservedKeywords } from '../../../lib/jhipster/index.js';
-import { formatDocAsApiDescription, formatDocAsJavaDoc } from '../../java/support/doc.js';
-import { mutateData } from '../../../lib/utils/object.js';
-import type { Field } from '../../../lib/types/application/field.js';
-import { applyDerivedProperty } from '../../base/support/index.js';
-import { getUXConstraintName } from './database.js';
-import { getJavaValueGeneratorForType } from './templates/field-values.js';
+import { databaseTypes, entityOptions, fieldTypes, reservedKeywords } from '../../../lib/jhipster/index.ts';
+import { buildMutateDataForProperty, mutateData } from '../../../lib/utils/index.ts';
+import type CoreGenerator from '../../base-core/generator.ts';
+import { formatDocAsApiDescription, formatDocAsJavaDoc } from '../../java/support/doc.ts';
+import type { Field as LiquibaseField } from '../../liquibase/types.d.ts';
+import type { Field as SpringBootField } from '../../spring-boot/types.d.ts';
+import type { Field as SpringDataRelationalField } from '../../spring-data/generators/relational/types.d.ts';
+import type { Application as ServerApplication, Entity as ServerEntity, Field as ServerField } from '../types.d.ts';
+
+import { getUXConstraintName } from './database.ts';
+import { getJavaValueGeneratorForType } from './templates/field-values.ts';
 
 const { isReservedTableName } = reservedKeywords;
 const { CommonDBTypes } = fieldTypes;
@@ -35,18 +40,24 @@ const { MapperTypes } = entityOptions;
 const { MAPSTRUCT } = MapperTypes;
 const { INTEGER, LONG, UUID } = CommonDBTypes;
 
-export default function prepareField(entityWithConfig, field: Field & any, generator) {
+export const prepareMapstructField = (entity: ServerEntity, field: SpringBootField): SpringBootField => {
   if (field.mapstructExpression) {
-    assert.equal(
-      entityWithConfig.dto,
-      MAPSTRUCT,
-      `@MapstructExpression requires an Entity with mapstruct dto [${entityWithConfig.name}.${field.fieldName}].`,
-    );
+    assert.equal(entity.dto, MAPSTRUCT, `@MapstructExpression requires an Entity with mapstruct dto [${entity.name}.${field.fieldName}].`);
     // Remove from Entity.java and liquibase.
     field.transient = true;
     // Disable update form.
     field.readonly = true;
   }
+  return field;
+};
+
+export default function prepareField(
+  application: ServerApplication,
+  entityWithConfig: ServerEntity,
+  field: ServerField & LiquibaseField & SpringBootField & SpringDataRelationalField,
+  generator: CoreGenerator,
+) {
+  prepareMapstructField(entityWithConfig, field);
 
   if (field.documentation) {
     mutateData(field, {
@@ -54,13 +65,12 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
       fieldJavadoc: formatDocAsJavaDoc(field.documentation, 4),
       fieldApiDescription: formatDocAsApiDescription(field.documentation),
       propertyApiDescription: ({ fieldApiDescription }) => fieldApiDescription,
-    } as any);
+    });
   }
 
+  const { reactive: entityReactive, prodDatabaseType: entityProdDatabaseType } = entityWithConfig as any;
   if (field.id && entityWithConfig.primaryKey) {
-    if (field.autoGenerate === undefined) {
-      field.autoGenerate = !entityWithConfig.primaryKey.composite && [INTEGER, LONG, UUID].includes(field.fieldType);
-    }
+    field.autoGenerate ??= !entityWithConfig.primaryKey.composite && ([INTEGER, LONG, UUID] as string[]).includes(field.fieldType);
 
     if (!field.autoGenerate) {
       field.liquibaseAutoIncrement = false;
@@ -75,7 +85,7 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
       field.autoGenerateByRepository = !field.autoGenerateByService;
       field.requiresPersistableImplementation = false;
       field.readonly = true;
-    } else if (entityWithConfig.reactive) {
+    } else if (entityReactive) {
       field.liquibaseAutoIncrement = field.fieldType === LONG;
       field.jpaGeneratedValue = false;
       field.autoGenerateByService = !field.liquibaseAutoIncrement;
@@ -83,8 +93,9 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
       field.requiresPersistableImplementation = !field.liquibaseAutoIncrement;
       field.readonly = true;
     } else {
-      const defaultGenerationType = entityWithConfig.prodDatabaseType === MYSQL ? 'identity' : 'sequence';
-      field.jpaGeneratedValue = field.jpaGeneratedValue || [INTEGER, LONG].includes(field.fieldType) ? defaultGenerationType : true;
+      const defaultGenerationType = entityProdDatabaseType === MYSQL ? 'identity' : 'sequence';
+      field.jpaGeneratedValue =
+        field.jpaGeneratedValue || ([INTEGER, LONG] as string[]).includes(field.fieldType) ? defaultGenerationType : true;
       field.jpaGeneratedValueSequence = field.jpaGeneratedValue === 'sequence';
       field.jpaGeneratedValueIdentity = field.jpaGeneratedValue === 'identity';
       field.autoGenerateByService = false;
@@ -103,16 +114,14 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
 
   if (field.fieldNameAsDatabaseColumn === undefined) {
     const fieldNameUnderscored = snakeCase(field.fieldName);
-    const jhiFieldNamePrefix = entityWithConfig.jhiTablePrefix;
-
-    if (isReservedTableName(fieldNameUnderscored, entityWithConfig.prodDatabaseType ?? entityWithConfig.databaseType)) {
-      if (!jhiFieldNamePrefix) {
+    if (isReservedTableName(fieldNameUnderscored, entityProdDatabaseType ?? entityWithConfig.databaseType)) {
+      if (!application.jhiTablePrefix) {
         generator.log.warn(
           `The field name '${fieldNameUnderscored}' is regarded as a reserved keyword, but you have defined an empty jhiPrefix. This might lead to a non-working application.`,
         );
         field.fieldNameAsDatabaseColumn = fieldNameUnderscored;
       } else {
-        field.fieldNameAsDatabaseColumn = `${jhiFieldNamePrefix}_${fieldNameUnderscored}`;
+        field.fieldNameAsDatabaseColumn = `${application.jhiTablePrefix}_${fieldNameUnderscored}`;
       }
     } else {
       field.fieldNameAsDatabaseColumn = fieldNameUnderscored;
@@ -122,7 +131,7 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
   field.columnName = field.fieldNameAsDatabaseColumn;
   if (field.unique) {
     field.uniqueConstraintName = getUXConstraintName(entityWithConfig.entityTableName, field.columnName, {
-      prodDatabaseType: entityWithConfig.prodDatabaseType,
+      prodDatabaseType: entityProdDatabaseType,
     }).value;
   }
 
@@ -153,7 +162,8 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
   } else {
     field.javaFieldType = field.fieldType;
   }
-  applyDerivedProperty(field, 'javaFieldType', ['String', 'Integer', 'Long', 'UUID']);
+
+  mutateData(field, buildMutateDataForProperty('javaFieldType', ['String', 'Integer', 'Long', 'UUID']));
 
   if (field.fieldTypeInteger || field.fieldTypeLong || field.fieldTypeString || field.fieldTypeUUID) {
     if (field.fieldTypeInteger) {
@@ -171,4 +181,6 @@ export default function prepareField(entityWithConfig, field: Field & any, gener
     }
     field.javaValueGenerator = getJavaValueGeneratorForType(field.javaFieldType);
   }
+
+  field.fieldSupportsSortBy = !field.transient;
 }

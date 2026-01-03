@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,9 +18,11 @@
  */
 
 import { upperFirst } from 'lodash-es';
-import { merge } from '../utils/object-utils.js';
-import type JDLValidation from './jdl-validation.js';
-import type AbstractJDLOption from './abstract-jdl-option.js';
+
+import { merge } from '../utils/object-utils.ts';
+
+import type AbstractJDLOption from './abstract-jdl-option.ts';
+import type JDLValidation from './jdl-validation.ts';
 
 export default class JDLField {
   name: string;
@@ -41,7 +43,7 @@ export default class JDLField {
     this.options = merged.options ?? {};
   }
 
-  addValidation(validation) {
+  addValidation(validation: JDLValidation) {
     if (!validation) {
       throw new Error("Can't add a nil JDL validation to the JDL field.");
     }

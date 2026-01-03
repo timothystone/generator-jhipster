@@ -1,19 +1,14 @@
 import type { IsNever } from 'type-fest';
+
 import type {
   ExportApplicationPropertiesFromCommand,
   ExportGeneratorOptionsFromCommand,
   ExportStoragePropertiesFromCommand,
-} from './types.js';
+} from './types.ts';
 
 type AssertType<Expected extends true | false, _T2 extends Expected, _T3 extends Expected = Expected> = void;
 
 const _testCommand = {
-  options: {
-    arrayOptionsType: {
-      type: Array,
-      scope: 'storage',
-    },
-  },
   configs: {
     stringRootType: {
       cli: { type: String },
@@ -64,10 +59,6 @@ const _booleanCliTypeError = {
   booleanCliType: 'false',
 } satisfies StorageProperties;
 
-const _arrayCliType = {
-  arrayOptionsType: ['false'],
-} satisfies StorageProperties;
-
 const _choiceType = {
   choiceType: 'foo',
 } satisfies StorageProperties;
@@ -87,37 +78,36 @@ const _unknownType2 = {
 
 type ApplicationProperties = ExportApplicationPropertiesFromCommand<TestCommand>;
 
-const applicationChoiceType = {
+const _applicationChoiceType = {
   choiceType: 'foo',
   // @ts-expect-error missing fields
 } satisfies ApplicationProperties;
 
-const applicationChoiceTypeNo = {
+const _applicationChoiceTypeNo = {
   choiceTypeNo: false,
   // @ts-expect-error missing fields
 } satisfies ApplicationProperties;
 
-const applicationChoiceTypeFoo = {
+const _applicationChoiceTypeFoo = {
   choiceTypeFoo: true,
   // @ts-expect-error missing fields
 } satisfies ApplicationProperties;
 
-const applicationChoiceTypeAny = {
+const _applicationChoiceTypeAny = {
   choiceTypeAny: true,
   // @ts-expect-error missing fields
 } satisfies ApplicationProperties;
 
 const _applicationChoiceComplete = {
-  ...applicationChoiceType,
-  ...applicationChoiceTypeNo,
-  ...applicationChoiceTypeFoo,
-  ...applicationChoiceTypeAny,
+  ..._applicationChoiceType,
+  ..._applicationChoiceTypeNo,
+  ..._applicationChoiceTypeFoo,
+  ..._applicationChoiceTypeAny,
 } satisfies ApplicationProperties;
 
 type ApplicationOptions = ExportGeneratorOptionsFromCommand<TestCommand>;
 
 const _applicationOptions = {
-  arrayOptionsType: ['false'],
   stringRootType: 'foo',
   booleanCliType: false,
   choiceType: 'foo',
@@ -125,7 +115,7 @@ const _applicationOptions = {
 } satisfies ApplicationOptions;
 
 const _applicationOptionsError = {
-  // @ts-expect-error unknow field
+  // @ts-expect-error unknown field
   foo: 'bar',
 } satisfies ApplicationOptions;
 

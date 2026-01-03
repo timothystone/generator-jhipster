@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,34 @@
  * limitations under the License.
  */
 
-import { merge } from '../utils/object-utils.js';
-import { upperFirst } from '../utils/string-utils.js';
+import { upperFirst } from 'lodash-es';
+
+import type { JSONField, JSONRelationship } from '../types/json-config.ts';
+import { merge } from '../utils/object-utils.ts';
 
 /**
  * The JSONEntity class represents a read-to-be exported to JSON entity.
  */
 class JSONEntity {
   annotations: Record<string, boolean | string | number | undefined>;
-  [x: string]: any;
+  name: string;
+  fields: JSONField[];
+  relationships: JSONRelationship[];
+  documentation?: string;
+  entityTableName?: string;
+  dto?: string;
+  pagination?: string;
+  service?: string;
+  jpaMetamodelFiltering?: boolean;
+  fluentMethods?: boolean;
+  readOnly?: boolean;
+  embedded?: boolean;
+  clientRootFolder?: string;
+  microserviceName?: string;
+  angularJSSuffix?: string;
+  skipServer?: boolean;
+  skipClient?: boolean;
+  applications: string[];
 
   /**
    * Creates a new JSONEntity instance.
@@ -44,11 +63,11 @@ class JSONEntity {
    *        - fluentMethods, defaults to true,
    *        - clientRootFolder
    */
-  constructor(args: Partial<JSONEntity>) {
+  constructor(args: Partial<JSONEntity> & { entityName: string }) {
     if (!args?.entityName) {
       throw new Error('At least an entity name must be passed.');
     }
-    const merged: Partial<JSONEntity> = merge(getDefaults(args.entityName), args);
+    const merged = merge(getDefaults(args.entityName), args) as JSONEntity;
     this.name = merged.name;
     this.fields = merged.fields;
     this.annotations = merged.annotations ?? {};
@@ -80,51 +99,51 @@ class JSONEntity {
     this.applications = [];
   }
 
-  addFields(fields) {
+  addFields(fields: JSONField[]) {
     if (!fields || fields.length === 0) {
       return;
     }
     this.fields = this.fields.concat(fields);
   }
 
-  addField(field) {
+  addField(field: JSONField) {
     if (field) {
       this.fields.push(field);
     }
   }
 
-  addRelationships(relationships) {
+  addRelationships(relationships: JSONRelationship[]) {
     if (!relationships || relationships.length === 0) {
       return;
     }
     this.relationships = this.relationships.concat(relationships);
   }
 
-  addRelationship(relationship) {
+  addRelationship(relationship: JSONRelationship) {
     if (relationship) {
       this.relationships.push(relationship);
     }
   }
 
-  setOptions(options = {}) {
+  setOptions(options: Partial<JSONEntity> = {}) {
     Object.keys(options).forEach(optionName => {
-      this[optionName] = options[optionName];
+      (this as Record<string, unknown>)[optionName] = (options as Record<string, unknown>)[optionName];
     });
   }
 
-  setAnnotations(annotations = {}) {
+  setAnnotations(annotations: Record<string, boolean | string | number | undefined> = {}) {
     Object.assign(this.annotations, annotations);
   }
 }
 
 export default JSONEntity;
 
-function getDefaults(entityName: string): Pick<JSONEntity, 'name' | 'fields' | 'relationships' | 'applications' | 'annotations'> {
+function getDefaults(entityName: string): Pick<JSONEntity, 'name' | 'fields' | 'relationships' | 'annotations'> {
   return {
     name: upperFirst(entityName),
     fields: [],
     relationships: [],
-    applications: [],
+    // applications: [],
     annotations: {},
   };
 }

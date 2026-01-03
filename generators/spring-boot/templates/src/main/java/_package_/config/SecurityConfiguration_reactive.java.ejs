@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -34,7 +34,7 @@ import tech.jhipster.web.filter.reactive.CookieCsrfFilter;
 <%_ } _%>
 import tech.jhipster.config.JHipsterProperties;
 <%_ if (generateInMemoryUserCredentials) { _%>
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
+import org.springframework.boot.security.autoconfigure.SecurityProperties;
 <%_ } _%>
 <%_ if (!skipClient) { _%>
 import <%= packageName %>.web.filter.SpaWebFilter;
@@ -217,7 +217,7 @@ public class SecurityConfiguration {
                 pathMatchers(
   <%_ if (clientBundlerVite) { _%>
                     "/assets/**",
-  <%_ } else if (clientBundlerExperimentalEsbuild) { _%>
+  <%_ } else if (clientBundlerEsbuild) { _%>
                     "/content/**",
                     "/resources/**",
   <%_ } else { _%>

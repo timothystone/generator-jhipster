@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,29 +16,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import assert from 'assert';
-import fs, { existsSync, writeFileSync } from 'fs';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { before, describe, it } from 'esmocha';
+import assert from 'node:assert';
+import fs, { existsSync, writeFileSync } from 'node:fs';
+import type { PathOrFileDescriptor } from 'node:fs';
+import path from 'node:path';
+
 import sortKeys from 'sort-keys';
 
-import { applicationTypes, authenticationTypes } from '../lib/jhipster/index.js';
-import { formatDateForChangelog } from '../generators/base/support/index.js';
+import { formatDateForChangelog } from '../generators/base/support/index.ts';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE } from '../lib/core/application-types.ts';
+import { authenticationTypes } from '../lib/jhipster/index.ts';
 
-const writeJsonSync = (file, content) => writeFileSync(file, JSON.stringify(content, null, 2));
-const readJsonSync = file => JSON.parse(fs.readFileSync(file, 'utf-8'));
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const writeJsonSync = (file: PathOrFileDescriptor, content: any) => writeFileSync(file, JSON.stringify(content, null, 2));
+const readJsonSync = (file: PathOrFileDescriptor) => JSON.parse(fs.readFileSync(file, 'utf-8'));
 
 const { JWT, SESSION } = authenticationTypes;
-const { GATEWAY, MICROSERVICE } = applicationTypes;
 
 const fixSamples = process.argv.includes('--fix-samples');
-const itSamplesPath = path.join(__dirname, '..', 'test-integration', 'samples');
-const dailyBuildsSamplesPath = path.join(__dirname, '..', 'test-integration', 'daily-builds');
-const itEntitiesSamplesPath = path.join(__dirname, '..', 'test-integration', 'samples', '.jhipster');
+const itSamplesPath = path.join(import.meta.dirname, '..', '.blueprint', 'generate-sample', 'templates', 'test-integration', 'samples');
+const dailyBuildsSamplesPath = path.join(
+  import.meta.dirname,
+  '..',
+  '.blueprint',
+  'generate-sample',
+  'templates',
+  'test-integration',
+  'daily-builds',
+);
+const itEntitiesSamplesPath = path.join(
+  import.meta.dirname,
+  '..',
+  '.blueprint',
+  'generate-sample',
+  'templates',
+  'test-integration',
+  'samples',
+  '.jhipster',
+);
 const REMEMBER_ME_KEY = 'a5e93fdeb16e2ee2dc4a629b5dbdabb30f968e418dfc0483c53afdc695cfac96d06cf5c581cbefb93e3aaa241880857fcafe';
 const JWT_SECRET_KEY =
   'ZjY4MTM4YjI5YzMwZjhjYjI2OTNkNTRjMWQ5Y2Q0Y2YwOWNmZTE2NzRmYzU3NTMwM2NjOTE3MTllOTM3MWRkMzcyYTljMjVmNmQ0Y2MxOTUzODc0MDhhMTlkMDIxMzI2YzQzZDM2ZDE3MmQ3NjVkODk3OTVmYzljYTQyZDNmMTQ=';
@@ -79,7 +94,9 @@ describe('integration-test', () => {
               config.rememberMeKey = REMEMBER_ME_KEY;
               writeJsonSync(yoFile, yoJson);
             } else if (
-              (config.authenticationType === JWT || config.applicationType === MICROSERVICE || config.applicationType === GATEWAY) &&
+              (config.authenticationType === JWT ||
+                config.applicationType === APPLICATION_TYPE_MICROSERVICE ||
+                config.applicationType === APPLICATION_TYPE_GATEWAY) &&
               config.jwtSecretKey !== JWT_SECRET_KEY
             ) {
               config.jwtSecretKey = JWT_SECRET_KEY;
@@ -95,7 +112,11 @@ describe('integration-test', () => {
         it('should contain creationTimestamp', () => {
           assert(config.creationTimestamp);
         });
-        if (config.authenticationType === JWT || config.applicationType === MICROSERVICE || config.applicationType === GATEWAY) {
+        if (
+          config.authenticationType === JWT ||
+          config.applicationType === APPLICATION_TYPE_MICROSERVICE ||
+          config.applicationType === APPLICATION_TYPE_GATEWAY
+        ) {
           it('should contain jwtSecretKey', () => {
             assert(config.jwtSecretKey);
           });
@@ -141,11 +162,11 @@ describe('integration-test', () => {
             }
           }
         });
-        it('cypress should not added to skipClient and clientFrameworkNo', () => {
+        it('cypress should not be added to skipClient and clientFrameworkNo', () => {
           if (config.skipClient || config.clientFramework === 'no') {
             const includesCypress = config.testFrameworks?.includes('cypress');
             if (fixSamples && includesCypress) {
-              config.testFrameworks = config.testFrameworks.filter(test => test !== 'cypress');
+              config.testFrameworks = config.testFrameworks.filter((test: string) => test !== 'cypress');
               writeConfig();
             } else {
               assert(!includesCypress);
@@ -178,7 +199,7 @@ describe('integration-test', () => {
         }
         assert(entityJson.changelogDate);
       });
-      it(`${name} does not contains duplicate changelogDate`, () => {
+      it(`${name} does not contain duplicate changelogDate`, () => {
         if (fixSamples) {
           while (changelogDates.includes(entityJson.changelogDate)) {
             entityJson.changelogDate = formatDateForChangelog(new Date());

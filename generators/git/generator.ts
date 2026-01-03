@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,22 +17,21 @@
  * limitations under the License.
  */
 
-import chalk from 'chalk';
 import type { QueuedAdapter } from '@yeoman/types';
+import chalk from 'chalk';
+import { CheckRepoActions } from 'simple-git';
 
-import BaseGenerator from '../base/index.js';
-import { files } from './files.js';
+import BaseGenerator from '../base/index.ts';
 
-/**
- * @class
- * @extends {BaseGenerator}
- */
-export default class GitGenerator extends BaseGenerator {
+import { files } from './files.ts';
+import type { Config as GitConfig, GeneratorProperties as GitGeneratorProperties, Options as GitOptions } from './types.ts';
+
+export default class GitGenerator extends BaseGenerator<GitConfig, GitOptions> {
   gitInitialized!: boolean;
-  skipGit!: boolean;
-  forceGit!: boolean;
   existingRepository!: boolean;
-  commitMsg!: string;
+  skipGit!: GitGeneratorProperties['skipGit'];
+  readonly forceGit!: GitGeneratorProperties['forceGit'];
+  readonly commitMsg!: GitGeneratorProperties['commitMsg'];
 
   async beforeQueue() {
     if (!this.fromBlueprint) {
@@ -68,7 +67,7 @@ export default class GitGenerator extends BaseGenerator {
       async preparing() {
         if (!this.skipGit) {
           // Force write .yo-rc.json to disk, it's used to check if the application is regenerated
-          this.jhipsterConfig.skipGit = undefined;
+          this.jhipsterConfig.monorepository ??= undefined;
         }
       },
     });
@@ -148,7 +147,7 @@ export default class GitGenerator extends BaseGenerator {
             this.log.ok(`Application successfully committed to Git from ${repositoryRoot}.`);
           } catch (e) {
             this.log.warn(
-              chalk.red.bold(`Application commit to Git failed from ${repositoryRoot}. Try to commit manually. (${(e as any).message})`),
+              chalk.red.bold(`Application commit to Git failed from ${repositoryRoot}. Try to commit manually. (${(e as Error).message})`),
             );
           }
         };
@@ -171,7 +170,7 @@ export default class GitGenerator extends BaseGenerator {
     try {
       const git = this.createGit();
       if (await git.checkIsRepo()) {
-        if (await git.checkIsRepo('root' as any)) {
+        if (await git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT)) {
           this.log.info('Using existing git repository.');
         } else {
           this.log.info('Using existing git repository at parent folder.');

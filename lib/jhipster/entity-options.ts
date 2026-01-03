@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,30 +19,30 @@
 export const MapperTypes = {
   MAPSTRUCT: 'mapstruct',
   NO: 'no',
-};
+} as const;
 
 export const ServiceTypes = {
   SERVICE_CLASS: 'serviceClass',
   SERVICE_IMPL: 'serviceImpl',
   NO: 'no',
-};
+} as const;
 
 export const PaginationTypes = {
   PAGINATION: 'pagination',
   INFINITE_SCROLL: 'infinite-scroll',
   NO: 'no',
-};
+} as const;
 
 export const SearchTypes = {
   ELASTICSEARCH: 'elasticsearch',
   COUCHBASE: 'couchbase',
   NO: 'no',
-};
+} as const;
 
 export const FilteringTypes = {
   JPA_METAMODEL: 'jpaMetamodel',
   NO: 'no',
-};
+} as const;
 
 export default {
   MapperTypes,

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createNeedleCallback } from '../../base/support/needles.js';
-import { upperFirstCamelCase } from '../../../lib/utils/string.js';
-import { joinCallbacks } from '../../base/support/write-files.js';
-import type { PostWritingEntitiesTaskParam } from '../../../lib/types/application/tasks.js';
+import { upperFirstCamelCase } from '../../../lib/utils/index.ts';
+import { createNeedleCallback } from '../../base-core/support/needles.ts';
+import { joinCallbacks } from '../../base-core/support/write-files.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../../client/types.d.ts';
 
 export function addRoute({
   needle,
@@ -54,13 +54,19 @@ export function addRoute({
   });
 }
 
-export function addEntitiesRoute({ application, entities }: Pick<PostWritingEntitiesTaskParam, 'application' | 'entities'>) {
+export function addEntitiesRoute<const E extends ClientEntity, const A extends ClientApplication<E>>({
+  application,
+  entities,
+}: {
+  application: A;
+  entities: E[];
+}) {
   const { enableTranslation } = application;
   return joinCallbacks(
     ...entities.map(entity => {
-      const { i18nKeyPrefix, entityClassPlural, entityFolderName, entityFileName, entityUrl } = entity;
+      const { i18nKeyPrefix, entityNamePlural, entityFolderName, entityFileName, entityUrl } = entity;
 
-      const pageTitle = enableTranslation ? `${i18nKeyPrefix}.home.title` : entityClassPlural;
+      const pageTitle = enableTranslation ? `${i18nKeyPrefix}.home.title` : entityNamePlural;
       const modulePath = `./${entityFolderName}/${entityFileName}.routes`;
 
       return addRoute({
@@ -95,7 +101,7 @@ export function addItemToMenu({
   const contentToAdd = `
         <li>
           <a class="dropdown-item" ${routerLink} routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="collapseNavbar()">
-            <fa-icon icon="${icon}" [fixedWidth]="true"></fa-icon>
+            <fa-icon icon="${icon}" [fixedWidth]="true" />
             <span${enableTranslation ? ` ${jhiPrefix}Translate="${translationKey}"` : ''}>${name}</span>
           </a>
         </li>`;
@@ -126,7 +132,13 @@ export const addIconImport = ({ icon }: { icon: string }) => {
   });
 };
 
-export function addToEntitiesMenu({ application, entities }: Pick<PostWritingEntitiesTaskParam, 'application' | 'entities'>) {
+export function addToEntitiesMenu<const E extends ClientEntity, const A extends ClientApplication<E>>({
+  application,
+  entities,
+}: {
+  application: A;
+  entities: E[];
+}) {
   const { enableTranslation, jhiPrefix } = application;
   return joinCallbacks(
     ...entities.map(entity => {
@@ -134,9 +146,9 @@ export function addToEntitiesMenu({ application, entities }: Pick<PostWritingEnt
         needle: entity.adminEntity ? 'jhipster-needle-add-element-to-admin-menu' : 'jhipster-needle-add-entity-to-menu',
         enableTranslation,
         icon: 'asterisk',
-        route: entity.entityPage,
+        route: entity.entityPage!,
         translationKey: `global.menu.entities.${entity.entityTranslationKeyMenu}`,
-        name: entity.entityClassHumanized,
+        name: entity.entityNameHumanized,
         jhiPrefix,
       });
     }),

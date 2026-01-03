@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -29,7 +29,7 @@
 # ===================================================================
 # Standard Spring Boot properties.
 # Full reference is available at:
-# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# https://docs.spring.io/spring-boot/appendix/application-properties/index.html
 # ===================================================================
 
 ---
@@ -128,7 +128,7 @@ management:
         readiness:
           include: readinessState<% if (databaseTypeSql && !reactive) { %>,db<% } %>
     jhimetrics:
-      enabled: true
+      access: read-only
   info:
     git:
       mode: full
@@ -207,45 +207,53 @@ spring:
       <%_ } _%>
     <%_ } _%>
     gateway:
+      server:
     <%_ if (reactive) { _%>
-      default-filters:
-        - <% if (authenticationTypeJwt) { %>JWTRelay<% } else { %>TokenRelay<% } %>
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-          predicates:
-            - name: Path
-              args:
-                pattern: "'/services/'+serviceId.toLowerCase()+'/**'"
-          filters:
-            - StripPrefix=2
-      httpclient:
-        pool:
-          max-connections: 1000
+        webflux:
+          default-filters:
+            - <% if (authenticationTypeJwt) { %>JWTRelay<% } else { %>TokenRelay<% } %>
     <%_ } else { _%>
-      mvc:
-        routes:
-          - id: <%= lowercaseBaseName %>_route
-            uri: lb://<%= lowercaseBaseName %>
-            predicates:
-              - Path=/services/<%= lowercaseBaseName %>/**
-            filters:
-              - StripPrefix=2
+        webmvc:
+    <%_ } _%>
+    <%_ if (serviceDiscoveryAny) { _%>
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+              predicates:
+                - name: Path
+                  args:
+                    pattern: "'/services/'+serviceId.toLowerCase()+'/**'"
+              filters:
+                - StripPrefix=2
+    <%_ } _%>
+    <%_ if (reactive) { _%>
+          httpclient:
+            pool:
+              max-connections: 1000
+    <%_ } _%>
+    <%_ if (!serviceDiscoveryAny) { _%>
+          routes:
+            - id: <%= lowercaseBaseName %>_route
+              uri: lb://<%= lowercaseBaseName %>
+              predicates:
+                - Path=/services/<%= lowercaseBaseName %>/**
+              filters:
+                - StripPrefix=2
       <%_ for (const ms of gatewayRoutes ?? []) { _%>
-          - id: <%= ms.route %>_route
-            uri: lb://<%= ms.route %>
-            predicates:
-              - Path=/services/<%= ms.route %>/**
-            filters:
-        <%_ if (authenticationTypeOauth2) { _%>
-              - TokenRelay
+            - id: <%= ms.route %>_route
+              uri: lb://<%= ms.route %>
+              predicates:
+                - Path=/services/<%= ms.route %>/**
+              filters:
+        <%_ if (!reactive && authenticationTypeOauth2) { _%>
+                - TokenRelay
         <%_ } _%>
-              - StripPrefix=2
-              # X-Forwarded-Prefix not working when using MVC https://github.com/spring-cloud/spring-cloud-gateway/issues/3354, add manually
-              - AddRequestHeader=X-Forwarded-Prefix,/services/<%= ms.route %>
+                - StripPrefix=2
       <%_ } _%>
     <%_ } _%>
+          # See alternatives in https://github.com/spring-cloud/spring-cloud-gateway/issues/3818
+          trusted-proxies: '.*'
   <%_ } _%>
   <%_ if (messageBrokerKafka) { _%>
     function:
@@ -327,6 +335,7 @@ spring:
       hibernate.cache.hazelcast.instance_name: <%= baseName %>
       hibernate.cache.hazelcast.use_lite_member: true
     <%_ } else if (cacheProviderInfinispan) { _%>
+      hibernate.cache.region.factory_class: infinispan
       hibernate.cache.infinispan.statistics: false
       hibernate.cache.use_minimal_puts: true
       hibernate.cache.infinispan.entity.expiration.lifespan: 3600000
@@ -337,8 +346,8 @@ spring:
     hibernate:
       ddl-auto: none
       naming:
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+        physical-strategy: <%= locals.hibernateNamingPhysicalStrategy %>
+        implicit-strategy: <%= locals.hibernateNamingImplicitStrategy %>
 <%_ } _%>
   messages:
     basename: i18n/messages
@@ -420,20 +429,22 @@ info:
 # ===================================================================
 
 jhipster:
+<%_ if (!skipClient) { _%>
   clientApp:
-    name: "<%= frontendAppName %>"
+    name: "<%= locals.frontendAppName %>"
   # By default CORS is disabled. Uncomment to enable.
   # cors:
   #   allowed-origins: "http://localhost:8100,http://localhost:9000"
   #   allowed-methods: "*"
   #   allowed-headers: "*"
-<%_ if (authenticationTypeSession) { _%>
+  <%_ if (authenticationTypeSession) { _%>
   #   exposed-headers: "Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params"
-<%_ } else { _%>
+  <%_ } else { _%>
   #   exposed-headers: "Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params"
-<%_ } _%>
+  <%_ } _%>
   #   allow-credentials: true
   #   max-age: 1800
+<%_ } _%>
   mail:
     from: <%= baseName %>@localhost
   api-docs:
@@ -463,6 +474,8 @@ jhipster:
         - api://default
 <%_ } _%>
 
+# jhipster-needle-add-application-yaml-document
+---
 # ===================================================================
 # Application specific properties
 # Add your own application properties here, see the ApplicationProperties class

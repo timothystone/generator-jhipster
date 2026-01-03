@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,12 @@
  * limitations under the License.
  */
 
-import Validator from './validator.js';
+import type AbstractJDLOption from '../../core/models/abstract-jdl-option.ts';
+
+import Validator from './validator.ts';
 
 export default class OptionValidator extends Validator {
-  constructor(optionType, additionalFieldToCheck?: any) {
+  constructor(optionType: string, additionalFieldToCheck?: string) {
     const fieldsToCheck = ['name', 'entityNames', 'excludedNames', 'getType'];
     if (additionalFieldToCheck) {
       fieldsToCheck.push(additionalFieldToCheck);
@@ -28,7 +30,7 @@ export default class OptionValidator extends Validator {
     super(`${optionType} option`, fieldsToCheck);
   }
 
-  validate(jdlOption) {
+  validate(jdlOption: AbstractJDLOption) {
     super.validate(jdlOption);
   }
 }

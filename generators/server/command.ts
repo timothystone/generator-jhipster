@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,109 +16,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chalk from 'chalk';
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_COMMON, GENERATOR_SPRING_BOOT } from '../generator-list.js';
-import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../lib/jhipster/index.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+
+import { getDBTypeFromDBValue } from './support/database.ts';
 
 const command = {
-  options: {
-    db: {
-      description: 'Provide DB name for the application when skipping server side generation',
-      type: String,
-      scope: 'none',
-    },
-    skipUserManagement: {
-      description: 'Skip the user management module during app generation',
-      type: Boolean,
-      scope: 'storage',
-    },
-    recreateInitialChangelog: {
-      description: 'Recreate the initial database changelog based on the current config',
-      type: Boolean,
-      scope: 'none',
-    },
-    cacheProvider: {
-      description: 'Cache provider',
-      type: String,
-      scope: 'storage',
-    },
+  configs: {
     enableSwaggerCodegen: {
       description: 'API first development using OpenAPI-generator',
-      type: Boolean,
-      scope: 'storage',
-    },
-    enableHibernateCache: {
-      description: 'Enable hibernate cache',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
     searchEngine: {
       description: 'Provide search engine for the application when skipping server side generation',
-      type: String,
+      cli: {
+        type: String,
+      },
+      choices: ['no', 'elasticsearch', 'couchbase'],
       scope: 'storage',
     },
     skipCheckLengthOfIdentifier: {
       description: 'Skip check the length of the identifier, only for recent Oracle databases that support 30+ characters metadata',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
-    },
-    skipDbChangelog: {
-      description: 'Skip the generation of database migrations',
-      type: Boolean,
-      scope: 'none',
     },
     skipFakeData: {
       description: 'Skip generation of fake data for development',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
     websocket: {
       description: 'Provide websocket option for the application when skipping server side generation',
-      type: String,
-      scope: 'storage',
-    },
-    projectVersion: {
-      description: 'project version to use, this option is not persisted',
-      type: String,
-      env: 'JHI_PROJECT_VERSION',
-      scope: 'generator',
-    },
-    jhipsterDependenciesVersion: {
-      description: 'jhipster-dependencies version to use, this option is not persisted',
-      type: String,
-      env: 'JHIPSTER_DEPENDENCIES_VERSION',
-      scope: 'generator',
-    },
-  },
-  configs: {
-    applicationType: {
-      description: 'Application type to generate',
       cli: {
         type: String,
       },
-      prompt: {
-        type: 'list',
-        message: `Which ${chalk.yellow('*type*')} of application would you like to create?`,
-      },
-      choices: [
-        {
-          value: APPLICATION_TYPE_MONOLITH,
-          name: 'Monolithic application (recommended for simple projects)',
-        },
-        {
-          value: APPLICATION_TYPE_GATEWAY,
-          name: 'Gateway application',
-        },
-        {
-          value: APPLICATION_TYPE_MICROSERVICE,
-          name: 'Microservice application',
-        },
-      ],
       scope: 'storage',
     },
+    db: {
+      description: 'Provide DB name for the application when skipping server side generation',
+      cli: {
+        type: String,
+      },
+      configure: (gen, value) => {
+        if (value) {
+          const databaseType = getDBTypeFromDBValue(value);
+          if (databaseType) {
+            gen.jhipsterConfig.databaseType = databaseType;
+          } else if (!gen.jhipsterConfig.databaseType) {
+            throw new Error(`Could not detect databaseType for database ${value}`);
+          }
+          if (value !== value) {
+            gen.jhipsterConfig.devDatabaseType = value;
+            gen.jhipsterConfig.prodDatabaseType = value;
+          }
+        }
+      },
+      scope: 'none',
+    },
   },
-  import: [GENERATOR_COMMON, GENERATOR_SPRING_BOOT],
-} as const satisfies JHipsterCommandDefinition;
+  import: ['common', 'spring-boot'],
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

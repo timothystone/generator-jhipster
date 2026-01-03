@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-import { relationshipTypes } from '../../core/basic-types/index.js';
-import type JDLRelationship from '../../core/models/jdl-relationship.js';
-import { relationshipTypeExists } from '../../core/basic-types/relationship-types.js';
-import Validator from './validator.js';
+import { relationshipTypes } from '../../core/basic-types/index.ts';
+import { relationshipTypeExists } from '../../core/basic-types/relationship-types.ts';
+import type JDLRelationship from '../../core/models/jdl-relationship.ts';
+
+import Validator from './validator.ts';
 
 const { ONE_TO_ONE, MANY_TO_MANY, MANY_TO_ONE, ONE_TO_MANY } = relationshipTypes;
 

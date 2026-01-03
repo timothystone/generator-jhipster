@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -21,8 +21,6 @@ dependencies {
 }
 
 ext {
-    springProfiles = "prod" + springProfiles
-
     if (project.hasProperty("api-docs")) {
         springProfiles += ",api-docs"
     }
@@ -41,7 +39,7 @@ bootRun {
 
 <%_ if (!skipClient) { _%>
 task webapp(type: NpmTask) {
-    dependsOn npmInstall
+    dependsOn(npmInstall)
     args = ["run", "webapp:prod"]
     environment = [APP_VERSION: project.version]
 }
@@ -75,15 +73,14 @@ task integrationTest(type: Test) {
     description = "Execute integration tests."
     group = "verification"
     include "**/*IT*", "**/*IntTest*"
-<%_ if (cucumberTests) { _%>
-    exclude "**/*CucumberIT*"
+<%_ if (javaIntegrationTestExclude.length > 0) { _%>
+    exclude <%- javaIntegrationTestExclude.map(exclude => `"${exclude}"`).join('') %>
 <%_ } _%>
     testLogging {
-        events 'FAILED', 'SKIPPED'
-        exceptionFormat "full"
+        events = ['FAILED', 'SKIPPED']
+        exceptionFormat = "full"
     }
-    systemProperty('spring.profiles.active', 'test,testprod')
-    systemProperty('java.security.egd', 'file:/dev/./urandom')
+    systemProperty('spring.profiles.active', springTestProfiles)
     // uncomment if the tests reports are not generated
     // see https://github.com/jhipster/generator-jhipster/pull/2771 and https://github.com/jhipster/generator-jhipster/pull/4484
     // ignoreFailures true
@@ -96,10 +93,9 @@ task integrationTest(type: Test) {
     }
 <%_ } _%>
 }
-integrationTest.dependsOn test
-
+integrationTest.dependsOn(test)
 
 <%_ if (!skipClient) { _%>
-processResources.dependsOn webapp
-bootJar.dependsOn processResources
+processResources.dependsOn(webapp)
+bootJar.dependsOn(processResources)
 <%_ } _%>

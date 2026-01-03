@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,5 +20,5 @@
 
 // Executable should be written in commonjs https://github.com/nodejs/modules/issues/152.
 (async () => {
-  await import('./cli.mjs');
+  await import('./cli.ts');
 })();

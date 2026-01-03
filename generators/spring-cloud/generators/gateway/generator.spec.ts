@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { before, describe, expect, it } from 'esmocha';
+import { basename, resolve } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.js';
-import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = `${basename(resolve(__dirname, '../../'))}:${basename(__dirname)}`;
+const generator = `${basename(resolve(import.meta.dirname, '../../'))}:${basename(import.meta.dirname)}`;
 
 describe(`generator - ${generator}`, () => {
   shouldSupportFeatures(Generator);
@@ -35,7 +32,12 @@ describe(`generator - ${generator}`, () => {
 
   describe('with defaults options', () => {
     before(async () => {
-      await helpers.runJHipster(generator).withMockedJHipsterGenerators().withMockedSource().withSharedApplication({}).withJHipsterConfig();
+      await helpers
+        .runJHipster(generator)
+        .withMockedJHipsterGenerators({ except: ['jhipster:java:bootstrap', 'jhipster:java-simple-application:build-tool'] })
+        .withMockedSource()
+        .withSharedApplication({})
+        .withJHipsterConfig();
     });
 
     it('should match files snapshot', () => {
@@ -49,9 +51,7 @@ describe(`generator - ${generator}`, () => {
     it('should compose with generators', () => {
       expect(result.getComposedGenerators()).toMatchInlineSnapshot(`
 [
-  "jhipster:bootstrap",
-  "jhipster:java:build-tool",
-  "jhipster:project-name",
+  "jhipster:java-simple-application:maven",
 ]
 `);
     });
@@ -61,7 +61,7 @@ describe(`generator - ${generator}`, () => {
     before(async () => {
       await helpers
         .runJHipster(generator)
-        .withMockedJHipsterGenerators()
+        .withMockedJHipsterGenerators({ except: ['jhipster:java:bootstrap', 'jhipster:java-simple-application:build-tool'] })
         .withMockedSource()
         .withSharedApplication({})
         .withJHipsterConfig({ serviceDiscoveryType: 'consul' });
@@ -78,9 +78,7 @@ describe(`generator - ${generator}`, () => {
     it('should compose with generators', () => {
       expect(result.getComposedGenerators()).toMatchInlineSnapshot(`
 [
-  "jhipster:bootstrap",
-  "jhipster:java:build-tool",
-  "jhipster:project-name",
+  "jhipster:java-simple-application:maven",
 ]
 `);
     });
@@ -91,11 +89,11 @@ describe(`generator - ${generator}`, () => {
       await expect(
         helpers
           .runJHipster(generator)
-          .withMockedJHipsterGenerators()
+          .withMockedJHipsterGenerators({ except: ['jhipster:java:bootstrap', 'jhipster:java-simple-application:build-tool'] })
           .withMockedSource()
           .withSharedApplication({})
           .withJHipsterConfig({ reactive: false }),
-      ).rejects.toThrowError('Spring Cloud Gateway MVC support is experimental');
+      ).rejects.toThrow('Spring Cloud Gateway MVC support is experimental');
     });
   });
 
@@ -103,7 +101,7 @@ describe(`generator - ${generator}`, () => {
     before(async () => {
       await helpers
         .runJHipster(generator)
-        .withMockedJHipsterGenerators()
+        .withMockedJHipsterGenerators({ except: ['jhipster:java:bootstrap', 'jhipster:java-simple-application:build-tool'] })
         .withMockedSource()
         .withSharedApplication({})
         .withOptions({ experimental: true })
@@ -121,9 +119,7 @@ describe(`generator - ${generator}`, () => {
     it('should compose with generators', () => {
       expect(result.getComposedGenerators()).toMatchInlineSnapshot(`
 [
-  "jhipster:bootstrap",
-  "jhipster:java:build-tool",
-  "jhipster:project-name",
+  "jhipster:java-simple-application:maven",
 ]
 `);
     });

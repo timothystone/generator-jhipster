@@ -1,10 +1,13 @@
-import { readdir } from 'fs/promises';
-import { basename, join } from 'path';
+import { readdir } from 'node:fs/promises';
+import { basename, join } from 'node:path';
+
 import { loadFile } from 'mem-fs';
 import type { MemFsEditorFile } from 'mem-fs-editor';
 import { Minimatch } from 'minimatch';
+import normalizePath from 'normalize-path';
 import { transform } from 'p-transform';
-import { GENERATOR_JHIPSTER } from '../../generator-constants.js';
+
+import { GENERATOR_JHIPSTER } from '../../generator-constants.ts';
 
 export const updateApplicationEntitiesTransform = ({
   destinationPath,
@@ -16,7 +19,7 @@ export const updateApplicationEntitiesTransform = ({
   let yoRcFileInMemory: MemFsEditorFile | undefined;
   const entities: string[] = [];
   const yoRcFilePath = join(destinationPath, '.yo-rc.json');
-  const entitiesMatcher = new Minimatch(`${destinationPath}/.jhipster/*.json`);
+  const entitiesMatcher = new Minimatch(`${normalizePath(destinationPath)}/.jhipster/*.json`);
 
   return transform<MemFsEditorFile>(
     file => {
@@ -24,7 +27,7 @@ export const updateApplicationEntitiesTransform = ({
         yoRcFileInMemory = file;
         return undefined;
       }
-      if (entitiesMatcher.match(file.path)) {
+      if (entitiesMatcher.match(normalizePath(file.path))) {
         entities.push(basename(file.path).replace('.json', ''));
       }
       return file;
@@ -37,7 +40,7 @@ export const updateApplicationEntitiesTransform = ({
       }
       if (entities.length > 0) {
         // The mem-fs instance requires another file instance to emit a change event
-        const yoRcFile: MemFsEditorFile = loadFile(yoRcFilePath) as any;
+        const yoRcFile = loadFile(yoRcFilePath) as MemFsEditorFile;
         // Prefer in-memory file if it exists
         const yoRcFileContents = yoRcFileInMemory?.contents ?? yoRcFile.contents;
         if (yoRcFileContents) {

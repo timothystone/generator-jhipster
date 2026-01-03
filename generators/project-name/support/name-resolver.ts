@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import path from 'path';
+import path from 'node:path';
 
 import { camelCase } from 'lodash-es';
-import { isReproducible } from '../../base/support/index.js';
 
 const defaultName = 'jhipster';
 
@@ -46,16 +45,13 @@ export const validateNpmProjectName = (name: string) => {
 export const validateProjectName = (name: string, { javaApplication }: { javaApplication?: boolean } = {}) =>
   javaApplication ? validateJavaApplicationName(name) : validateNpmProjectName(name);
 
-const getDefaultName = (generator: { reproducible?: boolean; javaApplication?: boolean } | any) => {
-  if (generator?.options && isReproducible(generator)) {
+const getDefaultName = (options: { cwd?: string; reproducible?: boolean; javaApplication?: boolean } = {}) => {
+  if (options.reproducible) {
     return defaultName;
   }
-  let projectName = path.basename(process.cwd());
 
-  const { reproducible = false, javaApplication = false } = generator && !generator.options ? generator : {};
-  if (reproducible) {
-    return defaultName;
-  }
+  const { javaApplication = false, cwd = process.cwd() } = options;
+  let projectName = path.basename(cwd);
   if (javaApplication) {
     projectName = camelCase(projectName);
   } else {

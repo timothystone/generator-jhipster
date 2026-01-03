@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,47 +17,45 @@
  * limitations under the License.
  */
 
-import { after, before, describe, it, expect as jestExpect } from 'esmocha';
-import { use as chaiUse, expect } from 'chai';
+import { after, before, describe, expect as jestExpect, it } from 'esmocha';
+
+import { expect, use as chaiUse } from 'chai';
 import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
 
 chaiUse(sinonChai);
 
-import { relationshipTypes } from '../../core/basic-types/index.js';
-import {
-  applicationTypes,
-  binaryOptions,
-  databaseTypes,
-  fieldTypes,
-  relationshipOptions,
-  unaryOptions,
-  validations,
-} from '../../core/built-in-options/index.js';
-import JDLObject from '../../core/models/jdl-object.js';
-import { JDLEntity, JDLEnum } from '../../core/models/index.js';
-import JDLField from '../../core/models/jdl-field.js';
-import JDLValidation from '../../core/models/jdl-validation.js';
-import JDLRelationship from '../../core/models/jdl-relationship.js';
-import JDLUnaryOption from '../../core/models/jdl-unary-option.js';
-import JDLBinaryOption from '../../core/models/jdl-binary-option.js';
+import { APPLICATION_TYPE_MONOLITH } from '../../../core/application-types.ts';
+import fieldTypes from '../../../jhipster/field-types.ts';
+import { createJDLApplication } from '../../core/__test-support__/index.ts';
+import { relationshipTypes } from '../../core/basic-types/index.ts';
+import { binaryOptions, relationshipOptions, unaryOptions, validations } from '../../core/built-in-options/index.ts';
+import { JDLEntity, JDLEnum } from '../../core/models/index.ts';
+import JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import JDLField from '../../core/models/jdl-field.ts';
+import JDLObject from '../../core/models/jdl-object.ts';
+import JDLRelationship from '../../core/models/jdl-relationship.ts';
+import JDLUnaryOption from '../../core/models/jdl-unary-option.ts';
+import JDLValidation from '../../core/models/jdl-validation.ts';
+import { createRuntime } from '../../core/runtime.ts';
+import logger from '../../core/utils/objects/logger.ts';
 
-import logger from '../../core/utils/objects/logger.js';
-import { createJDLApplication } from '../../core/__test-support__/index.js';
-import { convert } from './jdl-with-applications-to-json-converter.js';
+import { convert } from './jdl-with-applications-to-json-converter.ts';
 
 const {
   Validations: { REQUIRED, UNIQUE, MIN, MAX, MINLENGTH, MAXLENGTH, PATTERN, MINBYTES, MAXBYTES },
 } = validations;
-const { MONOLITH } = applicationTypes;
 const { CommonDBTypes } = fieldTypes;
-const { SQL } = databaseTypes;
 
 const { ONE_TO_ONE, MANY_TO_MANY, MANY_TO_ONE, ONE_TO_MANY } = relationshipTypes;
 
 const { BUILT_IN_ENTITY } = relationshipOptions;
 
+type ConvertedEntity = Exclude<ReturnType<ReturnType<typeof convert>['get']>, never[] | undefined>[0] | undefined;
+
 describe('jdl - JDLWithApplicationsToJSONConverter', () => {
+  const runtime = createRuntime();
+
   describe('convert', () => {
     describe('when passing invalid parameters', () => {
       describe('such as no JDL object', () => {
@@ -70,43 +68,41 @@ describe('jdl - JDLWithApplicationsToJSONConverter', () => {
       });
     });
     describe('when passing a JDL object with two applications one with and one without entities', () => {
-      let result;
+      let result: ReturnType<typeof convert>;
 
       before(() => {
         const jdlObject = new JDLObject();
-        const application1 = createJDLApplication({ applicationType: MONOLITH, baseName: 'app1' });
+        const application1 = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'app1' }, runtime);
         jdlObject.addApplication(application1);
         const entity = new JDLEntity({
           name: 'EntityA',
         });
-        const application2 = createJDLApplication({ applicationType: MONOLITH, baseName: 'app2' });
+        const application2 = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'app2' }, runtime);
         application2.addEntityName('EntityA');
         jdlObject.addEntity(entity);
         jdlObject.addApplication(application2);
-        result = convert({
-          jdlObject,
-        });
+        result = convert(jdlObject);
       });
 
       it('should return a map with two applications', () => {
         expect(result.size).to.equal(2);
+        // @ts-expect-error FIXME
         expect(result.get('app1').length).to.equal(0);
+        // @ts-expect-error FIXME
         expect(result.get('app2').length).to.equal(1);
       });
     });
     describe('when passing a JDL object without entities', () => {
-      let result;
+      let result: ReturnType<typeof convert>;
 
       before(() => {
         const jdlObject = new JDLObject();
-        const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+        const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
         jdlObject.addApplication(application);
-        result = convert({
-          jdlObject,
-        });
+        result = convert(jdlObject);
       });
 
-      it('should return a map with no entiy', () => {
+      it('should return a map with no entity', () => {
         result.forEach(entities => {
           expect(entities.length).to.equal(0);
         });
@@ -114,12 +110,12 @@ describe('jdl - JDLWithApplicationsToJSONConverter', () => {
     });
     describe('when passing a JDL object with entities', () => {
       describe('with some of them being built-in entities', () => {
-        let builtInEntitiesAreConverted;
-        let customEntitiesAreConverted;
+        let builtInEntitiesAreConverted: boolean | undefined;
+        let customEntitiesAreConverted: boolean | undefined;
 
         before(() => {
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -138,11 +134,9 @@ describe('jdl - JDLWithApplicationsToJSONConverter', () => {
           application.addEntityName('User');
           application.addEntityName('Authority');
           jdlObject.addApplication(application);
-          const returnedMap: any = convert({
-            jdlObject,
-          });
-          customEntitiesAreConverted = returnedMap.get('toto').some(entity => entity.name === 'A');
-          builtInEntitiesAreConverted = returnedMap.get('toto').some(entity => entity.name === 'User' || entity.name === 'Authority');
+          const returnedMap = convert(jdlObject);
+          customEntitiesAreConverted = returnedMap.get('toto')?.some(entity => entity.name === 'A');
+          builtInEntitiesAreConverted = returnedMap.get('toto')?.some(entity => entity.name === 'User' || entity.name === 'Authority');
         });
 
         it('should not convert built-in entities', () => {
@@ -153,11 +147,11 @@ describe('jdl - JDLWithApplicationsToJSONConverter', () => {
         });
       });
       describe('with no field, no option and no relationship', () => {
-        let convertedEntity;
+        let convertedEntity: any;
 
         before(() => {
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -166,19 +160,19 @@ describe('jdl - JDLWithApplicationsToJSONConverter', () => {
           application.addEntityName('A');
           jdlObject.addApplication(application);
           jdlObject.addEntity(entityA);
-          const returnedMap: any = convert({
-            jdlObject,
-          });
-          convertedEntity = returnedMap.get('toto')[0];
+          const returnedMap = convert(jdlObject);
+          convertedEntity = returnedMap.get('toto')?.[0];
         });
 
         it('should convert the entity', () => {
           jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -186,21 +180,24 @@ JSONEntity {
   "fields": [],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
         });
       });
       describe('with options', () => {
-        let convertedEntity;
+        let convertedEntity: any;
 
         before(() => {
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -271,13 +268,8 @@ JSONEntity {
           jdlObject.addEntity(entityA);
           jdlObject.addApplication(application);
           options.forEach(option => jdlObject.addOption(option));
-          const returnedMap: any = convert({
-            jdlObject,
-            applicationName: 'toto',
-            applicationType: MONOLITH,
-            databaseType: SQL,
-          });
-          convertedEntity = returnedMap.get('toto')[0];
+          const returnedMap = convert(jdlObject);
+          convertedEntity = returnedMap.get('toto')?.[0];
         });
 
         it('should convert the entity', () => {
@@ -310,13 +302,13 @@ JSONEntity {
         });
       });
       describe('when setting the DTO option without the service option', () => {
-        let convertedEntity;
-        let loggerSpy;
+        let convertedEntity: any;
+        let loggerSpy: ReturnType<typeof sinon.spy>;
 
         before(() => {
           loggerSpy = sinon.spy(logger, 'info');
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -332,10 +324,8 @@ JSONEntity {
               entityNames: new Set(['A']),
             }),
           );
-          const returnedMap: any = convert({
-            jdlObject,
-          });
-          convertedEntity = returnedMap.get('toto')[0];
+          const returnedMap = convert(jdlObject);
+          convertedEntity = returnedMap.get('toto')?.[0];
         });
 
         after(() => {
@@ -351,10 +341,12 @@ JSONEntity {
         it('should set the service option to serviceClass', () => {
           jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": "mapstruct",
   "embedded": undefined,
@@ -362,23 +354,26 @@ JSONEntity {
   "fields": [],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": "serviceClass",
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
         });
       });
       describe('when setting the filtering option without the service option', () => {
-        let convertedEntity;
-        let loggerSpy;
+        let convertedEntity: any;
+        let loggerSpy: ReturnType<typeof sinon.spy>;
 
         before(() => {
           loggerSpy = sinon.spy(logger, 'info');
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -393,13 +388,8 @@ JSONEntity {
               entityNames: new Set(['A']),
             }),
           );
-          const returnedMap: any = convert({
-            jdlObject,
-            applicationName: 'toto',
-            applicationType: MONOLITH,
-            databaseType: SQL,
-          });
-          convertedEntity = returnedMap.get('toto')[0];
+          const returnedMap = convert(jdlObject);
+          convertedEntity = returnedMap.get('toto')?.[0];
         });
 
         after(() => {
@@ -415,10 +405,12 @@ JSONEntity {
         it('should set the service option to serviceClass', () => {
           jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -426,21 +418,24 @@ JSONEntity {
   "fields": [],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": true,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": "serviceClass",
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
         });
       });
       describe('when the searching option is set with exclusions', () => {
-        let convertedEntity;
+        let convertedEntity: any;
 
         before(() => {
           const jdlObject = new JDLObject();
-          const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+          const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -457,22 +452,19 @@ JSONEntity {
               excludedNames: new Set(['A']),
             }),
           );
-          const returnedMap: any = convert({
-            jdlObject,
-            applicationName: 'toto',
-            applicationType: MONOLITH,
-            databaseType: SQL,
-          });
-          convertedEntity = returnedMap.get('toto')[0];
+          const returnedMap = convert(jdlObject);
+          convertedEntity = returnedMap.get('toto')?.[0];
         });
 
         it('should prevent the entities from being searched', () => {
           jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -480,23 +472,26 @@ JSONEntity {
   "fields": [],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "searchEngine": "no",
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
         });
       });
       describe('with fields', () => {
         describe('without validation, comment or option', () => {
-          let convertedEntity;
+          let convertedEntity: any;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               tableName: 'entity_a',
@@ -515,22 +510,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -547,21 +539,24 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
         });
         describe('when having blobs', () => {
-          let convertedEntity;
+          let convertedEntity: ConvertedEntity;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               tableName: 'entity_a',
@@ -590,22 +585,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -630,21 +622,24 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
         });
         describe('with field types being enums', () => {
-          let convertedEntity;
+          let convertedEntity: ConvertedEntity;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               comment: 'The best entity',
@@ -659,22 +654,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -688,21 +680,24 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
         });
         describe('with comments', () => {
-          let convertedEntity;
+          let convertedEntity: ConvertedEntity;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               tableName: 'entity_a',
@@ -717,22 +712,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -746,21 +738,24 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
         });
         describe('with validations', () => {
-          let convertedEntity;
+          let convertedEntity: ConvertedEntity;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               tableName: 'entity_a',
@@ -830,22 +825,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -888,21 +880,24 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
         });
         describe('with options', () => {
-          let convertedEntity;
+          let convertedEntity: ConvertedEntity;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({
               name: 'A',
               tableName: 'entity_a',
@@ -920,22 +915,19 @@ JSONEntity {
             jdlObject.addEntity(entityA);
             application.addEntityName('A');
             jdlObject.addApplication(application);
-            const returnedMap: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            convertedEntity = returnedMap.get('toto')[0];
+            const returnedMap = convert(jdlObject);
+            convertedEntity = returnedMap.get('toto')?.[0];
           });
 
           it('should convert them', () => {
             jestExpect(convertedEntity).toMatchInlineSnapshot(`
 JSONEntity {
+  "angularJSSuffix": undefined,
   "annotations": {},
   "applications": [
     "toto",
   ],
+  "clientRootFolder": undefined,
   "documentation": "The best entity",
   "dto": undefined,
   "embedded": undefined,
@@ -952,11 +944,14 @@ JSONEntity {
   ],
   "fluentMethods": undefined,
   "jpaMetamodelFiltering": undefined,
+  "microserviceName": undefined,
   "name": "A",
   "pagination": undefined,
   "readOnly": undefined,
   "relationships": [],
   "service": undefined,
+  "skipClient": undefined,
+  "skipServer": undefined,
 }
 `);
           });
@@ -964,12 +959,12 @@ JSONEntity {
       });
       describe('with relationships', () => {
         describe('without options, required relationships or comments', () => {
-          let relationshipsForA;
-          let relationshipsForB;
+          let relationshipsForA: ReturnType<ReturnType<typeof convert>['get']>;
+          let relationshipsForB: ReturnType<ReturnType<typeof convert>['get']>;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({ name: 'A', comment: 'a' });
             const entityB = new JDLEntity({ name: 'B', comment: 'b' });
             const oneToOneRelationship = new JDLRelationship({
@@ -1009,14 +1004,9 @@ JSONEntity {
             jdlObject.addRelationship(manyToManyRelationship);
             jdlObject.addRelationship(oneToManyRelationship);
             jdlObject.addRelationship(manyToOneRelationship);
-            const returned: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            relationshipsForA = returned.get('toto').find(entity => entity.name === 'A').relationships;
-            relationshipsForB = returned.get('toto').find(entity => entity.name === 'B').relationships;
+            const returned: any = convert(jdlObject);
+            relationshipsForA = returned.get('toto').find((entity: any) => entity.name === 'A').relationships;
+            relationshipsForB = returned.get('toto').find((entity: any) => entity.name === 'B').relationships;
           });
 
           it('should convert them', () => {
@@ -1088,11 +1078,11 @@ JSONEntity {
         });
         describe('with options', () => {
           describe('being custom options', () => {
-            let convertedRelationship;
+            let convertedRelationship: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToOneRelationship = new JDLRelationship({
@@ -1115,13 +1105,8 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              convertedRelationship = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
+              const returned: any = convert(jdlObject);
+              convertedRelationship = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
             });
 
             it('should convert them', () => {
@@ -1140,11 +1125,11 @@ JSONEntity {
             });
           });
           describe('being regular options', () => {
-            let convertedRelationship;
+            let convertedRelationship: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToOneRelationship = new JDLRelationship({
@@ -1167,13 +1152,8 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              convertedRelationship = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
+              const returned: any = convert(jdlObject);
+              convertedRelationship = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
             });
 
             it('should convert them', () => {
@@ -1191,12 +1171,12 @@ JSONEntity {
           });
         });
         describe('with required relationships', () => {
-          let relationshipsForA;
-          let relationshipsForB;
+          let relationshipsForA: any;
+          let relationshipsForB: any;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({ name: 'A', comment: 'a' });
             const entityB = new JDLEntity({ name: 'B', comment: 'b' });
             const oneToOneRelationship = new JDLRelationship({
@@ -1214,14 +1194,9 @@ JSONEntity {
             application.addEntityName('B');
             jdlObject.addApplication(application);
             jdlObject.addRelationship(oneToOneRelationship);
-            const returned: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            relationshipsForA = returned.get('toto').find(entity => entity.name === 'A').relationships;
-            relationshipsForB = returned.get('toto').find(entity => entity.name === 'B').relationships;
+            const returned: any = convert(jdlObject);
+            relationshipsForA = returned.get('toto').find((entity: any) => entity.name === 'A').relationships;
+            relationshipsForB = returned.get('toto').find((entity: any) => entity.name === 'B').relationships;
           });
 
           it('should convert them', () => {
@@ -1252,12 +1227,12 @@ JSONEntity {
           });
         });
         describe('with comments', () => {
-          let relationshipsForA;
-          let relationshipsForB;
+          let relationshipsForA: any;
+          let relationshipsForB: any;
 
           before(() => {
             const jdlObject = new JDLObject();
-            const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+            const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
             const entityA = new JDLEntity({ name: 'A', comment: 'a' });
             const entityB = new JDLEntity({ name: 'B', comment: 'b' });
             const oneToOneRelationship = new JDLRelationship({
@@ -1275,14 +1250,9 @@ JSONEntity {
             application.addEntityName('B');
             jdlObject.addApplication(application);
             jdlObject.addRelationship(oneToOneRelationship);
-            const returned: any = convert({
-              jdlObject,
-              applicationName: 'toto',
-              applicationType: MONOLITH,
-              databaseType: SQL,
-            });
-            relationshipsForA = returned.get('toto').find(entity => entity.name === 'A').relationships;
-            relationshipsForB = returned.get('toto').find(entity => entity.name === 'B').relationships;
+            const returned: any = convert(jdlObject);
+            relationshipsForA = returned.get('toto').find((entity: any) => entity.name === 'A').relationships;
+            relationshipsForB = returned.get('toto').find((entity: any) => entity.name === 'B').relationships;
           });
 
           it('should convert them', () => {
@@ -1314,12 +1284,12 @@ JSONEntity {
         });
         describe("when the injected field in the destination side isn't present", () => {
           describe('for a One-to-One relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToOneRelationship = new JDLRelationship({
@@ -1334,14 +1304,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add the relationship for the source entity', () => {
@@ -1359,12 +1324,12 @@ JSONEntity {
             });
           });
           describe('for a One-to-Many relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToManyRelationship = new JDLRelationship({
@@ -1379,14 +1344,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToManyRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add the relationship for the source entity', () => {
@@ -1404,12 +1364,12 @@ JSONEntity {
             });
           });
           describe('for a Many-to-One relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const manyToOneRelationship = new JDLRelationship({
@@ -1424,14 +1384,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(manyToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add the relationship for the source entity', () => {
@@ -1449,12 +1404,12 @@ JSONEntity {
             });
           });
           describe('for a Many-to-Many relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const manyToManyRelationship = new JDLRelationship({
@@ -1469,14 +1424,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(manyToManyRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add the relationship for the source entity', () => {
@@ -1496,12 +1446,12 @@ JSONEntity {
         });
         describe('when setting custom field for relationship mapping', () => {
           describe('for a One-to-One relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToOneRelationship = new JDLRelationship({
@@ -1517,14 +1467,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add it for the source entity', () => {
@@ -1553,12 +1498,12 @@ JSONEntity {
             });
           });
           describe('for a One-to-Many relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const oneToManyRelationship = new JDLRelationship({
@@ -1574,14 +1519,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(oneToManyRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should ignore it for the source entity', () => {
@@ -1610,12 +1550,12 @@ JSONEntity {
             });
           });
           describe('for a Many-to-One relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const manyToOneRelationship = new JDLRelationship({
@@ -1631,14 +1571,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(manyToOneRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add it for the source entity', () => {
@@ -1667,12 +1602,12 @@ JSONEntity {
             });
           });
           describe('for a Many-to-Many relationship', () => {
-            let relationshipFromSourceToDestination;
-            let relationshipFromDestinationToSource;
+            let relationshipFromSourceToDestination: any;
+            let relationshipFromDestinationToSource: any;
 
             before(() => {
               const jdlObject = new JDLObject();
-              const application = createJDLApplication({ applicationType: MONOLITH, baseName: 'toto' });
+              const application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'toto' }, runtime);
               const entityA = new JDLEntity({ name: 'A', comment: 'a' });
               const entityB = new JDLEntity({ name: 'B', comment: 'b' });
               const manyToManyRelationship = new JDLRelationship({
@@ -1688,14 +1623,9 @@ JSONEntity {
               application.addEntityName('B');
               jdlObject.addApplication(application);
               jdlObject.addRelationship(manyToManyRelationship);
-              const returned: any = convert({
-                jdlObject,
-                applicationName: 'toto',
-                applicationType: MONOLITH,
-                databaseType: SQL,
-              });
-              relationshipFromSourceToDestination = returned.get('toto').find(entity => entity.name === 'A').relationships[0];
-              relationshipFromDestinationToSource = returned.get('toto').find(entity => entity.name === 'B').relationships[0];
+              const returned: any = convert(jdlObject);
+              relationshipFromSourceToDestination = returned.get('toto').find((entity: any) => entity.name === 'A').relationships[0];
+              relationshipFromDestinationToSource = returned.get('toto').find((entity: any) => entity.name === 'B').relationships[0];
             });
 
             it('should add it for the source entity', () => {
@@ -1726,13 +1656,13 @@ JSONEntity {
         });
       });
       describe('with application options', () => {
-        let convertedEntitiesForTataApplication;
-        let convertedEntitiesForTutuApplication;
+        let convertedEntitiesForTataApplication: ReturnType<ReturnType<typeof convert>['get']>;
+        let convertedEntitiesForTutuApplication: ReturnType<ReturnType<typeof convert>['get']>;
 
         before(() => {
           const jdlObject = new JDLObject();
-          const tataApplication = createJDLApplication({ applicationType: MONOLITH, baseName: 'tata' });
-          const tutuApplication = createJDLApplication({ applicationType: MONOLITH, baseName: 'tutu' });
+          const tataApplication = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'tata' }, runtime);
+          const tutuApplication = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH, baseName: 'tutu' }, runtime);
           const entityA = new JDLEntity({
             name: 'A',
             tableName: 'entity_a',
@@ -1795,9 +1725,7 @@ JSONEntity {
           jdlObject.addEntity(entityF);
           jdlObject.addApplication(tataApplication);
           jdlObject.addApplication(tutuApplication);
-          const returnedMap: any = convert({
-            jdlObject,
-          });
+          const returnedMap = convert(jdlObject);
           convertedEntitiesForTataApplication = returnedMap.get('tata');
           convertedEntitiesForTutuApplication = returnedMap.get('tutu');
         });
@@ -1806,10 +1734,12 @@ JSONEntity {
           jestExpect(convertedEntitiesForTataApplication).toMatchInlineSnapshot(`
 [
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tata",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": undefined,
     "embedded": undefined,
@@ -1817,17 +1747,22 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "A",
     "pagination": "pagination",
     "readOnly": undefined,
     "relationships": [],
     "service": undefined,
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tata",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": undefined,
     "embedded": undefined,
@@ -1835,18 +1770,23 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "B",
     "pagination": "infinite-scroll",
     "readOnly": undefined,
     "relationships": [],
     "service": undefined,
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tata",
       "tutu",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": undefined,
     "embedded": undefined,
@@ -1854,22 +1794,27 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "C",
     "pagination": "pagination",
     "readOnly": undefined,
     "relationships": [],
     "service": undefined,
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
 ]
 `);
           jestExpect(convertedEntitiesForTutuApplication).toMatchInlineSnapshot(`
 [
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tata",
       "tutu",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": undefined,
     "embedded": undefined,
@@ -1877,17 +1822,22 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "C",
     "pagination": "pagination",
     "readOnly": undefined,
     "relationships": [],
     "service": undefined,
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tutu",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": "mapstruct",
     "embedded": undefined,
@@ -1895,17 +1845,22 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "D",
     "pagination": "infinite-scroll",
     "readOnly": undefined,
     "relationships": [],
     "service": "serviceClass",
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
   JSONEntity {
+    "angularJSSuffix": undefined,
     "annotations": {},
     "applications": [
       "tutu",
     ],
+    "clientRootFolder": undefined,
     "documentation": "The best entity",
     "dto": undefined,
     "embedded": undefined,
@@ -1913,11 +1868,14 @@ JSONEntity {
     "fields": [],
     "fluentMethods": undefined,
     "jpaMetamodelFiltering": undefined,
+    "microserviceName": undefined,
     "name": "E",
     "pagination": "infinite-scroll",
     "readOnly": undefined,
     "relationships": [],
     "service": undefined,
+    "skipClient": undefined,
+    "skipServer": undefined,
   },
 ]
 `);

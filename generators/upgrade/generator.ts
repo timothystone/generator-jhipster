@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,24 +16,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { setTimeout } from 'timers/promises';
-import { readdir, rm } from 'fs/promises';
+import { readdir, rm } from 'node:fs/promises';
+import { setTimeout } from 'node:timers/promises';
+
 import chalk from 'chalk';
+import type { Store } from 'mem-fs';
 import gitignore from 'parse-gitignore';
 import semver from 'semver';
 import { ResetMode } from 'simple-git';
 
-import BaseGenerator from '../base/index.js';
-import { packageJson } from '../../lib/index.js';
-import EnvironmentBuilder from '../../cli/environment-builder.mjs';
-import { SERVER_MAIN_RES_DIR } from '../generator-constants.js';
-import { GIT_VERSION_NOT_ALLOW_MERGE_UNRELATED_HISTORIES, UPGRADE_BRANCH } from './support/index.js';
+import EnvironmentBuilder from '../../cli/environment-builder.ts';
+import { packageJson } from '../../lib/index.ts';
+import BaseGenerator from '../base/index.ts';
+import { SERVER_MAIN_RES_DIR } from '../generator-constants.ts';
+import type { Config as ProjectNameConfig } from '../project-name/types.d.ts';
+
+import { GIT_VERSION_NOT_ALLOW_MERGE_UNRELATED_HISTORIES, UPGRADE_BRANCH } from './support/index.ts';
+import type { Config as UpgradeConfig, Options as UpgradeOptions } from './types.ts';
 
 /* Constants used throughout */
 const GENERATOR_JHIPSTER = 'generator-jhipster';
-const GENERATOR_APP = 'app';
 const DEFAULT_CLI_OPTIONS = '--force --skip-install --skip-git --ignore-errors --no-insight --skip-checks';
-const DEFAULT_NON_INTERATIVE_OPTIONS = {
+const DEFAULT_NON_INTERACTIVE_OPTIONS = {
   skipInstall: true,
   skipGit: true,
   skipChecks: true,
@@ -43,14 +47,14 @@ const DEFAULT_NON_INTERATIVE_OPTIONS = {
 };
 const DEFAULT_MERGE_OPTIONS = ['--strategy', 'ours'];
 
-export default class UpgradeGenerator extends BaseGenerator {
+export default class UpgradeGenerator extends BaseGenerator<UpgradeConfig, UpgradeOptions> {
   requiredPackage = GENERATOR_JHIPSTER;
-  createEnvBuilder;
-  actualApplicationBranch;
-  silent;
-  applyConfig;
+  createEnvBuilder!: typeof EnvironmentBuilder.createDefaultBuilder;
+  actualApplicationBranch!: string;
+  silent!: boolean;
+  applyConfig!: boolean;
   spawnStdio: 'inherit' | 'ignore' | 'pipe' | 'overlapped' = 'inherit';
-  executable;
+  executable!: string;
   verbose!: boolean;
 
   async beforeQueue() {
@@ -86,12 +90,12 @@ export default class UpgradeGenerator extends BaseGenerator {
           );
         }
 
-        if (!this.config.get('baseName')) {
+        if (!(this.jhipsterConfig as ProjectNameConfig).baseName) {
           throw new Error('Current directory does not contain a JHipster project.');
         }
       },
 
-      async checkoutDependency() {
+      checkoutDependency() {
         if (this.applyConfig) return;
 
         const jhipsterVersion = this.getPackageJsonVersion();
@@ -279,7 +283,7 @@ export default class UpgradeGenerator extends BaseGenerator {
     return this.delegateTasksToBlueprint(() => this.end);
   }
 
-  async rmRf(file) {
+  async rmRf(file: string) {
     const absolutePath = this.destinationPath(file);
     if (this.verbose) {
       this.log.verboseInfo(`Removing ${absolutePath}`);
@@ -296,7 +300,7 @@ export default class UpgradeGenerator extends BaseGenerator {
    * Remove every generated file not related to the generation.
    */
   async cleanUp() {
-    const gitignoreContent = this.readDestination('.gitignore', { defaults: '' });
+    const gitignoreContent = this.readDestination('.gitignore', { defaults: '' }) as string;
     const ignoredFiles = gitignoreContent ? (gitignore(gitignoreContent).patterns ?? []) : [];
     const filesToKeep = ['.yo-rc.json', '.jhipster', 'package.json', 'package-lock.json', 'node_modules', '.git', ...ignoredFiles];
     for (const file of await readdir(this.destinationPath())) {
@@ -311,32 +315,29 @@ export default class UpgradeGenerator extends BaseGenerator {
     return this.readDestinationJSON('package.json').devDependencies?.['generator-jhipster'];
   }
 
-  isV7(version) {
-    return version.includes('.') && parseInt(version.split('.', 2), 10) < 8;
+  isV7(version: string): boolean {
+    return version.includes('.') && parseInt(version.split('.', 2)[0], 10) < 8;
   }
 
   async runNonInteractive(inherit = true) {
     const adapter = this.env.adapter.newAdapter?.();
-    const sharedFs = inherit ? this.env.sharedFs : undefined;
+    const sharedFs = inherit ? (this.env.sharedFs as Store<any>) : undefined;
     const inheritedOptions = inherit ? this.options : {};
     const envOptions = { sharedFs, adapter };
-    const generatorOptions = { ...inheritedOptions, ...DEFAULT_NON_INTERATIVE_OPTIONS };
-
-    // We should not reuse sharedData at non interactive runs
-    delete (generatorOptions as any).sharedData;
+    const generatorOptions = { ...inheritedOptions, ...DEFAULT_NON_INTERACTIVE_OPTIONS };
 
     const envBuilder = await this.createEnvBuilder(envOptions);
     const env = envBuilder.getEnvironment();
-    await env.run([`jhipster:${GENERATOR_APP}`], generatorOptions);
+    await env.run([`jhipster:app`], generatorOptions);
   }
 
   /**
    * Check git version.
    */
-  async checkGitVersion(minVersion) {
+  async checkGitVersion(minVersion?: string): Promise<boolean> {
     try {
       const rawVersion = await this.createGit().raw('--version');
-      const gitVersion = String(rawVersion.match(/([0-9]+\.[0-9]+\.[0-9]+)/g));
+      const gitVersion = String(rawVersion.match(/(\d+\.\d+\.\d+)/g));
       if (minVersion) {
         return semver.gte(gitVersion, minVersion);
       }

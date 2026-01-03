@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,16 @@
  * limitations under the License.
  */
 import chalk from 'chalk';
+import type { WritableDeep } from 'type-fest';
 
-import * as GENERATOR_LIST from '../generator-list.js';
-import { PRIORITY_NAMES_LIST } from '../base-application/priorities.js';
+import { PRIORITY_NAMES_LIST } from '../base-application/priorities.ts';
+
+import { lookupGeneratorsNamespaces } from './internal/lookup-namespaces.ts';
 
 const prioritiesForSub = (_subGen: string) => PRIORITY_NAMES_LIST;
 
 export const GENERATE_SNAPSHOTS = 'generateSnapshots';
 export const LINK_JHIPSTER_DEPENDENCY = 'linkJhipsterDependency';
-export const GENERATORS = 'generators';
 export const SUB_GENERATORS = 'subGenerators';
 export const ADDITIONAL_SUB_GENERATORS = 'additionalSubGenerators';
 export const DYNAMIC = 'dynamic';
@@ -36,8 +37,6 @@ export const CLI_OPTION = 'cli';
 export const SBS = 'sbs';
 export const COMMAND = 'command';
 export const PRIORITIES = 'priorities';
-export const ALL_GENERATORS = 'allGenerators';
-export const ALL_PRIORITIES = 'allPriorities';
 export const WRITTEN = 'written';
 
 /**
@@ -48,13 +47,13 @@ export const requiredConfig = () => ({});
 /**
  * Default config that will be used for templates
  */
-export const defaultConfig = ({ config = {} } = {}) => ({
+export const defaultConfig = ({ config = {} }: { config?: any } = {}) => ({
   ...requiredConfig,
   [DYNAMIC]: false,
   [JS]: !config[LOCAL_BLUEPRINT_OPTION],
   [LOCAL_BLUEPRINT_OPTION]: false,
   [CLI_OPTION]: !config[LOCAL_BLUEPRINT_OPTION],
-  [SUB_GENERATORS]: [],
+  [SUB_GENERATORS]: [] as string[],
   [ADDITIONAL_SUB_GENERATORS]: '',
 });
 
@@ -65,7 +64,7 @@ export const defaultSubGeneratorConfig = () => ({
   [PRIORITIES]: [],
 });
 
-const allSubGeneratorConfig = subGenerator => ({
+const allSubGeneratorConfig = (subGenerator: string) => ({
   [SBS]: true,
   [COMMAND]: false,
   [PRIORITIES]: prioritiesForSub(subGenerator),
@@ -73,16 +72,16 @@ const allSubGeneratorConfig = subGenerator => ({
 
 export const allGeneratorsConfig = () => ({
   ...requiredConfig,
-  [SUB_GENERATORS]: Object.values(GENERATOR_LIST),
+  [SUB_GENERATORS]: lookupGeneratorsNamespaces(),
   [ADDITIONAL_SUB_GENERATORS]: '',
   [DYNAMIC]: false,
   [JS]: true,
-  [GENERATORS]: Object.fromEntries(Object.values(GENERATOR_LIST).map(subGenerator => [subGenerator, allSubGeneratorConfig(subGenerator)])),
+  generators: Object.fromEntries(lookupGeneratorsNamespaces().map(subGenerator => [subGenerator, allSubGeneratorConfig(subGenerator)])),
 });
 
 export const prompts = () => {
   const { [LOCAL_BLUEPRINT_OPTION]: LOCAL_BLUEPRINT_OPTION_DEFAULT_VALUE, [CLI_OPTION]: CLI_OPTION_DEFAULT_VALUE } = defaultConfig();
-  return [
+  const ret = [
     {
       type: 'confirm',
       name: LOCAL_BLUEPRINT_OPTION,
@@ -93,7 +92,7 @@ export const prompts = () => {
       type: 'checkbox',
       name: SUB_GENERATORS,
       message: 'Which sub-generators do you want to override?',
-      choices: Object.values(GENERATOR_LIST),
+      choices: lookupGeneratorsNamespaces(),
       pageSize: 30,
       loop: false,
     },
@@ -101,26 +100,36 @@ export const prompts = () => {
       type: 'input',
       name: ADDITIONAL_SUB_GENERATORS,
       message: 'Comma separated additional sub-generators.',
-      validate: input => {
+      validate: (input: string) => {
         if (input) {
-          return /^([\w,-]*)$/.test(input) ? true : 'Please provide valid generator names';
+          return /^([\w,-:]*)$/.test(input) ? true : 'Please provide valid generator names (must match ([w,-:]*))';
         }
         return true;
       },
     },
     {
-      when: answers => !answers[LOCAL_BLUEPRINT_OPTION],
+      when: (answers: any) => !answers[LOCAL_BLUEPRINT_OPTION],
       type: 'confirm',
       name: CLI_OPTION,
       message: 'Add a cli?',
       default: CLI_OPTION_DEFAULT_VALUE,
     },
-  ];
+  ] as const;
+  // Inquirer doesn't support readonly prompts, so we need to cast it
+  return ret as WritableDeep<typeof ret>;
 };
 
-export const subGeneratorPrompts = ({ subGenerator, additionalSubGenerator, localBlueprint }) => {
+export const subGeneratorPrompts = ({
+  subGenerator,
+  additionalSubGenerator,
+  localBlueprint,
+}: {
+  subGenerator: string;
+  additionalSubGenerator: boolean;
+  localBlueprint?: boolean;
+}) => {
   const { [SBS]: SBS_DEFAULT_VALUE } = defaultSubGeneratorConfig();
-  return [
+  const prompts = [
     {
       type: 'confirm',
       name: SBS,
@@ -141,8 +150,10 @@ export const subGeneratorPrompts = ({ subGenerator, additionalSubGenerator, loca
       message: `What task do you want do implement at ${chalk.yellow(subGenerator)} generator?`,
       choices: prioritiesForSub(subGenerator),
       pageSize: 30,
-      default: answers => (answers.sbs || additionalSubGenerator ? [] : prioritiesForSub(subGenerator)),
+      default: (answers: any) => (answers.sbs || additionalSubGenerator ? [] : prioritiesForSub(subGenerator)),
       loop: false,
     },
-  ];
+  ] as const;
+  // Inquirer doesn't support readonly prompts, so we need to cast it
+  return prompts as WritableDeep<typeof prompts>;
 };

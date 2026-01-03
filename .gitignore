@@ -1,13 +1,14 @@
 node_modules
 node_modules_container
 coverage
-.idea
+/.idea/*
+!/.idea/runConfigurations
 *.iml
 *.ipr
 *.iws
 atlassian-ide-plugin.xml
 /.project
-app.jdl
+lib/**/app.jdl
 test/temp/
 /docs
 *debug.log*
@@ -26,14 +27,14 @@ test/**/*.png
 jdl/**/*.png
 test-integration/**/*.png
 /dist
-
 # allow customizations without having a dirty tree
 .devcontainer
 
-# NetBeans 
+# NetBeans
 nbproject/
 build/
 nbbuild/
 nbdist/
 .nb-gradle/
 generators/**/package-lock.json
+generators/**/.gradle

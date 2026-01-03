@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,22 +17,23 @@
  * limitations under the License.
  */
 
+import { beforeEach, describe, expect as jestExpect, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { beforeEach, describe, it, expect as jestExpect } from 'esmocha';
-import { basicHelpers as helpers } from '../../lib/testing/index.js';
-import { applicationTypes } from '../jhipster/index.js';
-import { convert as convertWithoutApplication } from './converters/jdl-to-json/jdl-without-application-to-json-converter.js';
-import exportToJDL from './converters/exporters/jdl-exporter.js';
+import helpers from 'yeoman-test';
+
+import { APPLICATION_TYPE_MONOLITH } from '../core/application-types.ts';
+
+import exportToJDL from './converters/exporters/jdl-exporter.ts';
+import { convert as convertWithoutApplication } from './converters/jdl-to-json/jdl-without-application-to-json-converter.ts';
 import {
   createImporterFromContent,
   getTestFile,
   parseFromConfigurationObject,
   parseFromContent,
   parseFromFiles,
-} from './core/__test-support__/index.js';
-import type { ApplicationWithEntities } from './jdl-importer.js';
-
-const { MONOLITH } = applicationTypes;
+} from './core/__test-support__/index.ts';
+import type { ApplicationWithEntities } from './jdl-importer.ts';
 
 describe('jdl - integration tests', () => {
   beforeEach(async () => {
@@ -40,18 +41,18 @@ describe('jdl - integration tests', () => {
   });
 
   describe('when parsing and exporting a JDL', () => {
-    let originalContent;
-    let writtenContent;
+    let originalContent: ReturnType<typeof parseFromConfigurationObject>;
+    let writtenContent: ReturnType<typeof parseFromConfigurationObject>;
 
     beforeEach(() => {
       originalContent = parseFromConfigurationObject({
         parsedContent: parseFromFiles([getTestFile('big_sample.jdl')]),
-        applicationType: MONOLITH,
+        applicationType: APPLICATION_TYPE_MONOLITH,
       });
       exportToJDL(originalContent, 'exported.jdl');
       writtenContent = parseFromConfigurationObject({
         parsedContent: parseFromFiles(['exported.jdl']),
-        applicationType: MONOLITH,
+        applicationType: APPLICATION_TYPE_MONOLITH,
       });
     });
 
@@ -80,17 +81,13 @@ entity A
       beforeEach(() => {
         const jdlObject = parseFromConfigurationObject({
           parsedContent: parseFromContent(jdl),
-          applicationType: MONOLITH,
+          applicationType: APPLICATION_TYPE_MONOLITH,
         });
-        result = convertWithoutApplication({
-          applicationName,
-          databaseType: 'sql',
-          jdlObject,
-        });
+        result = convertWithoutApplication(jdlObject, applicationName);
         convertedJdl = jdlObject.toString();
       });
 
-      it('stringfied JDL should match original jdl', () => {
+      it('stringified JDL should match original jdl', () => {
         jestExpect(convertedJdl).toEqual(expectedJdl);
       });
       it('should result matching', () => {
@@ -98,6 +95,7 @@ entity A
 Map {
   "jhipster" => [
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {
         "booleanFalse": false,
         "booleanTrue": true,
@@ -107,7 +105,10 @@ Map {
         "string": "foo",
         "unary": true,
       },
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -115,11 +116,14 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "A",
       "pagination": undefined,
       "readOnly": undefined,
       "relationships": [],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
   ],
 }
@@ -138,14 +142,13 @@ relationship ManyToOne {
 `;
 
       beforeEach(() => {
-        result = convertWithoutApplication({
-          applicationName,
-          databaseType: 'sql',
-          jdlObject: parseFromConfigurationObject({
+        result = convertWithoutApplication(
+          parseFromConfigurationObject({
             parsedContent: parseFromContent(jdl),
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           }),
-        });
+          applicationName,
+        );
       });
 
       it('should add relationship at both sides', () => {
@@ -158,8 +161,12 @@ relationship ManyToOne {
 Map {
   "jhipster" => [
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -167,6 +174,7 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "A",
       "pagination": undefined,
       "readOnly": undefined,
@@ -180,10 +188,16 @@ Map {
         },
       ],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -191,6 +205,7 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "B",
       "pagination": undefined,
       "readOnly": undefined,
@@ -204,6 +219,8 @@ Map {
         },
       ],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
   ],
 }
@@ -225,13 +242,9 @@ relationship ManyToOne {
       beforeEach(() => {
         const jdlObject = parseFromConfigurationObject({
           parsedContent: parseFromContent(jdl),
-          applicationType: MONOLITH,
+          applicationType: APPLICATION_TYPE_MONOLITH,
         });
-        result = convertWithoutApplication({
-          applicationName,
-          databaseType: 'sql',
-          jdlObject,
-        });
+        result = convertWithoutApplication(jdlObject, applicationName);
         convertedJdl = jdlObject.toString();
       });
 
@@ -249,8 +262,12 @@ relationship ManyToOne {
 Map {
   "jhipster" => [
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -258,6 +275,7 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "A",
       "pagination": undefined,
       "readOnly": undefined,
@@ -273,10 +291,16 @@ Map {
         },
       ],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -284,11 +308,14 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "B",
       "pagination": undefined,
       "readOnly": undefined,
       "relationships": [],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
   ],
 }
@@ -307,14 +334,13 @@ relationship ManyToOne {
 `;
 
       beforeEach(() => {
-        result = convertWithoutApplication({
-          applicationName,
-          databaseType: 'sql',
-          jdlObject: parseFromConfigurationObject({
+        result = convertWithoutApplication(
+          parseFromConfigurationObject({
             parsedContent: parseFromContent(jdl),
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           }),
-        });
+          applicationName,
+        );
       });
 
       it('should add relationship at both sides', () => {
@@ -327,8 +353,12 @@ relationship ManyToOne {
 Map {
   "jhipster" => [
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -336,6 +366,7 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "A",
       "pagination": undefined,
       "readOnly": undefined,
@@ -351,10 +382,16 @@ Map {
         },
       ],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
     JSONEntity {
+      "angularJSSuffix": undefined,
       "annotations": {},
-      "applications": "*",
+      "applications": [
+        "*",
+      ],
+      "clientRootFolder": undefined,
       "documentation": undefined,
       "dto": undefined,
       "embedded": undefined,
@@ -362,6 +399,7 @@ Map {
       "fields": [],
       "fluentMethods": undefined,
       "jpaMetamodelFiltering": undefined,
+      "microserviceName": undefined,
       "name": "B",
       "pagination": undefined,
       "readOnly": undefined,
@@ -378,6 +416,8 @@ Map {
         },
       ],
       "service": undefined,
+      "skipClient": undefined,
+      "skipServer": undefined,
     },
   ],
 }
@@ -403,7 +443,7 @@ application {
 
       it('should throw error', () => {
         const importer = createImporterFromContent(jdl);
-        jestExpect(() => importer.import()).toThrowError(/Blueprint namespace config foo requires the blueprint foo/);
+        jestExpect(() => importer.import()).toThrow(/Blueprint namespace config foo requires the blueprint foo/);
       });
     });
 
@@ -452,6 +492,7 @@ application {
       },
     ],
     "entities": [],
+    "microfrontends": undefined,
   },
   "entities": [],
   "namespaceConfigs": {

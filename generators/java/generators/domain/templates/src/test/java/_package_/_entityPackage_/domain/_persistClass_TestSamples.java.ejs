@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -41,7 +41,7 @@ public class <%= persistClass %>TestSamples {
     private static final Random random = new Random();
 <%_ } _%>
 <%_ if (fields.some(field => field.fieldTypeLong)) { _%>
-    private static final AtomicLong longCount = new AtomicLong(random.nextInt() + ( 2 * Integer.MAX_VALUE ));
+    private static final AtomicLong longCount = new AtomicLong(random.nextInt() + ( 2L * Integer.MAX_VALUE ));
 <%_ } _%>
 <%_ if (fields.some(field => field.fieldTypeInteger)) { _%>
     private static final AtomicInteger intCount = new AtomicInteger(random.nextInt() + ( 2 * Short.MAX_VALUE ));

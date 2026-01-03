@@ -1,6 +1,6 @@
-import type { GitHubMatrixGroup } from '../../../lib/testing/index.js';
-import { extendMatrix, fromMatrix } from '../../../lib/testing/index.js';
-import { convertOptionsToJDL } from '../support/jdl.js';
+import type { GitHubMatrixGroup } from '../../../lib/testing/github-matrix.ts';
+import { type MatrixSample, extendMatrix, fromMatrix } from '../../../lib/testing/support/matrix-utils.ts';
+import { convertOptionsToJDL } from '../support/jdl.ts';
 
 // Supported containers: https://github.com/spring-projects/spring-boot/tree/main/spring-boot-project/spring-boot-docker-compose/src/main/java/org/springframework/boot/docker/compose/service/connection
 export default Object.fromEntries(
@@ -33,13 +33,13 @@ export default Object.fromEntries(
         },
       ),
     ),
-    ['h2', { devDatabaseType: 'h2Disk' }],
+    ['h2', { devDatabaseType: 'h2Disk' } as MatrixSample],
   ].map(([key, value]) => [
-    key,
+    key as string,
     {
       'cmd-e2e': 'npm run ci:e2e:dev',
       args: 'jdl',
-      jdl: convertOptionsToJDL(value),
+      jdl: convertOptionsToJDL(value as MatrixSample),
     },
   ]),
 ) satisfies GitHubMatrixGroup;

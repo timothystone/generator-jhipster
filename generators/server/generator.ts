@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,46 +17,29 @@
  * limitations under the License.
  */
 
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs';
 
-import { GENERATOR_COMMON, GENERATOR_SPRING_BOOT } from '../generator-list.js';
-import BaseApplicationGenerator from '../base-application/index.js';
-import {
-  CLIENT_WEBPACK_DIR,
-  JAVA_COMPATIBLE_VERSIONS,
-  JAVA_VERSION,
-  JHIPSTER_DEPENDENCIES_VERSION,
-  LOGIN_REGEX,
-  MAIN_DIR,
-  SERVER_MAIN_RES_DIR,
-  SERVER_MAIN_SRC_DIR,
-  SERVER_TEST_RES_DIR,
-  SERVER_TEST_SRC_DIR,
-  TEST_DIR,
-} from '../generator-constants.js';
+import { APPLICATION_TYPE_GATEWAY } from '../../lib/core/application-types.ts';
+import { databaseTypes, entityOptions, fieldTypes, reservedKeywords, searchEngineTypes, validations } from '../../lib/jhipster/index.ts';
+import { isReservedPaginationWords } from '../../lib/jhipster/reserved-keywords.ts';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { stringifyApplicationData } from '../base-application/support/index.ts';
+import { isReservedH2Keyword } from '../spring-data/generators/relational/support/h2-reserved-keywords.ts';
 
-import {
-  applicationTypes,
-  clientFrameworkTypes,
-  databaseTypes,
-  entityOptions,
-  fieldTypes,
-  reservedKeywords,
-  searchEngineTypes,
-  validations,
-} from '../../lib/jhipster/index.js';
-import { stringifyApplicationData } from '../base-application/support/index.js';
-import { mutateData } from '../base/support/index.js';
-import { isReservedPaginationWords } from '../../lib/jhipster/reserved-keywords.js';
-import { loadStoredAppOptions } from '../app/support/index.js';
-import { isReservedH2Keyword } from '../spring-data-relational/support/h2-reserved-keywords.js';
-import { hibernateSnakeCase } from './support/index.js';
+import { hibernateSnakeCase } from './support/index.ts';
+import type {
+  Application as ServerApplication,
+  Config as ServerConfig,
+  Entity as ServerEntity,
+  Field as ServerField,
+  Options as ServerOptions,
+  Relationship as ServerRelationship,
+  Source as ServerSource,
+} from './types.ts';
 
 const { SUPPORTED_VALIDATION_RULES } = validations;
 const { isReservedTableName } = reservedKeywords;
-const { ANGULAR, REACT, VUE } = clientFrameworkTypes;
 const { SQL, NO: NO_DATABASE } = databaseTypes;
-const { GATEWAY } = applicationTypes;
 
 const { NO: NO_SEARCH_ENGINE } = searchEngineTypes;
 const { CommonDBTypes, RelationalOnlyDBTypes } = fieldTypes;
@@ -70,21 +53,21 @@ const {
 const { NO: NO_PAGINATION } = PaginationTypes;
 const { NO: NO_SERVICE } = ServiceTypes;
 
-export default class JHipsterServerGenerator extends BaseApplicationGenerator {
-  /** @type {string} */
-  jhipsterDependenciesVersion;
-  /** @type {string} */
-  projectVersion;
-
+export default class JHipsterServerGenerator extends BaseApplicationGenerator<
+  ServerEntity,
+  ServerApplication,
+  ServerConfig,
+  ServerOptions,
+  ServerSource
+> {
   async beforeQueue() {
     if (!this.fromBlueprint) {
-      loadStoredAppOptions.call(this);
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
-      await this.dependsOnJHipster(GENERATOR_COMMON);
+      await this.dependsOnBootstrap('server');
+      await this.dependsOnJHipster('common');
     }
   }
 
@@ -92,7 +75,7 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
     return this.asComposingTaskGroup({
       async composeBackendType() {
         if (!this.jhipsterConfig.backendType || ['spring-boot', 'java'].includes(this.jhipsterConfig.backendType.toLowerCase())) {
-          await this.composeWithJHipster(GENERATOR_SPRING_BOOT);
+          await this.composeWithJHipster('spring-boot');
         }
       },
     });
@@ -102,74 +85,20 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.composing);
   }
 
-  get loading() {
-    return this.asLoadingTaskGroup({
-      setupServerconsts({ application, applicationDefaults }) {
-        // Make constants available in templates
-        applicationDefaults({
-          MAIN_DIR,
-          TEST_DIR,
-          LOGIN_REGEX,
-          CLIENT_WEBPACK_DIR,
-          SERVER_MAIN_SRC_DIR,
-          SERVER_MAIN_RES_DIR,
-          SERVER_TEST_SRC_DIR,
-          SERVER_TEST_RES_DIR,
-          JAVA_VERSION: this.useVersionPlaceholders ? 'JAVA_VERSION' : JAVA_VERSION,
-          JAVA_COMPATIBLE_VERSIONS,
-          javaCompatibleVersions: JAVA_COMPATIBLE_VERSIONS,
-          ANGULAR,
-          VUE,
-          REACT,
-        } as any);
-
-        if (this.projectVersion) {
-          application.projectVersion = this.projectVersion;
-          this.log.info(`Using projectVersion: ${application.projectVersion}`);
-        } else {
-          application.projectVersion = '0.0.1-SNAPSHOT';
-        }
-
-        if (this.useVersionPlaceholders) {
-          application.jhipsterDependenciesVersion = 'JHIPSTER_DEPENDENCIES_VERSION';
-        } else if (this.jhipsterDependenciesVersion) {
-          application.jhipsterDependenciesVersion = this.jhipsterDependenciesVersion;
-          this.log.info(`Using jhipsterDependenciesVersion: ${application.jhipsterDependenciesVersion}`);
-        } else {
-          application.jhipsterDependenciesVersion = JHIPSTER_DEPENDENCIES_VERSION;
-        }
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.LOADING]() {
-    return this.delegateTasksToBlueprint(() => this.loading);
-  }
-
   get configuringEachEntity() {
     return this.asConfiguringEachEntityTaskGroup({
       configureMicroservice({ application, entityConfig }) {
         if (application.applicationTypeMicroservice) {
-          if (entityConfig.microserviceName === undefined) {
-            entityConfig.microserviceName = application.baseName;
-          }
-          if (entityConfig.clientRootFolder === undefined) {
-            entityConfig.clientRootFolder = entityConfig.microserviceName;
-          }
-          if (entityConfig.databaseType === undefined) {
-            entityConfig.databaseType = application.databaseType;
-          }
+          entityConfig.microserviceName ??= application.baseName;
+          entityConfig.clientRootFolder ??= entityConfig.microserviceName;
+          entityConfig.databaseType ??= application.databaseType;
         }
       },
       configureGateway({ application, entityConfig }) {
         if (application.applicationTypeGateway) {
-          if (entityConfig.databaseType === undefined) {
-            entityConfig.databaseType = application.databaseType;
-          }
+          entityConfig.databaseType ??= application.databaseType;
           if (entityConfig.clientRootFolder === undefined) {
-            entityConfig.clientRootFolder = entityConfig.clientRootFolder = entityConfig.skipUiGrouping
-              ? ''
-              : entityConfig.microserviceName;
+            entityConfig.clientRootFolder = entityConfig.skipUiGrouping ? '' : entityConfig.microserviceName;
           }
         }
       },
@@ -209,7 +138,10 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
       configurePagination({ application, entityName, entityConfig }) {
         const entityDatabaseType = entityConfig.databaseType ?? application.databaseType;
         // disable pagination if there is no database, unless it’s a microservice entity published by a gateway
-        if (entityDatabaseType === NO_DATABASE && (application.applicationType !== GATEWAY || !entityConfig.microserviceName)) {
+        if (
+          entityDatabaseType === NO_DATABASE &&
+          (application.applicationType !== APPLICATION_TYPE_GATEWAY || !entityConfig.microserviceName)
+        ) {
           const errorMessage = `Pagination is not supported for entity ${entityName} when the app doesn't use a database.`;
           if (!this.skipChecks) {
             throw new Error(errorMessage);
@@ -267,8 +199,8 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
           // Field type check should be ignored for entities of others microservices.
           if (!field.fieldValues && (!entityConfig.microserviceName || entityConfig.microserviceName === application.baseName)) {
             if (
-              !Object.values(CommonDBTypes).includes(field.fieldType) &&
-              (application.databaseType !== SQL || !Object.values(RelationalOnlyDBTypes).includes(field.fieldType))
+              !(Object.values(CommonDBTypes) as string[]).includes(field.fieldType) &&
+              (application.databaseType !== SQL || !(Object.values(RelationalOnlyDBTypes) as string[]).includes(field.fieldType))
             ) {
               throw new Error(
                 `The type '${field.fieldType}' is an unknown field type for field '${field.fieldName}' of entity '${entityConfig.name}' using '${application.databaseType}' database.`,
@@ -293,7 +225,7 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
               )}, using ${relationship.otherEntityName} as fallback`,
             );
           }
-          // @ts-ignore deprecated property
+          // @ts-expect-error deprecated property
           if (relationship.useJPADerivedIdentifier) {
             this.log.verboseInfo('Option useJPADerivedIdentifier is deprecated, use id instead');
             relationship.options ??= {};
@@ -327,21 +259,6 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
 
   get [BaseApplicationGenerator.LOADING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.loadingEntities);
-  }
-
-  get preparingEachEntity() {
-    return this.asPreparingEachEntityTaskGroup({
-      prepareEntity({ entity }) {
-        mutateData(entity, {
-          entityPersistenceLayer: true,
-          entityRestLayer: true,
-        });
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY]() {
-    return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
   }
 
   get postPreparingEachEntity() {
@@ -385,11 +302,11 @@ export default class JHipsterServerGenerator extends BaseApplicationGenerator {
    * Validate the entityTableName
    * @return {true|string} true for a valid value or error message.
    */
-  _validateTableName(entityTableName, prodDatabaseType, entity) {
-    const jhiTablePrefix = entity.jhiTablePrefix;
+  _validateTableName(entityTableName: string, prodDatabaseType: string, entity: ServerEntity): true | string {
+    const jhiTablePrefix = (entity as any).jhiTablePrefix;
     const instructions = `You can specify a different table name in your JDL file or change it in .jhipster/${entity.name}.json file and then run again 'jhipster entity ${entity.name}.'`;
 
-    if (!/^([a-zA-Z0-9_]*)$/.test(entityTableName)) {
+    if (!/^(\w*)$/.test(entityTableName)) {
       return `The table name cannot contain special characters.
 ${instructions}`;
     }
@@ -413,7 +330,7 @@ ${instructions}`,
     return true;
   }
 
-  _validateField(entityName, field) {
+  _validateField(entityName: string, field: ServerField) {
     if (field.fieldName === undefined) {
       throw new Error(`fieldName is missing in .jhipster/${entityName}.json for field ${stringifyApplicationData(field)}`);
     }
@@ -469,7 +386,7 @@ ${instructions}`,
     }
   }
 
-  _validateRelationship(entityName, relationship) {
+  _validateRelationship(entityName: string, relationship: ServerRelationship) {
     if (relationship.otherEntityName === undefined) {
       throw new Error(
         `otherEntityName is missing in .jhipster/${entityName}.json for relationship ${stringifyApplicationData(relationship)}`,

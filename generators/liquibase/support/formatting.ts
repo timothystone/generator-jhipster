@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,9 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { formatDocAsSingleLine } from '../../base-application/support/index.js';
+import { formatDocAsSingleLine } from '../../base-application/support/doc.ts';
 
-const htmlEncode = text => {
+const htmlEncode = (text: string) => {
   let htmLifiedText = text;
   // escape & to &amp;
   htmLifiedText = htmLifiedText.replace(/&/g, '&amp;');
@@ -40,7 +40,7 @@ const htmlEncode = text => {
  * @param {boolean} addRemarksTag - add remarks tag
  * @returns formatted liquibase remarks
  */
-const formatAsLiquibaseRemarks = (text, addRemarksTag = false) => {
+const formatAsLiquibaseRemarks = (text: string, addRemarksTag = false) => {
   if (!text) {
     return addRemarksTag ? '' : text;
   }

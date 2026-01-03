@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,22 @@
  * limitations under the License.
  */
 
-import BaseApplicationGenerator from '../base-application/index.js';
+import BaseApplicationGenerator from '../base-application/index.ts';
 
-export default class JavaGenerator extends BaseApplicationGenerator {
+import type {
+  Application as JavaApplication,
+  Config as JavaConfig,
+  Entity as JavaEntity,
+  Options as JavaOptions,
+  Source as JavaSource,
+} from './types.ts';
+
+/**
+ * Utility class with types.
+ */
+export class JavaApplicationGenerator extends BaseApplicationGenerator<JavaEntity, JavaApplication, JavaConfig, JavaOptions, JavaSource> {}
+
+export default class JavaGenerator extends JavaApplicationGenerator {
   customLifecycle = true;
 
   async beforeQueue() {
@@ -27,8 +40,7 @@ export default class JavaGenerator extends BaseApplicationGenerator {
       await this.composeWithBlueprints();
     }
 
-    if (!this.delegateToBlueprint) {
-      await this.dependsOnJHipster('jhipster:java:domain');
-    }
+    await this.dependsOnBootstrap('java');
+    await this.dependsOnJHipster('java-simple-application');
   }
 }

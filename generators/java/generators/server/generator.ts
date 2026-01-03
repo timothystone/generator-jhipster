@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import BaseApplicationGenerator from '../../../base-application/index.js';
+import type { Source as CommonSource } from '../../../common/types.d.ts';
+import { JavaApplicationGenerator } from '../../generator.ts';
 
 const WAIT_TIMEOUT = 3 * 60000;
 
-export default class ServerGenerator extends BaseApplicationGenerator {
+export default class ServerGenerator extends JavaApplicationGenerator {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('java');
     }
   }
 
@@ -35,8 +36,8 @@ export default class ServerGenerator extends BaseApplicationGenerator {
     return this.asPostWritingTaskGroup({
       packageJsonScripts({ application }) {
         const packageJsonConfigStorage = this.packageJson.createStorage('config').createProxy();
-        (packageJsonConfigStorage as any).backend_port = application.gatewayServerPort || application.serverPort;
-        (packageJsonConfigStorage as any).packaging = application.defaultPackaging;
+        packageJsonConfigStorage.backend_port = application.gatewayServerPort || application.serverPort;
+        packageJsonConfigStorage.packaging = application.defaultPackaging;
       },
       packageJsonBackendScripts({ application }) {
         const scriptsStorage = this.packageJson.createStorage('scripts');
@@ -109,10 +110,26 @@ export default class ServerGenerator extends BaseApplicationGenerator {
           'ci:server:await': `echo "Waiting for server at port $npm_package_config_backend_port to start" && wait-on -t ${applicationWaitTimeout} ${applicationEndpoint} && echo "Server at port $npm_package_config_backend_port started"`,
         });
       },
+      sonar({ application, source }) {
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S7027-dto',
+          ruleKey: 'javaarchitecture:S7027',
+          resourceKey: `${application.javaPackageSrcDir}service/dto/**/*`,
+          comment: 'Rule https://rules.sonarsource.com/java/RSPEC-7027 is ignored for dtos',
+        });
+
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'UndocumentedApi',
+          ruleKey: 'squid:UndocumentedApi',
+          resourceKey: `${application.javaPackageSrcDir}**/*`,
+          comment:
+            'Rule https://rules.sonarsource.com/java/RSPEC-1176 is ignored, as we want to follow "clean code" guidelines and classes, methods and arguments names should be self-explanatory',
+        });
+      },
     });
   }
 
-  get [BaseApplicationGenerator.POST_WRITING]() {
+  get [JavaApplicationGenerator.POST_WRITING]() {
     return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 }

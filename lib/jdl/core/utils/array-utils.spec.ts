@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,8 +18,10 @@
  */
 
 import { describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import deduplicate from '../utils/array-utils.js';
+
+import deduplicate from './array-utils.ts';
 
 describe('jdl - ArrayUtils', () => {
   describe('deduplicate', () => {

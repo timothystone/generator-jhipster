@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -22,7 +22,7 @@
  * @param language
  * @returns
  */
-export function languageSnakeCase(language) {
+export function languageSnakeCase(language: string): string {
   return language.replace(/-/g, '_');
 }
 
@@ -40,7 +40,7 @@ export function languageSnakeCase(language) {
  * @param language
  * @returns
  */
-function languageUpperCaseCountry(language) {
+function languageUpperCaseCountry(language: string): string {
   const split = splitLanguageTag(language);
   split.country = split.country ? split.country.toUpperCase() : split.country;
   return buildLanguageTag(split);
@@ -51,7 +51,14 @@ function languageUpperCaseCountry(language) {
  * @param language
  * @returns
  */
-export function languageToJavaLanguage(language) {
+export function languageToJavaLanguage(language: string): string {
+  return languageSnakeCase(languageUpperCaseCountry(language));
+}
+
+/**
+ * Convert a language tag to faker exported name.
+ */
+export function languageToFakerLanguage(language: string): string {
   return languageSnakeCase(languageUpperCaseCountry(language));
 }
 
@@ -190,6 +197,7 @@ const partialLanguages: PartialLanguage[] = [
   { name: 'Galician', displayName: 'Galego', languageTag: 'gl' },
   { name: 'German', displayName: 'Deutsch', languageTag: 'de' },
   { name: 'Greek', displayName: 'Ελληνικά', languageTag: 'el' },
+  { name: 'Hebrew', displayName: 'עברית', languageTag: 'he', rtl: true },
   { name: 'Hindi', displayName: 'हिंदी', languageTag: 'hi' },
   { name: 'Hungarian', displayName: 'Magyar', languageTag: 'hu' },
   { name: 'Indonesian', displayName: 'Bahasa Indonesia', languageTag: 'id' },
@@ -278,7 +286,7 @@ export const defaultLanguage = findLanguageForTag('en') as Required<Language>;
  * @param languages
  */
 export const generateLanguagesWebappOptions = (languages: readonly Language[]) =>
-  languages.map(language => `'${language.languageTag}': { name: '${language.displayName}'${language.rtl ? ', rtl: true' : ''} }`);
+  languages.map(language => `'${language.languageTag}': { name: '${language.displayName}'${language.rtl ? ', rtl: true' : ''} },`);
 
 type LanguageIdParts = { language: string; script?: string; country?: string; variant?: string };
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,19 @@
  * limitations under the License.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { beforeEach, describe, expect as jestExpect, it } from 'esmocha';
+import { readFileSync, writeFileSync } from 'node:fs';
+
 import { expect } from 'chai';
-import { beforeEach, describe, it, expect as jestExpect } from 'esmocha';
-import { basicHelpers as helpers } from '../../../../lib/testing/index.js';
-import { createJDLLinterFromContent, getTestFile } from '.././__test-support__/index.js';
-import type { JDLLinter } from './jdl-linter.js';
-import type Issues from './issues/issues.js';
-import type EnumIssue from './issues/enum-issue.js';
-import type relationshipIssue from './issues/relationship-issue.js';
+import helpers from 'yeoman-test';
+
+import { createJDLLinterFromContent, getTestFile } from '../__test-support__/index.ts';
+
+import type EntityIssue from './issues/entity-issue.ts';
+import type EnumIssue from './issues/enum-issue.ts';
+import type Issues from './issues/issues.ts';
+import type relationshipIssue from './issues/relationship-issue.ts';
+import type { JDLLinter } from './jdl-linter.ts';
 
 /**
  * Creates a new JDL linters from a JDL file.
@@ -81,7 +85,7 @@ describe('jdl - JDLLinter', () => {
   describe('check', () => {
     describe('when checking for useless entity braces', () => {
       let linter: JDLLinter;
-      let issue: any;
+      let issue: EntityIssue;
       let reportedIssues: Issues;
 
       beforeEach(() => {
@@ -96,32 +100,9 @@ describe('jdl - JDLLinter', () => {
         expect(issue.ruleName).to.equal('ENT_SHORTER_DECL');
       });
     });
-    describe('when checking for useless table names', () => {
-      let linter: { check: any };
-      let issueForB: { ruleName: any };
-      let issueForToto: { ruleName: any };
-      let issueForSuperToto: { ruleName: any };
-      let reportedIssues: { getIssues: () => any; getNumberOfIssues: () => any };
-
-      beforeEach(() => {
-        linter = createJDLLinterFromFile(getTestFile('lint', 'useless_table_names.jdl'));
-        reportedIssues = linter.check();
-        const issues = reportedIssues.getIssues();
-        issueForB = issues.entities[0];
-        issueForToto = issues.entities[1];
-        issueForSuperToto = issues.entities[2];
-      });
-
-      it('reports the issues', () => {
-        expect(reportedIssues.getNumberOfIssues()).to.equal(3);
-        expect(issueForB.ruleName).to.equal('ENT_OPTIONAL_TABLE_NAME');
-        expect(issueForToto.ruleName).to.equal('ENT_OPTIONAL_TABLE_NAME');
-        expect(issueForSuperToto.ruleName).to.equal('ENT_OPTIONAL_TABLE_NAME');
-      });
-    });
     describe('when checking for duplicated', () => {
       describe('entities', () => {
-        let linter: { check: any };
+        let linter: JDLLinter;
         let reportedIssues: { getIssues: () => any; getNumberOfIssues: () => any };
         let issueForA: { ruleName: any };
         let issueForB: { ruleName: any };
@@ -141,7 +122,7 @@ describe('jdl - JDLLinter', () => {
         });
       });
       describe('fields', () => {
-        let linter: { check: any };
+        let linter: JDLLinter;
         let reportedIssues: { getIssues: () => any; getNumberOfIssues: () => any };
         let issueForAa: { ruleName: any };
         let issueForBb: { ruleName: any };
@@ -161,7 +142,7 @@ describe('jdl - JDLLinter', () => {
         });
       });
       describe('enums', () => {
-        let linter: { check: any };
+        let linter: JDLLinter;
         let reportedIssues: { getIssues: () => any; getNumberOfIssues: () => any };
         let issueForA: { ruleName: any };
 
@@ -199,7 +180,7 @@ describe('jdl - JDLLinter', () => {
       });
     });
     describe('when checking for collapsible relationships', () => {
-      let linter: { check: any };
+      let linter: JDLLinter;
       let reportedIssues: Issues;
       let issueForAToB: relationshipIssue;
       let issueForBToC: relationshipIssue;

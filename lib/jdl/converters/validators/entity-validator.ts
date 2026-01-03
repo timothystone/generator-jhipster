@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,28 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import type JDLEntity from '../../core/models/jdl-entity.ts';
 
-import { reservedKeywords } from '../../../jhipster/index.js';
-import type { ValidatorOptions } from './validator.js';
-import Validator from './validator.js';
-
-const { isReservedClassName } = reservedKeywords;
+import Validator from './validator.ts';
 
 export default class EntityValidator extends Validator {
   constructor() {
     super('entity', ['name']);
   }
 
-  validate(jdlEntity, options: ValidatorOptions = {}) {
+  validate(jdlEntity: JDLEntity) {
     super.validate(jdlEntity);
-    if (options.checkReservedKeywords) {
-      checkForReservedClassName(jdlEntity);
-    }
-  }
-}
-
-function checkForReservedClassName(jdlEntity) {
-  if (isReservedClassName(jdlEntity.name)) {
-    throw new Error(`The name '${jdlEntity.name}' is a reserved keyword and can not be used as an entity class name.`);
   }
 }

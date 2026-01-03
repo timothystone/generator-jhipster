@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 import { upperFirst } from 'lodash-es';
-import type { JDLRelationshipType, RelationshipSide } from '../basic-types/relationships.js';
-import { Validations } from '../built-in-options/index.js';
-import { relationshipTypeExists } from '../basic-types/relationship-types.js';
+
+import { relationshipTypeExists } from '../basic-types/relationship-types.ts';
+import type { JDLRelationshipType, RelationshipSide } from '../basic-types/relationships.ts';
+import { Validations } from '../built-in-options/index.ts';
 
 const { REQUIRED } = Validations;
 
@@ -113,58 +114,74 @@ export default class JDLRelationship implements JDLRelationshipModel {
     });
   }
 
-  // TODO: refactor this function
   toString() {
     let string = `relationship ${this.type} {\n  `;
+
     if (this.commentInFrom) {
-      string += `/**\n${this.commentInFrom
-        .split('\n')
-        .map(line => `   * ${line}\n`)
-        .join('')}   */\n  `;
+      string += this.formatComment(this.commentInFrom);
     }
-    const sourceOptions = this.options.source;
-    if (Object.keys(sourceOptions).length !== 0) {
-      Object.keys(sourceOptions).forEach(name => {
-        const value = sourceOptions[name];
-        name = upperFirst(name);
-        string += `@${name}${value != null && value !== true ? `(${value}) ` : ' '}`;
-      });
-    }
-    string += `${this.from}`;
-    if (this.injectedFieldInFrom) {
-      string += `{${this.injectedFieldInFrom}${this.isInjectedFieldInFromRequired ? ` ${REQUIRED}` : ''}}`;
-    }
+
+    string += this.formatOptions(this.options.source);
+
+    string += this.formatEntityWithField(this.from, this.injectedFieldInFrom, this.isInjectedFieldInFromRequired);
+
     string += ' to';
+
     if (this.commentInTo) {
-      string += `\n  /**\n${this.commentInTo
-        .split('\n')
-        .map(line => `   * ${line}\n`)
-        .join('')}   */\n  `;
+      string += `\n  ${this.formatComment(this.commentInTo)}`;
     } else {
       string += ' ';
     }
-    const destinationOptions = this.options.destination;
-    if (Object.keys(destinationOptions).length !== 0) {
-      Object.keys(destinationOptions).forEach(name => {
-        const value = destinationOptions[name];
-        name = upperFirst(name);
-        string += `@${name}${value != null && value !== true ? `(${value}) ` : ' '}`;
-      });
-    }
-    string += `${this.to}`;
-    if (this.injectedFieldInTo) {
-      string += `{${this.injectedFieldInTo}${this.isInjectedFieldInToRequired ? ` ${REQUIRED}` : ''}}`;
-    }
-    const globalOptions = this.options.global;
-    if (Object.keys(globalOptions).length !== 0) {
-      string += ' with ';
-      Object.keys(globalOptions).forEach(name => {
-        string += `${name}, `;
-      });
-      string = string.substring(0, string.length - 2);
-    }
+
+    string += this.formatOptions(this.options.destination);
+
+    string += this.formatEntityWithField(this.to, this.injectedFieldInTo, this.isInjectedFieldInToRequired);
+
+    string += this.formatGlobalOptions();
+
     string += '\n}';
+
     return string.replace(/ \n/g, '\n').replace(/[ ]{4}/g, '  ');
+  }
+
+  private formatComment(comment: string | null | undefined): string {
+    if (!comment) {
+      return '';
+    }
+    return `/**\n${comment
+      .split('\n')
+      .map(line => `   * ${line}\n`)
+      .join('')}   */\n  `;
+  }
+
+  private formatOptions(options: Record<string, any>): string {
+    if (Object.keys(options).length === 0) {
+      return '';
+    }
+    return Object.keys(options)
+      .map(name => {
+        const value = options[name];
+        const capitalizedName = upperFirst(name);
+        return `@${capitalizedName}${value != null && value !== true ? `(${value}) ` : ' '}`;
+      })
+      .join('');
+  }
+
+  private formatGlobalOptions(): string {
+    const globalOptions = this.options.global;
+    if (Object.keys(globalOptions).length === 0) {
+      return '';
+    }
+    const optionsString = Object.keys(globalOptions).join(', ');
+    return ` with ${optionsString}`;
+  }
+
+  private formatEntityWithField(entityName: string, injectedField: string | null | undefined, isRequired: boolean): string {
+    let result = entityName;
+    if (injectedField) {
+      result += `{${injectedField}${isRequired ? ` ${REQUIRED}` : ''}}`;
+    }
+    return result;
   }
 }
 

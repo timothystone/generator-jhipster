@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,14 +17,18 @@
  * limitations under the License.
  */
 
-import { before, describe, it, expect as jestExpect } from 'esmocha';
-import { expect } from 'chai';
-import { parseFromContent as originalParseFromContent } from '../readers/jdl-reader.js';
-import { relationshipTypes } from '../basic-types/index.js';
-import { binaryOptions, unaryOptions, validations } from '../built-in-options/index.js';
-import { getDefaultRuntime } from '../runtime.js';
+import { before, describe, expect as jestExpect, it } from 'esmocha';
 
-const runtime = getDefaultRuntime();
+import { expect } from 'chai';
+
+import { APPLICATION_TYPE_MICROSERVICE } from '../../../core/application-types.ts';
+import { relationshipTypes } from '../basic-types/index.ts';
+import { binaryOptions, unaryOptions, validations } from '../built-in-options/index.ts';
+import { parseFromContent as originalParseFromContent } from '../readers/jdl-reader.ts';
+import { createRuntime } from '../runtime.ts';
+import type { ParsedJDLApplications, ParsedJDLOption } from '../types/parsed.ts';
+
+const runtime = createRuntime();
 const parseFromContent = (content: string) => originalParseFromContent(content, runtime);
 
 const { ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY, ONE_TO_ONE } = relationshipTypes;
@@ -35,12 +39,12 @@ const { READ_ONLY, NO_FLUENT_METHOD, FILTER, SKIP_SERVER, SKIP_CLIENT, EMBEDDED 
 
 const { Options, Values, OptionValues } = binaryOptions;
 
-const { SEARCH, SERVICE, PAGINATION, DTO, ANGULAR_SUFFIX, MICROSERVICE } = Options;
+const { SEARCH, SERVICE, PAGINATION, DTO, ANGULAR_SUFFIX } = Options;
 
 describe('jdl - Grammar tests', () => {
   describe('when parsing constants', () => {
     describe('with integer values', () => {
-      let constants;
+      let constants: ParsedJDLApplications['constants'];
 
       before(() => {
         const content = parseFromContent(`MIN = 42
@@ -58,7 +62,7 @@ MAX = 43`);
       });
     });
     describe('with decimal values', () => {
-      let constants;
+      let constants: ParsedJDLApplications['constants'];
 
       before(() => {
         const content = parseFromContent('MIN = 42.42');
@@ -76,7 +80,7 @@ MAX = 43`);
   });
   describe('when parsing applications', () => {
     describe('with no custom configuration', () => {
-      let application;
+      let application: ParsedJDLApplications['applications'][number];
 
       before(() => {
         const content = parseFromContent('application {}');
@@ -88,6 +92,10 @@ MAX = 43`);
 {
   "config": {},
   "entities": [],
+  "entitiesOptions": {
+    "entityList": [],
+    "excluded": [],
+  },
   "namespaceConfigs": {},
   "options": {},
   "useOptions": [],
@@ -97,7 +105,7 @@ MAX = 43`);
     });
     describe('with a custom configuration', () => {
       describe('when setting the applicationType', () => {
-        let application;
+        let application: ParsedJDLApplications['applications'][number];
 
         before(() => {
           const content = parseFromContent(`application {
@@ -115,6 +123,10 @@ MAX = 43`);
     "applicationType": "monolith",
   },
   "entities": [],
+  "entitiesOptions": {
+    "entityList": [],
+    "excluded": [],
+  },
   "namespaceConfigs": {},
   "options": {},
   "useOptions": [],
@@ -123,7 +135,7 @@ MAX = 43`);
         });
       });
       describe('when setting the baseName', () => {
-        let application;
+        let application: ParsedJDLApplications['applications'][number];
 
         before(() => {
           const content = parseFromContent(`application {
@@ -141,6 +153,10 @@ MAX = 43`);
     "baseName": "toto",
   },
   "entities": [],
+  "entitiesOptions": {
+    "entityList": [],
+    "excluded": [],
+  },
   "namespaceConfigs": {},
   "options": {},
   "useOptions": [],
@@ -149,7 +165,7 @@ MAX = 43`);
         });
       });
       describe('when setting the blueprints', () => {
-        let application;
+        let application: ParsedJDLApplications['applications'][number];
 
         before(() => {
           const content = parseFromContent(`application {
@@ -170,6 +186,10 @@ MAX = 43`);
     ],
   },
   "entities": [],
+  "entitiesOptions": {
+    "entityList": [],
+    "excluded": [],
+  },
   "namespaceConfigs": {},
   "options": {},
   "useOptions": [],
@@ -179,7 +199,7 @@ MAX = 43`);
       });
     });
     describe('with more than one application', () => {
-      let applications;
+      let applications: ParsedJDLApplications['applications'];
 
       before(() => {
         const content = parseFromContent(`application {
@@ -208,6 +228,10 @@ application {
       "baseName": "superApp2",
     },
     "entities": [],
+    "entitiesOptions": {
+      "entityList": [],
+      "excluded": [],
+    },
     "namespaceConfigs": {},
     "options": {},
     "useOptions": [],
@@ -218,6 +242,10 @@ application {
       "baseName": "superApp1",
     },
     "entities": [],
+    "entitiesOptions": {
+      "entityList": [],
+      "excluded": [],
+    },
     "namespaceConfigs": {},
     "options": {},
     "useOptions": [],
@@ -228,7 +256,7 @@ application {
     });
     describe('when having entities', () => {
       describe('without exclusions', () => {
-        let application;
+        let application: ParsedJDLApplications['applications'][number];
 
         before(() => {
           const content = parseFromContent(`application {
@@ -252,7 +280,7 @@ entity C
       });
       describe('with exclusions', () => {
         describe("using the 'all' keyword", () => {
-          let application;
+          let application: ParsedJDLApplications['applications'][number];
 
           before(() => {
             const content = parseFromContent(`application {
@@ -274,7 +302,7 @@ entity C
           });
         });
         describe("using the '*' keyword", () => {
-          let application;
+          let application: ParsedJDLApplications['applications'][number];
 
           before(() => {
             const content = parseFromContent(`application {
@@ -298,7 +326,7 @@ entity C
       });
     });
     describe('when having options', () => {
-      let application;
+      let application: ParsedJDLApplications['applications'][number];
 
       before(() => {
         const content = parseFromContent(`application {
@@ -340,7 +368,7 @@ entity C
       });
     });
     describe('when having options in the use form', () => {
-      let application;
+      let application: ParsedJDLApplications['applications'][number];
 
       before(() => {
         const content = parseFromContent(`application {
@@ -377,7 +405,7 @@ entity C
   });
   describe('when parsing an entity', () => {
     describe('with a name', () => {
-      let parsedEntity;
+      let parsedEntity: ParsedJDLApplications['entities'][number];
 
       before(() => {
         const content = parseFromContent('entity A');
@@ -397,7 +425,7 @@ entity C
       });
     });
     describe('with a name and a table name', () => {
-      let parsedEntity;
+      let parsedEntity: ParsedJDLApplications['entities'][number];
 
       before(() => {
         const content = parseFromContent('entity A(a_table)');
@@ -418,8 +446,8 @@ entity C
     });
     describe('without fields', () => {
       describe('if using curly braces or not', () => {
-        let firstDeclaration;
-        let secondDeclaration;
+        let firstDeclaration: ParsedJDLApplications['entities'][number];
+        let secondDeclaration: ParsedJDLApplications['entities'][number];
 
         before(() => {
           const firstContent = parseFromContent('entity A');
@@ -434,7 +462,7 @@ entity C
       });
     });
     describe('with annotations', () => {
-      let parsedEntity;
+      let parsedEntity: ParsedJDLApplications['entities'][number];
 
       before(() => {
         const content = parseFromContent(`@dto(mapstruct)
@@ -497,7 +525,7 @@ entity A`);
     });
     describe('with comments', () => {
       describe('with single-line comments', () => {
-        let parsedEntity;
+        let parsedEntity: ParsedJDLApplications['entities'][number];
 
         before(() => {
           const content = parseFromContent('/** A comment */\nentity A');
@@ -517,7 +545,7 @@ entity A`);
         });
       });
       describe('with multi-line comments', () => {
-        let parsedEntity;
+        let parsedEntity: ParsedJDLApplications['entities'][number];
 
         before(() => {
           const content = parseFromContent(`/**
@@ -546,7 +574,7 @@ entity A`);
     });
     describe('with annotations and comments', () => {
       describe('when comments appear before annotations', () => {
-        let parsedEntity;
+        let parsedEntity: ParsedJDLApplications['entities'][number];
 
         before(() => {
           const content = parseFromContent(
@@ -591,7 +619,7 @@ entity A`);
     describe('with fields', () => {
       describe('having annotations and comments', () => {
         describe('when comments appear before annotations', () => {
-          let parsedEntity;
+          let parsedEntity: ParsedJDLApplications['entities'][number];
 
           before(() => {
             const content = parseFromContent(
@@ -645,7 +673,7 @@ entity A`);
       });
       describe('with validations', () => {
         describe(`with the ${REQUIRED} validation`, () => {
-          let parsedEntity;
+          let parsedEntity: ParsedJDLApplications['entities'][number];
 
           before(() => {
             const content = parseFromContent(
@@ -658,7 +686,7 @@ entity A`);
           });
 
           it('should parse it', () => {
-            expect(parsedEntity.body[0].validations).to.deep.equal([
+            expect(parsedEntity.body?.[0].validations).to.deep.equal([
               {
                 key: REQUIRED,
                 value: '',
@@ -668,7 +696,7 @@ entity A`);
         });
         describe(`with the ${MINLENGTH} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -681,7 +709,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MINLENGTH,
                   value: '0',
@@ -690,7 +718,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -703,7 +731,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MINLENGTH,
                   value: '0.01',
@@ -714,7 +742,7 @@ entity A`);
         });
         describe(`with the ${MAXLENGTH} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -727,7 +755,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAXLENGTH,
                   value: '42',
@@ -736,7 +764,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -749,7 +777,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAXLENGTH,
                   value: '42.01',
@@ -759,7 +787,7 @@ entity A`);
           });
         });
         describe(`with the ${PATTERN} validation`, () => {
-          let parsedEntity;
+          let parsedEntity: ParsedJDLApplications['entities'][number];
 
           before(() => {
             const content = parseFromContent(
@@ -772,7 +800,7 @@ entity A`);
           });
 
           it('should parse it', () => {
-            expect(parsedEntity.body[0].validations).to.deep.equal([
+            expect(parsedEntity.body?.[0].validations).to.deep.equal([
               {
                 key: PATTERN,
                 value: '[A-Za-z]\\d',
@@ -781,7 +809,7 @@ entity A`);
           });
         });
         describe(`with the ${UNIQUE} validation`, () => {
-          let parsedEntity;
+          let parsedEntity: ParsedJDLApplications['entities'][number];
 
           before(() => {
             const content = parseFromContent(
@@ -794,7 +822,7 @@ entity A`);
           });
 
           it('should parse it', () => {
-            expect(parsedEntity.body[0].validations).to.deep.equal([
+            expect(parsedEntity.body?.[0].validations).to.deep.equal([
               {
                 key: UNIQUE,
                 value: '',
@@ -804,7 +832,7 @@ entity A`);
         });
         describe(`with the ${MIN} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -817,7 +845,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MIN,
                   value: '0',
@@ -826,7 +854,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -839,7 +867,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MIN,
                   value: '0.01',
@@ -850,7 +878,7 @@ entity A`);
         });
         describe(`with the ${MAX} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -863,7 +891,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAX,
                   value: '0',
@@ -872,7 +900,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -885,7 +913,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAX,
                   value: '0.01',
@@ -896,7 +924,7 @@ entity A`);
         });
         describe(`with the ${MINBYTES} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -909,7 +937,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MINBYTES,
                   value: '0',
@@ -918,7 +946,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -931,7 +959,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MINBYTES,
                   value: '0.01',
@@ -942,7 +970,7 @@ entity A`);
         });
         describe(`with the ${MAXBYTES} validation`, () => {
           describe('using an integer value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -955,7 +983,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAXBYTES,
                   value: '0',
@@ -964,7 +992,7 @@ entity A`);
             });
           });
           describe('using a decimal value', () => {
-            let parsedEntity;
+            let parsedEntity: ParsedJDLApplications['entities'][number];
 
             before(() => {
               const content = parseFromContent(
@@ -977,7 +1005,7 @@ entity A`);
             });
 
             it('should parse it', () => {
-              expect(parsedEntity.body[0].validations).to.deep.equal([
+              expect(parsedEntity.body?.[0].validations).to.deep.equal([
                 {
                   key: MAXBYTES,
                   value: '0.01',
@@ -987,7 +1015,7 @@ entity A`);
           });
         });
         describe('using constants', () => {
-          let parsedEntity;
+          let parsedEntity: ParsedJDLApplications['entities'][number];
 
           before(() => {
             const content = parseFromContent(
@@ -1001,7 +1029,7 @@ entity A {
           });
 
           it('should parse it', () => {
-            expect(parsedEntity.body[0].validations).to.deep.equal([
+            expect(parsedEntity.body?.[0].validations).to.deep.equal([
               {
                 key: MAXBYTES,
                 value: 'MAX',
@@ -1015,7 +1043,7 @@ entity A {
   });
   describe('when parsing enums', () => {
     describe('with values separated by commas', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1050,7 +1078,7 @@ entity A {
       });
     });
     describe('with values separated by whitespaces', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1088,7 +1116,7 @@ entity A {
       });
     });
     describe('without custom values', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1124,7 +1152,7 @@ entity A {
     });
 
     describe('without custom values but with comments', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1180,7 +1208,7 @@ entity A {
     });
 
     describe('with custom values containing spaces and with comments', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1237,7 +1265,7 @@ entity A {
     });
 
     describe('with custom values containing underscores and with comments', () => {
-      let parsedEnum;
+      let parsedEnum: ParsedJDLApplications['enums'][number];
 
       before(() => {
         const content = parseFromContent(
@@ -1294,7 +1322,7 @@ entity A {
 
     describe('without values', () => {
       describe('without spaces', () => {
-        let parsedEnum;
+        let parsedEnum: ParsedJDLApplications['enums'][number];
 
         before(() => {
           const content = parseFromContent(
@@ -1331,7 +1359,7 @@ entity A {
         });
       });
       describe('with spaces', () => {
-        let parsedEnum;
+        let parsedEnum: ParsedJDLApplications['enums'][number];
 
         before(() => {
           const content = parseFromContent(
@@ -1372,7 +1400,7 @@ entity A {
   describe('when parsing a relationship', () => {
     [ONE_TO_ONE, MANY_TO_MANY, MANY_TO_ONE, ONE_TO_MANY].forEach(relationshipType => {
       describe(`for a ${relationshipType} relationship`, () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent(`relationship ${relationshipType} { A to B }`);
@@ -1385,7 +1413,7 @@ entity A {
       });
     });
     describe('with only source & destination entities', () => {
-      let relationship;
+      let relationship: ParsedJDLApplications['relationships'][number];
 
       before(() => {
         const content = parseFromContent('relationship OneToOne { A to B }');
@@ -1417,7 +1445,7 @@ entity A {
     });
     describe('with an injected field in the source', () => {
       describe('that is not required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A{b} to B }');
@@ -1432,7 +1460,7 @@ entity A {
         });
       });
       describe('that is required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A{b required} to B }');
@@ -1449,7 +1477,7 @@ entity A {
     });
     describe('with an injected field in the destination', () => {
       describe('that is not required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A to B{a} }');
@@ -1464,7 +1492,7 @@ entity A {
         });
       });
       describe('that is required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A to B{a required} }');
@@ -1481,7 +1509,7 @@ entity A {
     });
     describe('with an injected field in both sides', () => {
       describe('without them being required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A{b} to B{a} }');
@@ -1502,7 +1530,7 @@ entity A {
         });
       });
       describe('with them being required', () => {
-        let relationship;
+        let relationship: ParsedJDLApplications['relationships'][number];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A{b required} to B{a required} }');
@@ -1518,7 +1546,7 @@ entity A {
       });
     });
     describe('with an explicit join field in the source', () => {
-      let relationship;
+      let relationship: ParsedJDLApplications['relationships'][number];
 
       before(() => {
         const content = parseFromContent('relationship OneToOne { A{b(name)} to B }');
@@ -1530,7 +1558,7 @@ entity A {
       });
     });
     describe('with an explicit join field in the destination', () => {
-      let relationship;
+      let relationship: ParsedJDLApplications['relationships'][number];
 
       before(() => {
         const content = parseFromContent('relationship OneToOne { A to B{a(name)} }');
@@ -1542,7 +1570,7 @@ entity A {
       });
     });
     describe('with an explicit join field in both sides', () => {
-      let relationship;
+      let relationship: ParsedJDLApplications['relationships'][number];
 
       before(() => {
         const content = parseFromContent('relationship OneToOne { A{b(name)} to B{a(name)} }');
@@ -1557,7 +1585,7 @@ entity A {
       });
     });
     describe('with a method', () => {
-      let relationship;
+      let relationship: ParsedJDLApplications['relationships'][number];
 
       before(() => {
         const content = parseFromContent('relationship OneToOne { A to B with builtInEntity }');
@@ -1579,7 +1607,7 @@ entity A {
     });
     describe('when parsing more than one relationship', () => {
       describe('with methods', () => {
-        let relationships;
+        let relationships: ParsedJDLApplications['relationships'];
 
         before(() => {
           const content = parseFromContent(`relationship OneToOne {
@@ -1665,7 +1693,7 @@ entity A {
     });
     describe('with annotations', () => {
       describe('only in the source side', () => {
-        let relationships;
+        let relationships: ParsedJDLApplications['relationships'];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { @id A to B }');
@@ -1703,7 +1731,7 @@ entity A {
         });
       });
       describe('only in the destination side', () => {
-        let relationships;
+        let relationships: ParsedJDLApplications['relationships'];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { A to @id B }');
@@ -1741,7 +1769,7 @@ entity A {
         });
       });
       describe('in both sides', () => {
-        let relationships;
+        let relationships: ParsedJDLApplications['relationships'];
 
         before(() => {
           const content = parseFromContent('relationship OneToOne { @id A to @id B }');
@@ -1788,7 +1816,7 @@ entity A {
   describe('when parsing an option', () => {
     describe('being unary', () => {
       describe('with exclusions', () => {
-        let parsedOption;
+        let parsedOption: ParsedJDLApplications['options']['skipClient'];
 
         before(() => {
           const content = parseFromContent('skipClient * except A');
@@ -1810,7 +1838,7 @@ entity A {
       });
       [READ_ONLY, EMBEDDED, SKIP_CLIENT, SKIP_SERVER, FILTER, NO_FLUENT_METHOD].forEach(option => {
         describe(option, () => {
-          let parsedOption;
+          let parsedOption: ParsedJDLApplications['options'][string];
 
           before(() => {
             const content = parseFromContent(`${option} A`);
@@ -1829,7 +1857,7 @@ entity A {
     describe('being binary', () => {
       describe('being clientRootFolder', () => {
         describe('in the regular form', () => {
-          let parsedOption;
+          let parsedOption: ParsedJDLApplications['options']['clientRootFolder'];
 
           before(() => {
             const content = parseFromContent('clientRootFolder * with client');
@@ -1850,7 +1878,7 @@ entity A {
           });
         });
         describe('in the path form', () => {
-          let parsedOption;
+          let parsedOption: ParsedJDLApplications['options']['clientRootFolder'];
 
           before(() => {
             const content = parseFromContent('clientRootFolder * with "../../toto"');
@@ -1872,7 +1900,7 @@ entity A {
         });
       });
       describe('with exclusions', () => {
-        let parsedOption;
+        let parsedOption: ParsedJDLApplications['options']['dto'];
 
         before(() => {
           const content = parseFromContent('dto * with mapstruct except A');
@@ -1896,12 +1924,13 @@ entity A {
       });
       [SEARCH, SERVICE, PAGINATION, DTO].forEach(option => {
         describe(option, () => {
-          Object.keys(Values[option]).forEach(key => {
-            let parsedOption;
-            const value = Values[option][key];
+          (Object.keys(Values[option]) as (keyof (typeof Values)[typeof option])[]).forEach(key => {
+            let parsedOption: any;
+            const value: any = Values[option][key];
 
             before(() => {
               const content = parseFromContent(`${option === PAGINATION ? 'paginate' : option} A with ${value}`);
+              // @ts-expect-error FIXME
               parsedOption = content.options[option][value];
             });
 
@@ -1914,13 +1943,13 @@ entity A {
           });
         });
       });
-      [MICROSERVICE, ANGULAR_SUFFIX].forEach(option => {
+      [APPLICATION_TYPE_MICROSERVICE, ANGULAR_SUFFIX].forEach(option => {
         describe(option, () => {
-          let parsedOption;
+          let parsedOption: any;
 
           before(() => {
             const content = parseFromContent(`${option} A with toto`);
-            parsedOption = content.options[option].toto;
+            parsedOption = (content.options[option] as Record<string, ParsedJDLOption>).toto;
           });
 
           it('should parse it', () => {
@@ -1933,7 +1962,7 @@ entity A {
       });
     });
     describe("using the 'all' keyword", () => {
-      let parsedOption;
+      let parsedOption: ParsedJDLApplications['options']['clientRootFolder'];
 
       before(() => {
         const content = parseFromContent('clientRootFolder all with client');
@@ -1954,7 +1983,7 @@ entity A {
       });
     });
     describe("using the '*' keyword", () => {
-      let parsedOption;
+      let parsedOption: ParsedJDLApplications['options']['clientRootFolder'];
 
       before(() => {
         const content = parseFromContent('clientRootFolder * with client');
@@ -1977,7 +2006,7 @@ entity A {
     describe('using the use-form', () => {
       Object.keys(OptionValues).forEach(optionValue => {
         describe(`of ${optionValue}`, () => {
-          let parsedOptions;
+          let parsedOptions: ParsedJDLApplications['useOptions'];
 
           before(() => {
             const content = parseFromContent(`use ${optionValue} for A`);
@@ -2000,7 +2029,7 @@ entity A {
   describe('when parsing deployments', () => {
     describe('with kubernetesStorageClassName', () => {
       describe('being empty', () => {
-        let parsedDeployment;
+        let parsedDeployment: ParsedJDLApplications['deployments'][number];
 
         before(() => {
           const content = parseFromContent(
@@ -2021,7 +2050,7 @@ entity A {
         });
       });
       describe('being set', () => {
-        let parsedDeployment;
+        let parsedDeployment: ParsedJDLApplications['deployments'][number];
 
         before(() => {
           const content = parseFromContent(

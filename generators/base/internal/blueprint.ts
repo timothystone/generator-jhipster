@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,25 +18,10 @@
  */
 import { requireNamespace } from '@yeoman/namespace';
 
-/**
- * @private
- * Loads the blueprint information from the configuration of the specified generator.
- * @param config - the generator's configuration object.
- * @returns {Array} an array that contains the info for each blueprint
- */
-export function loadBlueprintsFromConfiguration(config) {
-  // handle both config based on yeoman's Storage object, and direct configuration loaded from .yo-rc.json
-  const configuration = config?.getAll && typeof config.getAll === 'function' ? config.getAll() || {} : config;
-  // load blueprints from config file
-  const blueprints = configuration.blueprints || [];
-
-  const oldBlueprintName = configuration.blueprint;
-  if (oldBlueprintName && blueprints.findIndex(e => e.name === oldBlueprintName) === -1) {
-    const version = configuration.blueprintVersion || 'latest';
-    blueprints.push(parseBlueprintInfo(`${oldBlueprintName}@${version}`));
-  }
-  return blueprints;
-}
+export type Blueprint = {
+  name: string;
+  version?: string;
+};
 
 /**
  * @private
@@ -45,7 +30,7 @@ export function loadBlueprintsFromConfiguration(config) {
  * no processing is performed and it is returned as is.
  * @returns {Array} an array that contains the info for each blueprint
  */
-export function parseBluePrints(blueprints?: string | { name: string; version: string }[]) {
+export function parseBlueprints(blueprints?: string | Blueprint[]) {
   if (Array.isArray(blueprints)) {
     return blueprints;
   }
@@ -64,7 +49,7 @@ export function parseBluePrints(blueprints?: string | { name: string; version: s
  * @param {...Blueprint[]} [blueprintsToMerge] - Blueprint arrays to be merged.
  * @returns {Blueprint[]} an array that contains the info for each blueprint
  */
-export function mergeBlueprints(...blueprintsToMerge) {
+export function mergeBlueprints(...blueprintsToMerge: Blueprint[][]): Blueprint[] {
   if (!blueprintsToMerge || blueprintsToMerge.length === 0) {
     return [];
   }
@@ -82,7 +67,7 @@ export function mergeBlueprints(...blueprintsToMerge) {
  * @param {Blueprint[]} blueprints - Blueprint arrays to be merged.
  * @returns {Blueprint[]} an array that contains the info for each blueprint
  */
-export function removeBlueprintDuplicates(blueprints) {
+export function removeBlueprintDuplicates(blueprints: Blueprint[]): Blueprint[] {
   const uniqueBlueprints = new Map();
   blueprints.forEach(blueprintToAdd => {
     if (uniqueBlueprints.get(blueprintToAdd.name) === undefined) {
@@ -102,7 +87,7 @@ export function removeBlueprintDuplicates(blueprints) {
  * @param {string} blueprint - name of the blueprint and optionally a version, e.g kotlin[@0.8.1]
  * @returns {object} containing the name and version of the blueprint
  */
-export function parseBlueprintInfo(blueprint) {
+export function parseBlueprintInfo(blueprint: string): Blueprint {
   let bpName = normalizeBlueprintName(blueprint);
   const idx = bpName.lastIndexOf('@');
   if (idx > 0) {
@@ -125,7 +110,7 @@ export function parseBlueprintInfo(blueprint) {
  * @param {string} blueprint - name of the blueprint
  * @returns {string} the normalized blueprint name
  */
-export function normalizeBlueprintName(blueprint) {
+export function normalizeBlueprintName(blueprint: string): string {
   try {
     const ns = requireNamespace(blueprint);
     if (ns.unscoped.startsWith('generator-jhipster-')) {

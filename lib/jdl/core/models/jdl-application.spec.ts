@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,22 +17,26 @@
  * limitations under the License.
  */
 
-import { before, describe, it, expect as jestExpect } from 'esmocha';
+import { before, describe, expect as jestExpect, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { applicationOptions, binaryOptions } from '../built-in-options/index.js';
-import StringJDLApplicationConfigurationOption from '../models/string-jdl-application-configuration-option.js';
-import JDLApplication from '../models/jdl-application.js';
-import JDLBinaryOption from '../models/jdl-binary-option.js';
-import { getDefaultRuntime } from '../runtime.js';
+
+import applicationOptions from '../../../jhipster/application-options.ts';
+import { binaryOptions } from '../built-in-options/index.ts';
+import { createRuntime } from '../runtime.ts';
+
+import JDLApplication from './jdl-application.ts';
+import JDLBinaryOption from './jdl-binary-option.ts';
+import StringJDLApplicationConfigurationOption from './string-jdl-application-configuration-option.ts';
 
 const { OptionNames } = applicationOptions;
 
-const runtime = getDefaultRuntime();
+const runtime = createRuntime();
 
 describe('jdl - JDLApplication', () => {
   describe('hasConfigurationOption', () => {
     describe('when the application does not have the option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -43,7 +47,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when the application has the option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -57,18 +61,19 @@ describe('jdl - JDLApplication', () => {
   });
   describe('setConfigurationOption', () => {
     describe('when not passing an option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
       });
 
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => application.setConfigurationOption()).to.throw(/^An option has to be passed to set an option\.$/);
       });
     });
     describe('when setting a new option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -80,7 +85,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when setting an already present option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -95,18 +100,19 @@ describe('jdl - JDLApplication', () => {
   });
   describe('getConfigurationOptionValue', () => {
     describe('when not passing an option name', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
       });
 
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => application.getConfigurationOptionValue()).to.throw(/^An option name has to be passed to get a value\.$/);
       });
     });
     describe('when the application does not have the option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -117,7 +123,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when the application has the option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -131,18 +137,19 @@ describe('jdl - JDLApplication', () => {
   });
   describe('forEachConfigurationOption', () => {
     describe('when not passing a function', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
       });
 
       it('should not do anything', () => {
+        // @ts-expect-error invalid api test
         expect(() => application.forEachConfigurationOption()).not.to.throw();
       });
     });
     describe('when passing a function', () => {
-      let result;
+      let result: any;
 
       before(() => {
         const application = new JDLApplication(undefined, runtime);
@@ -162,13 +169,14 @@ describe('jdl - JDLApplication', () => {
   });
   describe('addEntityName', () => {
     describe('when not passing an entity name', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
       });
 
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => application.addEntityName()).to.throw(/^An entity name has to be passed so as to be added to the application\.$/);
       });
     });
@@ -246,7 +254,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when passing entity names', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(
@@ -299,7 +307,7 @@ describe('jdl - JDLApplication', () => {
     });
   });
   describe('forEachEntityName', () => {
-    let application;
+    let application: JDLApplication;
 
     before(() => {
       application = new JDLApplication({ entityNames: ['A', 'B'] }, runtime);
@@ -307,6 +315,7 @@ describe('jdl - JDLApplication', () => {
 
     describe('when not passing a function', () => {
       it('does not fail', () => {
+        // @ts-expect-error invalid api test
         application.forEachEntityName();
       });
     });
@@ -331,18 +340,19 @@ describe('jdl - JDLApplication', () => {
   });
   describe('addOption', () => {
     describe('when not passing an option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
       });
 
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => application.addOption()).to.throw(/^Can't add a nil option\.$/);
       });
     });
     describe('when passing an option', () => {
-      let result;
+      let result: string;
 
       before(() => {
         const application = new JDLApplication(undefined, runtime);
@@ -363,7 +373,7 @@ describe('jdl - JDLApplication', () => {
   });
   describe('getOptionQuantity', () => {
     describe('when there is no option', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -374,7 +384,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when there are options', () => {
-      let application;
+      let application: JDLApplication;
 
       before(() => {
         application = new JDLApplication(undefined, runtime);
@@ -401,7 +411,7 @@ describe('jdl - JDLApplication', () => {
   });
   describe('toString', () => {
     describe('when there is no entity', () => {
-      let jdlApplication;
+      let jdlApplication: JDLApplication;
 
       before(() => {
         jdlApplication = new JDLApplication({ config: { jhipsterVersion: '4.9.0' } }, runtime);
@@ -416,7 +426,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when there are listed entities', () => {
-      let jdlApplication;
+      let jdlApplication: JDLApplication;
 
       before(() => {
         jdlApplication = new JDLApplication({ entityNames: ['A', 'B', 'C', 'C'] }, runtime);
@@ -434,7 +444,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the jhipsterVersion option is there', () => {
       describe('when it is not quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { jhipsterVersion: '6.5.1' } }, runtime);
@@ -446,7 +456,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('when it is quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { jhipsterVersion: '"6.5.1"' } }, runtime);
@@ -460,7 +470,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the jwtSecretKey option is there', () => {
       describe('when it is not quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { jwtSecretKey: 'ASTUPIDLYLONGWORD=' } }, runtime);
@@ -472,7 +482,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('when it is quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { jwtSecretKey: '"ASTUPIDLYLONGWORD="' } }, runtime);
@@ -486,7 +496,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the rememberMeKey option is there', () => {
       describe('when it is not quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { rememberMeKey: 'ASTUPIDLYLONGWORD=' } }, runtime);
@@ -498,7 +508,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('when it is quoted', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { rememberMeKey: '"ASTUPIDLYLONGWORD="' } }, runtime);
@@ -512,7 +522,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the entitySuffix is present', () => {
       describe('without a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { entitySuffix: '' } }, runtime);
@@ -524,7 +534,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('with a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { entitySuffix: 'Entity' } }, runtime);
@@ -538,7 +548,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the dtoSuffix is present', () => {
       describe('without a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { dtoSuffix: '' } }, runtime);
@@ -550,7 +560,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('with a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { dtoSuffix: 'DTO' } }, runtime);
@@ -564,7 +574,7 @@ describe('jdl - JDLApplication', () => {
     });
     describe('when the clientThemeVariant is present', () => {
       describe('without a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { clientThemeVariant: '' } }, runtime);
@@ -576,7 +586,7 @@ describe('jdl - JDLApplication', () => {
         });
       });
       describe('with a value', () => {
-        let result;
+        let result: string;
 
         before(() => {
           const application = new JDLApplication({ config: { clientThemeVariant: 'aVariant' } }, runtime);
@@ -589,7 +599,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when the packageFolder option is present', () => {
-      let result;
+      let result: string;
 
       before(() => {
         const application = new JDLApplication({ config: { packageFolder: 'whatever' } }, runtime);
@@ -601,7 +611,7 @@ describe('jdl - JDLApplication', () => {
       });
     });
     describe('when there are options', () => {
-      let result;
+      let result: string;
 
       before(() => {
         const application = new JDLApplication(

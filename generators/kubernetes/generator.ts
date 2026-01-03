@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,52 +17,70 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
 import chalk from 'chalk';
 
-import BaseWorkspacesGenerator from '../base-workspaces/index.js';
+import { buildToolTypes } from '../../lib/jhipster/index.ts';
+import BaseWorkspacesGenerator from '../base-workspaces/index.ts';
+import { checkImages, configureImageNames } from '../base-workspaces/internal/docker-base.ts';
+import {
+  askForAdminPassword,
+  askForApplicationType,
+  askForApps,
+  askForClustersMode,
+  askForDockerPushCommand,
+  askForDockerRepositoryName,
+  askForMonitoring,
+  askForPath,
+  askForServiceDiscovery,
+} from '../base-workspaces/internal/docker-prompts.ts';
+import { getJdbcUrl, getR2dbcUrl } from '../spring-data/generators/relational/support/index.ts';
 
-import { buildToolTypes, messageBrokerTypes } from '../../lib/jhipster/index.js';
+import { applicationFiles, writeDeploymentFiles } from './files.ts';
+import {
+  askForIngressDomain,
+  askForIngressType,
+  askForIstioSupport,
+  askForKubernetesNamespace,
+  askForKubernetesServiceType,
+  askForPersistentStorage,
+  askForStorageClassName,
+} from './prompts.ts';
+import type {
+  Config as KubernetesConfig,
+  Deployment as KubernetesDeployment,
+  Options as KubernetesOptions,
+  Source as KubernetesSource,
+  WorkspacesApplication as KubernetesWorkspacesApplication,
+} from './types.ts';
 
-import { checkImages, configureImageNames, generateJwtSecret, loadFromYoRc } from '../base-workspaces/internal/docker-base.js';
-import { getJdbcUrl, getR2dbcUrl } from '../spring-data-relational/support/index.js';
-import { loadDeploymentConfig, loadDockerDependenciesTask } from '../base-workspaces/internal/index.js';
-import { checkDocker } from '../docker/support/index.js';
-import { loadDerivedServerConfig } from '../server/support/index.js';
-import { loadDerivedAppConfig } from '../app/support/index.js';
-import { checkKubernetes, derivedKubernetesPlatformProperties, loadConfig, setupKubernetesConstants } from './kubernetes-base.js';
-import { writeFiles } from './files.js';
-import prompts from './prompts.js';
-
-const { KAFKA } = messageBrokerTypes;
 const { MAVEN } = buildToolTypes;
 
 /**
- * @class
- * @extends {BaseWorkspacesGenerator}
+ * Temporary base class for Kubernetes generators.
  */
-export default class KubernetesGenerator extends BaseWorkspacesGenerator {
+export class BaseKubernetesGenerator extends BaseWorkspacesGenerator<
+  KubernetesDeployment,
+  KubernetesWorkspacesApplication,
+  KubernetesConfig,
+  KubernetesOptions,
+  KubernetesSource
+> {}
+
+export default class KubernetesGenerator extends BaseKubernetesGenerator {
   async beforeQueue() {
     if (!this.fromBlueprint) {
+      await this.dependsOnJHipster('jhipster:kubernetes:bootstrap');
       await this.composeWithBlueprints();
     }
   }
 
   get initializing() {
-    return {
+    return this.asInitializingTaskGroup({
       sayHello() {
         this.log.log(chalk.white(`${chalk.bold('⎈')} Welcome to the JHipster Kubernetes Generator ${chalk.bold('⎈')}`));
         this.log.log(chalk.white(`Files will be generated in folder: ${chalk.yellow(this.destinationRoot())}`));
       },
-      existingDeployment() {
-        this.regenerate = this.regenerate || this.config.existed;
-      },
-      loadDockerDependenciesTask,
-      checkDocker,
-      checkKubernetes,
-      loadConfig,
-      setupKubernetesConstants,
-    };
+    });
   }
 
   get [BaseWorkspacesGenerator.INITIALIZING]() {
@@ -71,83 +88,64 @@ export default class KubernetesGenerator extends BaseWorkspacesGenerator {
   }
 
   get prompting() {
-    return {
-      askForApplicationType: prompts.askForApplicationType,
-      askForPath: prompts.askForPath,
-      askForApps: prompts.askForApps,
-      askForMonitoring: prompts.askForMonitoring,
-      askForClustersMode: prompts.askForClustersMode,
-      askForServiceDiscovery: prompts.askForServiceDiscovery,
-      askForAdminPassword: prompts.askForAdminPassword,
-      askForKubernetesNamespace: prompts.askForKubernetesNamespace,
-      askForDockerRepositoryName: prompts.askForDockerRepositoryName,
-      askForDockerPushCommand: prompts.askForDockerPushCommand,
-      askForIstioSupport: prompts.askForIstioSupport,
-      askForKubernetesServiceType: prompts.askForKubernetesServiceType,
-      askForIngressType: prompts.askForIngressType,
-      askForIngressDomain: prompts.askForIngressDomain,
-      askForPersistentStorage: prompts.askForPersistentStorage,
-      askForStorageClassName: prompts.askForStorageClassName,
-    };
+    return this.asPromptingTaskGroup({
+      askForApplicationType,
+      askForPath,
+      askForApps,
+    });
   }
 
   get [BaseWorkspacesGenerator.PROMPTING]() {
     return this.delegateTasksToBlueprint(() => this.prompting);
   }
 
-  get configuring() {
-    return {
-      generateJwtSecret,
-    };
+  get promptingWorkspaces() {
+    return this.asPromptingWorkspacesTaskGroup({
+      askForMonitoring,
+      askForClustersMode,
+      askForServiceDiscovery,
+      askForAdminPassword,
+      askForKubernetesNamespace,
+      askForDockerRepositoryName,
+      askForDockerPushCommand,
+      askForIstioSupport,
+      askForKubernetesServiceType,
+      askForIngressType,
+      askForIngressDomain,
+      askForPersistentStorage,
+      askForStorageClassName,
+    });
   }
 
-  get [BaseWorkspacesGenerator.CONFIGURING]() {
-    return this.delegateTasksToBlueprint(() => this.configuring);
+  get [BaseWorkspacesGenerator.PROMPTING_WORKSPACES]() {
+    return this.delegateTasksToBlueprint(() => this.promptingWorkspaces);
   }
 
-  get loading() {
-    return {
-      loadFromYoRc,
-      loadSharedConfig() {
-        for (const app of this.appConfigs) {
-          loadDerivedAppConfig({ application: app });
-          loadDerivedServerConfig({ application: app });
-        }
-        loadDeploymentConfig.call(this);
-        derivedKubernetesPlatformProperties(this);
-      },
-    };
-  }
-
-  get [BaseWorkspacesGenerator.LOADING]() {
-    return this.delegateTasksToBlueprint(() => this.loading);
-  }
-
-  get preparing() {
-    return {
+  get preparingWorkspaces() {
+    return this.asPreparingWorkspacesTaskGroup({
       configureImageNames,
-
-      setPostPromptProp() {
-        this.appConfigs.forEach(element => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-          element.clusteredDb ? (element.dbPeerCount = 3) : (element.dbPeerCount = 1);
-          if (element.messageBroker === KAFKA) {
-            this.useKafka = true;
-          }
-        });
-        this.usesOauth2 = this.appConfigs.some(appConfig => appConfig.authenticationTypeOauth2);
-        this.usesIngress = this.kubernetesServiceType === 'Ingress';
-        this.useKeycloak = this.usesOauth2 && this.usesIngress;
-      },
-    };
+    });
   }
 
-  get [BaseWorkspacesGenerator.PREPARING]() {
-    return this.delegateTasksToBlueprint(() => this.preparing);
+  get [BaseWorkspacesGenerator.PREPARING_WORKSPACES]() {
+    return this.delegateTasksToBlueprint(() => this.preparingWorkspaces);
   }
 
   get writing() {
-    return writeFiles();
+    return this.asWritingTaskGroup({
+      async writeFiles({ deployment, applications }) {
+        for (const app of applications) {
+          await this.writeFiles({
+            sections: applicationFiles('k8s'),
+            context: { ...deployment, app },
+          });
+        }
+        await this.writeFiles({
+          sections: writeDeploymentFiles('k8s'),
+          context: deployment,
+        });
+      },
+    });
   }
 
   get [BaseWorkspacesGenerator.WRITING]() {
@@ -155,13 +153,13 @@ export default class KubernetesGenerator extends BaseWorkspacesGenerator {
   }
 
   get end() {
-    return {
-      checkImages,
-      deploy() {
-        if (this.hasWarning) {
+    return this.asEndTaskGroup({
+      deploy({ applications, deployment }) {
+        const check = checkImages.call(this, { applications });
+        if (check.hasWarning) {
           this.log.warn(`${chalk.yellow.bold('WARNING!')} Kubernetes configuration generated, but no Jib cache found`);
           this.log.warn('If you forgot to generate the Docker image for this application, please run:');
-          this.log.warn(this.warningMessage);
+          this.log.warn(check.warningMessage);
         } else {
           this.log.verboseInfo(`\n${chalk.bold.green('Kubernetes configuration successfully generated!')}`);
         }
@@ -169,55 +167,48 @@ export default class KubernetesGenerator extends BaseWorkspacesGenerator {
         this.log.warn(
           '\nYou will need to push your image to a registry. If you have not done so, use the following commands to tag and push the images:',
         );
-        for (let i = 0; i < this.appsFolders.length; i++) {
-          const originalImageName = this.appConfigs[i].baseName.toLowerCase();
-          const targetImageName = this.appConfigs[i].targetImageName;
+        for (const app of applications) {
+          const originalImageName = app.baseName.toLowerCase();
+          const targetImageName = app.targetImageName;
           if (originalImageName !== targetImageName) {
             this.log.verboseInfo(`  ${chalk.cyan(`docker image tag ${originalImageName} ${targetImageName}`)}`);
           }
-          this.log.verboseInfo(`  ${chalk.cyan(`${this.dockerPushCommand} ${targetImageName}`)}`);
+          this.log.verboseInfo(`  ${chalk.cyan(`${deployment.dockerPushCommand} ${targetImageName}`)}`);
         }
 
-        if (this.dockerRepositoryName) {
+        if (deployment.dockerRepositoryName) {
           this.log.log('\nAlternatively, you can use Jib to build and push image directly to a remote registry:');
-          this.appsFolders.forEach((appsFolder, index) => {
-            const appConfig = this.appConfigs[index];
+          for (const app of applications) {
             let runCommand = '';
-            if (appConfig.buildTool === MAVEN) {
+            if (app.buildTool === MAVEN) {
               runCommand = `./mvnw -ntp -Pprod verify jib:build${
                 process.arch === 'arm64' ? ' -Djib-maven-plugin.architecture=arm64' : ''
-              } -Djib.to.image=${appConfig.targetImageName}`;
+              } -Djib.to.image=${app.targetImageName}`;
             } else {
               runCommand = `./gradlew bootJar -Pprod jib${process.arch === 'arm64' ? ' -PjibArchitecture=arm64' : ''} -Djib.to.image=${
-                appConfig.targetImageName
+                app.targetImageName
               }`;
             }
-            this.log.verboseInfo(`  ${chalk.cyan(`${runCommand}`)} in ${this.destinationPath(this.directoryPath + appsFolder)}`);
-          });
+            this.log.verboseInfo(`  ${chalk.cyan(`${runCommand}`)} in ${this.workspacePath(app.appFolder!)}`);
+          }
         }
         this.log.log('\nYou can deploy all your apps by running the following kubectl command:');
         this.log.verboseInfo(`  ${chalk.cyan('bash kubectl-apply.sh -f')}`);
         this.log.log('\n[OR]');
         this.log.log('\nIf you want to use kustomize configuration, then run the following command:');
         this.log.verboseInfo(`  ${chalk.cyan('bash kubectl-apply.sh -k')}`);
-        if (this.gatewayNb + this.monolithicNb >= 1) {
-          const namespaceSuffix = this.kubernetesNamespace === 'default' ? '' : ` -n ${this.kubernetesNamespace}`;
+        if (deployment.gatewayNb! + deployment.monolithicNb! >= 1) {
+          const namespaceSuffix = deployment.kubernetesNamespace === 'default' ? '' : ` -n ${deployment.kubernetesNamespace}`;
           this.log.verboseInfo("\nUse these commands to find your application's IP addresses:");
-          for (let i = 0; i < this.appsFolders.length; i++) {
-            if (this.appConfigs[i].applicationType === 'gateway' || this.appConfigs[i].applicationType === 'monolith') {
-              this.log.verboseInfo(`  ${chalk.cyan(`kubectl get svc ${this.appConfigs[i].baseName.toLowerCase()}${namespaceSuffix}`)}`);
+          for (const app of applications) {
+            if (app.applicationType === 'gateway' || app.applicationType === 'monolith') {
+              this.log.verboseInfo(`  ${chalk.cyan(`kubectl get svc ${app.baseName.toLowerCase()}${namespaceSuffix}`)}`);
             }
           }
           this.log.log();
         }
-        // Make the apply script executable
-        try {
-          fs.chmodSync('kubectl-apply.sh', '755');
-        } catch {
-          this.log.warn("Failed to make 'kubectl-apply.sh' executable, you may need to run 'chmod +x kubectl-apply.sh'");
-        }
       },
-    };
+    });
   }
 
   get [BaseWorkspacesGenerator.END]() {
@@ -231,8 +222,8 @@ export default class KubernetesGenerator extends BaseWorkspacesGenerator {
    * @param {string} databaseType
    * @param {*} options: databaseName, and required infos that depends of databaseType (hostname, localDirectory, ...)
    */
-  getJDBCUrl(databaseType, options = {}) {
-    return getJdbcUrl(databaseType, options);
+  getJDBCUrl(...args: Parameters<typeof getJdbcUrl>) {
+    return getJdbcUrl(...args);
   }
 
   /**
@@ -242,7 +233,7 @@ export default class KubernetesGenerator extends BaseWorkspacesGenerator {
    * @param {string} databaseType
    * @param {*} options: databaseName, and required infos that depends of databaseType (hostname, localDirectory, ...)
    */
-  getR2DBCUrl(databaseType, options = {}) {
-    return getR2dbcUrl(databaseType, options);
+  getR2DBCUrl(...args: Parameters<typeof getR2dbcUrl>) {
+    return getR2dbcUrl(...args);
   }
 }

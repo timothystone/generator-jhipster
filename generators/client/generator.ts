@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,35 +16,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { startCase } from 'lodash-es';
 
-import BaseApplicationGenerator from '../base-application/index.js';
+import { clientFrameworkTypes, testFrameworkTypes } from '../../lib/jhipster/index.ts';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { createNeedleCallback } from '../base-core/support/index.ts';
+import { isReservedTypescriptKeyword } from '../javascript-simple-application/support/reserved-words.ts';
 
-import { LOGIN_REGEX_JS } from '../generator-constants.js';
-import { GENERATOR_CLIENT, GENERATOR_COMMON, GENERATOR_CYPRESS } from '../generator-list.js';
-
-import { clientFrameworkTypes, testFrameworkTypes } from '../../lib/jhipster/index.js';
-import { createNeedleCallback } from '../base/support/index.js';
-import { loadStoredAppOptions } from '../app/support/index.js';
-import { addEnumerationFiles } from './entity-files.js';
-import { writeFiles as writeCommonFiles } from './files-common.js';
-import { askForClientTheme, askForClientThemeVariant } from './prompts.js';
+import { addEnumerationFiles } from './entity-files.ts';
+import { writeFiles as writeCommonFiles } from './files-common.ts';
+import { askForClientTheme, askForClientThemeVariant } from './prompts.ts';
+import { filterEntitiesAndPropertiesForClient } from './support/filter-entities.ts';
+import type {
+  Application as ClientApplication,
+  Config as ClientConfig,
+  Entity as ClientEntity,
+  Features as ClientFeatures,
+  Options as ClientOptions,
+  Source as ClientSource,
+} from './types.d.ts';
 
 const { ANGULAR, NO: CLIENT_FRAMEWORK_NO } = clientFrameworkTypes;
 const { CYPRESS } = testFrameworkTypes;
 
-export default class JHipsterClientGenerator extends BaseApplicationGenerator {
-  async beforeQueue() {
-    loadStoredAppOptions.call(this);
+export class ClientApplicationGenerator<
+  Entity extends ClientEntity = ClientEntity,
+  Application extends ClientApplication<Entity> = ClientApplication<Entity>,
+  Config extends ClientConfig = ClientConfig,
+  Options extends ClientOptions = ClientOptions,
+  Source extends ClientSource = ClientSource,
+> extends BaseApplicationGenerator<Entity, Application, Config, Options, Source> {}
 
+export default class ClientGenerator extends ClientApplicationGenerator {
+  constructor(args?: string[], options?: ClientOptions, features?: ClientFeatures) {
+    super(args, options, { skipLoadCommand: true, ...features });
+  }
+
+  async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      // TODO depend on GENERATOR_BOOTSTRAP_APPLICATION_CLIENT.
-      await this.dependsOnBootstrapApplication();
-      await this.dependsOnJHipster(GENERATOR_COMMON);
+      await this.dependsOnBootstrap('client');
+      await this.dependsOnJHipster('common');
     }
   }
 
@@ -55,7 +69,7 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.PROMPTING]() {
+  get [ClientApplicationGenerator.PROMPTING]() {
     return this.delegateTasksToBlueprint(() => this.prompting);
   }
 
@@ -77,8 +91,7 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
         }
       },
       upgradeAngular() {
-        // @ts-ignore deprecated value
-        if (this.jhipsterConfig.clientFramework === 'angularX') {
+        if ((this.jhipsterConfig.clientFramework as string) === 'angularX') {
           this.jhipsterConfig.clientFramework = ANGULAR;
         }
       },
@@ -87,12 +100,12 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
         if (this.jhipsterConfig.devServerPort !== undefined || this.jhipsterConfig.applicationIndex === undefined) return;
 
         const { applicationIndex, devServerPort } = this.jhipsterConfigWithDefaults;
-        this.jhipsterConfig.devServerPort = devServerPort + applicationIndex;
+        this.jhipsterConfig.devServerPort = devServerPort! + applicationIndex!;
       },
     });
   }
 
-  get [BaseApplicationGenerator.CONFIGURING]() {
+  get [ClientApplicationGenerator.CONFIGURING]() {
     return this.delegateTasksToBlueprint(() => this.configuring);
   }
 
@@ -104,57 +117,35 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
           await this.composeWithJHipster(clientFramework!);
         }
         if (Array.isArray(testFrameworks) && testFrameworks.includes(CYPRESS)) {
-          await this.composeWithJHipster(GENERATOR_CYPRESS);
+          await this.composeWithJHipster('cypress');
         }
       },
     });
   }
 
-  get [BaseApplicationGenerator.COMPOSING]() {
+  get [ClientApplicationGenerator.COMPOSING]() {
     return this.delegateTasksToBlueprint(() => this.composing);
   }
 
   get loading() {
     return this.asLoadingTaskGroup({
-      loadSharedConfig({ application }) {
-        // TODO v8 rename to nodePackageManager;
-        application.clientPackageManager = 'npm';
-      },
-
       loadPackageJson({ application }) {
         // Load common client package.json into packageJson
         this.loadNodeDependenciesFromPackageJson(
           application.nodeDependencies,
-          this.fetchFromInstalledJHipster(GENERATOR_CLIENT, 'resources', 'package.json'),
+          this.fetchFromInstalledJHipster('client', 'resources', 'package.json'),
         );
       },
     });
   }
 
-  get [BaseApplicationGenerator.LOADING]() {
+  get [ClientApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
   }
 
   // Public API method used by the getter and also by Blueprints
   get preparing() {
     return this.asPreparingTaskGroup({
-      preparing({ applicationDefaults }) {
-        applicationDefaults({
-          clientBundlerName: ctx => (ctx.clientBundlerExperimentalEsbuild ? 'esbuild' : startCase(ctx.clientBundler)),
-          clientTestFramework: ctx => (ctx.clientFrameworkVue ? 'vitest' : 'jest'),
-          clientTestFrameworkName: ctx => startCase(ctx.clientTestFramework),
-        });
-      },
-      microservice({ application }) {
-        if (application.applicationTypeMicroservice) {
-          application.withAdminUi = false;
-        }
-      },
-
-      prepareForTemplates({ application }) {
-        application.webappLoginRegExp = LOGIN_REGEX_JS;
-      },
-
       addExternalResource({ application, source }) {
         if (!application.clientFrameworkBuiltIn) {
           return;
@@ -171,25 +162,54 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING]() {
+  get [ClientApplicationGenerator.PREPARING]() {
     return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
   get preparingEachEntity() {
-    return {
-      prepareEntity({ entity }) {
-        if (entity.entityRestLayer === false) {
-          entity.entityClientModelOnly = true;
+    return this.asPreparingEachEntityTaskGroup({
+      preparing({ entityName }) {
+        if (isReservedTypescriptKeyword(entityName)) {
+          throw new Error(`The entity name "${entityName}" is a reserved TypeScript keyword. It may cause issues in your application.`);
         }
       },
-    };
+    });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY]() {
+  get [ClientApplicationGenerator.PREPARING_EACH_ENTITY]() {
     return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
   }
 
-  // Public API method used by the getter and also by Blueprints
+  get preparingEachEntityField() {
+    return this.asPreparingEachEntityFieldTaskGroup({
+      preparing({ entity, field }) {
+        if (isReservedTypescriptKeyword(field.fieldName)) {
+          throw new Error(`The field name "${field.fieldName}" in entity "${entity.name}" is a reserved TypeScript keyword.`);
+        }
+      },
+    });
+  }
+
+  get [ClientApplicationGenerator.PREPARING_EACH_ENTITY_FIELD]() {
+    return this.delegateTasksToBlueprint(() => this.preparingEachEntityField);
+  }
+
+  get preparingEachEntityRelationship() {
+    return this.asPreparingEachEntityRelationshipTaskGroup({
+      preparing({ entity, relationship }) {
+        if (isReservedTypescriptKeyword(relationship.relationshipName)) {
+          throw new Error(
+            `The relationship name "${relationship.relationshipName}" in entity "${entity.name}" is a reserved TypeScript keyword.`,
+          );
+        }
+      },
+    });
+  }
+
+  get [ClientApplicationGenerator.PREPARING_EACH_ENTITY_RELATIONSHIP]() {
+    return this.delegateTasksToBlueprint(() => this.preparingEachEntityRelationship);
+  }
+
   get writing() {
     return this.asWritingTaskGroup({
       async cleanup({ application, control }) {
@@ -204,24 +224,24 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING]() {
+  get [ClientApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
   get writingEntities() {
     return this.asWritingEntitiesTaskGroup({
-      async writeEnumerationFiles({ control, application, entities }) {
+      async writeEnumerationFiles({ application, entities }) {
         if (!application.webappEnumerationsDir || !application.clientFrameworkBuiltIn) {
           return;
         }
-        for (const entity of (control.filterEntitiesAndPropertiesForClient ?? (entities => entities))(entities)) {
+        for (const entity of (application.filterEntitiesAndPropertiesForClient ?? filterEntitiesAndPropertiesForClient)(entities)) {
           await addEnumerationFiles.call(this, { application, entity });
         }
       },
     });
   }
 
-  get [BaseApplicationGenerator.WRITING_ENTITIES]() {
+  get [ClientApplicationGenerator.WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.writingEntities);
   }
 
@@ -239,7 +259,7 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
         devDependencies.set('concurrently', application.nodeDependencies.concurrently);
 
         if (application.clientFrameworkReact) {
-          scriptsStorage.set('ci:frontend:test', 'npm run webapp:build:$npm_package_config_default_environment && npm run test-ci');
+          scriptsStorage.set('ci:frontend:test', 'npm run webapp:build:$npm_package_config_default_environment && npm run test');
         } else {
           scriptsStorage.set('ci:frontend:build', 'npm run webapp:build:$npm_package_config_default_environment');
           scriptsStorage.set('ci:frontend:test', 'npm run ci:frontend:build && npm test');
@@ -281,7 +301,7 @@ export default class JHipsterClientGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.POST_WRITING]() {
+  get [ClientApplicationGenerator.POST_WRITING]() {
     return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 }

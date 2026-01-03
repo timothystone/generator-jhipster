@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,20 +18,18 @@
  */
 import chalk from 'chalk';
 import { intersection } from 'lodash-es';
-import {
-  APPLICATION_TYPE_GATEWAY,
-  APPLICATION_TYPE_MICROSERVICE,
-  clientFrameworkTypes,
-  testFrameworkTypes,
-} from '../../lib/jhipster/index.js';
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_COMMON } from '../generator-list.js';
+
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+import { ALPHANUMERIC_PATTERN } from '../../lib/constants/jdl.ts';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE } from '../../lib/core/application-types.ts';
+import { clientFrameworkTypes, testFrameworkTypes } from '../../lib/jhipster/index.ts';
 
 const { CYPRESS } = testFrameworkTypes;
 const { ANGULAR, REACT, VUE, NO: CLIENT_FRAMEWORK_NO } = clientFrameworkTypes;
 
-const microfrontendsToPromptValue = answer => (Array.isArray(answer) ? answer.map(({ baseName }) => baseName).join(',') : answer);
-const promptValueToMicrofrontends = answer =>
+const microfrontendsToPromptValue = (answer: string | { baseName: string }[]) =>
+  Array.isArray(answer) ? answer.map(({ baseName }) => baseName).join(',') : answer;
+const promptValueToMicrofrontends = (answer: string): { baseName: string }[] =>
   answer
     ? answer
         .split(',')
@@ -41,7 +39,6 @@ const promptValueToMicrofrontends = answer =>
     : [];
 
 const command = {
-  options: {},
   configs: {
     clientFramework: {
       description: 'Provide client framework for the application',
@@ -49,7 +46,7 @@ const command = {
         type: String,
       },
       prompt: generator => ({
-        type: 'list',
+        type: 'select',
         message: () =>
           generator.jhipsterConfigWithDefaults.applicationType === APPLICATION_TYPE_MICROSERVICE
             ? `Which ${chalk.yellow('*framework*')} would you like to use as microfrontend?`
@@ -75,6 +72,11 @@ const command = {
         type: String,
         hide: true,
       },
+      choices: [
+        { value: 'primary', name: 'Primary' },
+        { value: 'dark', name: 'Dark' },
+        { value: 'light', name: 'Light' },
+      ],
       scope: 'storage',
     },
     clientBundler: {
@@ -82,19 +84,7 @@ const command = {
         type: String,
         hide: true,
       },
-      choices: ['webpack', 'vite', 'experimentalEsbuild'],
-      scope: 'storage',
-    },
-    clientBundlerName: {
-      cli: { type: String, hide: true },
-      scope: 'storage',
-    },
-    clientTestFramework: {
-      cli: { type: String, hide: true },
-      scope: 'storage',
-    },
-    clientTestFrameworkName: {
-      cli: { type: String, hide: true },
+      choices: ['webpack', 'vite', 'esbuild'],
       scope: 'storage',
     },
     devServerPort: {
@@ -135,7 +125,7 @@ const command = {
         when: answers => {
           const askForMicrofrontends = Boolean(
             (answers.microfrontend ?? config.microfrontend) &&
-              (answers.applicationType ?? config.applicationType) === APPLICATION_TYPE_GATEWAY,
+            (answers.applicationType ?? config.applicationType) === APPLICATION_TYPE_GATEWAY,
           );
           if (askForMicrofrontends && answers.microfrontends) {
             answers.microfrontends = microfrontendsToPromptValue(answers.microfrontends);
@@ -150,6 +140,19 @@ const command = {
         transformer: microfrontendsToPromptValue,
       }),
       scope: 'storage',
+    },
+    clientTestFramework: {
+      cli: {
+        type: String,
+      },
+      jdl: {
+        type: 'string',
+        tokenType: 'NAME',
+        tokenValuePattern: ALPHANUMERIC_PATTERN,
+      },
+      scope: 'storage',
+      choices: ['jest', 'vitest'],
+      default: ctx => (ctx?.clientFramework === 'vue' || ctx?.clientFramework === 'angular' ? 'vitest' : 'jest'),
     },
     clientTestFrameworks: {
       description: 'Client test frameworks',
@@ -186,7 +189,7 @@ const command = {
       scope: 'storage',
     },
   },
-  import: [GENERATOR_COMMON],
-} as const satisfies JHipsterCommandDefinition;
+  import: ['common'],
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

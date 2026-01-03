@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,14 +18,12 @@
  */
 
 import { snakeCase } from 'lodash-es';
-import JDLEnum from '../jdl/core/models/jdl-enum.js';
-import validations from '../jdl/core/built-in-options/validations.js';
-import databaseTypes from './database-types.js';
+
+import validations from '../jdl/core/built-in-options/validations.ts';
 
 const {
   Validations: { REQUIRED, UNIQUE, MAX, MAXBYTES, MAXLENGTH, MIN, MINBYTES, MINLENGTH, PATTERN },
 } = validations;
-const { MONGODB, MARIADB, COUCHBASE, NEO4J, CASSANDRA, MSSQL, MYSQL, NO, ORACLE, POSTGRESQL, SQL } = databaseTypes;
 
 export const CommonDBTypes = {
   STRING: 'String',
@@ -48,12 +46,12 @@ export const CommonDBTypes = {
   BYTES: 'byte[]', // Supported by mongodb at CI samples
   BYTE_BUFFER: 'ByteBuffer', // Supported by cassandra at CI samples
   LOCAL_TIME: 'LocalTime',
-};
+} as const;
 
 export const RelationalOnlyDBTypes = {
   BYTES: 'byte[]',
   BYTE_BUFFER: 'ByteBuffer',
-};
+} as const;
 
 export const BlobTypes = {
   IMAGE: 'image',
@@ -87,55 +85,55 @@ export default {
   RelationalOnlyDBTypes,
   isCommonDBType,
   hasValidation,
-  getIsType,
   BlobTypes,
 };
 
-export function isCommonDBType(type): boolean {
+export function isCommonDBType(type: string): boolean {
   if (!type) {
     throw new Error('The passed type must not be nil.');
   }
 
-  return snakeCase(type).toUpperCase() in CommonDBTypes || type instanceof JDLEnum;
+  return snakeCase(type).toUpperCase() in CommonDBTypes;
 }
 
-export function hasValidation(type: any, validation, isAnEnum?: boolean): boolean {
+export function hasValidation(type: string, validation: string, isAnEnum?: boolean): boolean {
   if (!type || !validation) {
     throw new Error('The passed type and value must not be nil.');
   }
   if (isAnEnum) {
     type = 'Enum';
   }
-  return isCommonDBType(type) && CommonDBValidations[type].has(validation);
+  return isCommonDBType(type) && (CommonDBValidations as Record<string, Set<string>>)[type].has(validation);
 }
 
-export function getIsType(databaseType?: string, callback?: any): (type: any) => boolean {
-  if (!databaseType) {
-    throw new Error('The passed type must not be nil.');
-  }
-  let isType;
-  switch (databaseType) {
-    case SQL:
-    case MYSQL:
-    case MARIADB:
-    case POSTGRESQL:
-    case ORACLE:
-    case MSSQL:
-    case MONGODB:
-    case COUCHBASE:
-    case CASSANDRA:
-    case NEO4J:
-      isType = isCommonDBType;
-      break;
-    case NO:
-      isType = () => true;
-      break;
-    default:
-      callback?.();
-      throw new Error(
-        "The passed database type must either be 'sql', 'mysql', 'mariadb', 'postgresql'," +
-          " 'oracle', 'mssql', 'mongodb', 'couchbase', 'neo4j' or 'cassandra'",
-      );
-  }
-  return isType;
-}
+export const blobFieldTypesValues = {
+  BLOB: 'Blob',
+  ANY_BLOB: 'AnyBlob',
+  IMAGE_BLOB: 'ImageBlob',
+  TEXT_BLOB: 'TextBlob',
+} as const;
+
+export const fieldTypesValues = {
+  STRING: 'String',
+  INTEGER: 'Integer',
+  LONG: 'Long',
+  BIG_DECIMAL: 'BigDecimal',
+  FLOAT: 'Float',
+  DOUBLE: 'Double',
+  UUID: 'UUID',
+  BOOLEAN: 'Boolean',
+  LOCAL_DATE: 'LocalDate',
+  ZONED_DATE_TIME: 'ZonedDateTime',
+  INSTANT: 'Instant',
+  DURATION: 'Duration',
+  TIME: 'LocalTime',
+  BYTES: 'byte[]', // Supported by mongodb at CI samples
+  BYTE_BUFFER: 'ByteBuffer',
+  ...blobFieldTypesValues,
+} as const;
+
+export type FieldType = (typeof fieldTypesValues)[keyof typeof fieldTypesValues];
+
+export type FieldBlobType = (typeof blobFieldTypesValues)[keyof typeof blobFieldTypesValues];
+
+export type FieldBinaryType = (typeof blobFieldTypesValues)[keyof typeof blobFieldTypesValues] | 'byte[]';

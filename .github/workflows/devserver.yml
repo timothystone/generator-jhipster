@@ -40,19 +40,22 @@ on:
       - 'generators/*'
   pull_request:
     types: [closed, opened, synchronize, reopened]
-    branches:
-      - '*'
 jobs:
   build-matrix:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
       empty-matrix: ${{ steps.build.outputs.empty-matrix }}
     steps:
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
+      - run: echo "node-version=$(cat ${{ github.workspace }}/generators/init/resources/.node-version)" >> $GITHUB_OUTPUT
+        id: node-version
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.node-version.outputs.node-version }}
       - run: npm ci --ignore-scripts
       - id: build
         run: bin/jhipster.cjs github-build-matrix devserver --event-name ${{ github.event_name }}
@@ -73,11 +76,11 @@ jobs:
       # Install all tools and check configuration
       #----------------------------------------------------------------------
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: generator-jhipster
           fetch-depth: 2
-      - uses: jhipster/actions/setup-runner@v0
+      - uses: jhipster/actions/setup-runner@v1
         with:
           node-version: ${{ matrix.node-version }}
           java-version: ${{ matrix.java-version }}
@@ -91,17 +94,23 @@ jobs:
         working-directory: ${{ github.workspace }}/generator-jhipster
       - name: 'GENERATION: project'
         run: jhipster.cjs generate-sample ${{ matrix.sample }} --skip-jhipster-dependencies --skip-install ${{ matrix.args }}
+        env:
+          JHIPSTER_DEPENDENCIES_VERSION: ${{ matrix.jhipster-bom-cicd-version }}
+          JHI_JWT_SECRET_KEY: ${{ matrix.jwt-secret-key }}
       - run: jhipster.cjs info
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
+      - uses: jhipster/actions/build-jhipster-bom@v1
+        with:
+          jhipster-bom-ref: ${{ matrix.jhipster-bom-branch }}
       - name: 'E2E: Run'
         id: e2e
         run: |
           ./npmw install
           ./npmw run e2e:devserver --if-present
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ matrix.job-name }}

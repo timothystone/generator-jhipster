@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-import { validations } from '../../core/built-in-options/index.js';
-import Validator from './validator.js';
+import { validations } from '../../core/built-in-options/index.ts';
+import type JDLValidation from '../../core/models/jdl-validation.ts';
+
+import Validator from './validator.ts';
 
 const {
   Validations: { exists, needsValue, MINLENGTH, MAXLENGTH, MAXBYTES, MINBYTES },
@@ -29,30 +31,30 @@ export default class ValidationValidator extends Validator {
     super('validation', ['name']);
   }
 
-  validate(jdlValidation) {
+  validate(jdlValidation: JDLValidation) {
     super.validate(jdlValidation);
     checkForInvalidName(jdlValidation);
     checkForRequiredValue(jdlValidation);
-    if ([MINLENGTH, MAXLENGTH, MAXBYTES, MINBYTES].includes(jdlValidation.name)) {
+    if (([MINLENGTH, MAXLENGTH, MAXBYTES, MINBYTES] as string[]).includes(jdlValidation.name)) {
       checkForInvalidNumericValue(jdlValidation);
     }
   }
 }
 
-function checkForInvalidName(jdlValidation) {
+function checkForInvalidName(jdlValidation: JDLValidation) {
   if (!exists(jdlValidation.name)) {
     throw new Error(`The validation ${jdlValidation.name} doesn't exist.`);
   }
 }
 
-function checkForRequiredValue(jdlValidation) {
+function checkForRequiredValue(jdlValidation: JDLValidation) {
   if (jdlValidation.value == null && needsValue(jdlValidation.name)) {
     throw new Error(`The validation ${jdlValidation.name} requires a value.`);
   }
 }
 
-function checkForInvalidNumericValue(jdlValidation) {
-  if (jdlValidation.value.toString().includes('.')) {
+function checkForInvalidNumericValue(jdlValidation: JDLValidation) {
+  if (jdlValidation.value!.toString().includes('.')) {
     throw new Error(`Decimal values are forbidden for the ${jdlValidation.name} validation.`);
   }
 }

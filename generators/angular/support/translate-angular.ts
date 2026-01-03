@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 import { extname } from 'node:path';
+
 import { passthrough } from '@yeoman/transform';
+import type { MemFsEditorFile } from 'mem-fs-editor';
 import { Minimatch } from 'minimatch';
 
+import type { GetWebappTranslationCallback } from '../../client/translation.ts';
 import {
   type JHITranslateConverterOptions,
   createJhiTransformTranslateReplacer,
@@ -27,8 +30,7 @@ import {
   createJhiTranslateReplacer,
   escapeHtmlTranslationValue,
   escapeTsTranslationValue,
-} from '../../languages/support/index.js';
-import type { GetWebappTranslationCallback } from '../../../lib/types/base/translation.js';
+} from '../../languages/support/index.ts';
 
 const PLACEHOLDER_REGEX = /(?:placeholder|title)=['|"](\{\{\s?['|"]([a-zA-Z0-9.\-_]+)['|"]\s?\|\s?translate\s?\}\})['|"]/.source;
 
@@ -49,8 +51,8 @@ export type ReplacerOptions = { jhiPrefix: string; enableTranslation: boolean };
  */
 function replaceTranslationKeysWithText(
   getWebappTranslation: GetWebappTranslationCallback,
-  content,
-  regexSource,
+  content: string,
+  regexSource: string,
   {
     keyIndex = 1,
     replacementIndex = 1,
@@ -79,7 +81,7 @@ function replaceTranslationKeysWithText(
  * @param {string} jsKey
  * @returns string with jsKey value replaced
  */
-function replaceJSTranslation(getWebappTranslation: GetWebappTranslationCallback, content, jsKey) {
+function replaceJSTranslation(getWebappTranslation: GetWebappTranslationCallback, content: string, jsKey: string) {
   return replaceTranslationKeysWithText(
     getWebappTranslation,
     content,
@@ -96,18 +98,18 @@ function replaceJSTranslation(getWebappTranslation: GetWebappTranslationCallback
  * @param {string} content html content
  * @returns string with pageTitle replaced
  */
-function replacePageTitles(getWebappTranslation: GetWebappTranslationCallback, content) {
+function replacePageTitles(getWebappTranslation: GetWebappTranslationCallback, content: string) {
   return replaceJSTranslation(getWebappTranslation, content, 'title');
 }
 
-function replacePlaceholders(getWebappTranslation: GetWebappTranslationCallback, content) {
+function replacePlaceholders(getWebappTranslation: GetWebappTranslationCallback, content: string) {
   return replaceTranslationKeysWithText(getWebappTranslation, content, PLACEHOLDER_REGEX, { keyIndex: 2 });
 }
 
 /**
  * Replace error code translation key with translated message
  */
-function replaceErrorMessage(getWebappTranslation: GetWebappTranslationCallback, content) {
+function replaceErrorMessage(getWebappTranslation: GetWebappTranslationCallback, content: string) {
   return replaceJSTranslation(getWebappTranslation, content, 'errorMessage');
 }
 
@@ -310,7 +312,7 @@ export const createTranslationReplacer = (getWebappTranslation: GetWebappTransla
       }
     }
     // Translate html files and inline templates.
-    if (/(:?\.html|component\.ts)$/.test(filePath)) {
+    if (/(:?\.html|.ts)$/.test(filePath)) {
       content = htmlJhiTranslateReplacer(content);
       content = htmlJhiTranslateStringifyReplacer(content);
     }
@@ -318,7 +320,7 @@ export const createTranslationReplacer = (getWebappTranslation: GetWebappTransla
       content = translationReplacer ? translationReplacer?.(content, filePath) : content;
     }
     if (!enableTranslation) {
-      if (/(:?route|module)\.ts$/.test(filePath)) {
+      if (/(:?routes?|module)\.ts$/.test(filePath)) {
         content = replacePageTitles(getWebappTranslation, content);
       }
       if (filePath.endsWith('error.route.ts')) {
@@ -330,7 +332,7 @@ export const createTranslationReplacer = (getWebappTranslation: GetWebappTransla
 };
 
 const minimatch = new Minimatch('**/*{.html,.ts}');
-export const isTranslatedAngularFile = file => minimatch.match(file.path);
+export const isTranslatedAngularFile = (file: MemFsEditorFile) => minimatch.match(file.path);
 
 export const translateAngularFilesTransform = (getWebappTranslation: GetWebappTranslationCallback, opts: ReplacerOptions | boolean) => {
   const translate = createTranslationReplacer(getWebappTranslation, opts);

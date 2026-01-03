@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { fieldTypes } from '../../../lib/jhipster/index.js';
+import { fieldTypes } from '../../../lib/jhipster/index.ts';
 
 const { CommonDBTypes, RelationalOnlyDBTypes } = fieldTypes;
 const { BYTES, BYTE_BUFFER } = RelationalOnlyDBTypes;
@@ -40,26 +40,28 @@ const {
   BLOB,
 } = CommonDBTypes;
 
-export function fieldIsEnum(fieldType) {
-  return ![
-    STRING,
-    INTEGER,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    BIG_DECIMAL,
-    LOCAL_DATE,
-    INSTANT,
-    ZONED_DATE_TIME,
-    LOCAL_TIME,
-    DURATION,
-    UUID,
-    BOOLEAN,
-    BYTES,
-    BYTE_BUFFER,
-    ANY_BLOB,
-    BLOB,
-    IMAGE_BLOB,
-    TEXT_BLOB,
-  ].includes(fieldType);
+export function fieldIsEnum(fieldType: string): boolean {
+  return !(
+    [
+      STRING,
+      INTEGER,
+      LONG,
+      FLOAT,
+      DOUBLE,
+      BIG_DECIMAL,
+      LOCAL_DATE,
+      INSTANT,
+      ZONED_DATE_TIME,
+      LOCAL_TIME,
+      DURATION,
+      UUID,
+      BOOLEAN,
+      BYTES,
+      BYTE_BUFFER,
+      ANY_BLOB,
+      BLOB,
+      IMAGE_BLOB,
+      TEXT_BLOB,
+    ] as string[]
+  ).includes(fieldType);
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,12 @@
  * limitations under the License.
  */
 
-import { clientFrameworkTypes, fieldTypes, validations } from '../../../lib/jhipster/index.js';
-import getTypescriptKeyType from './types-utils.js';
-import { filterRelevantRelationships, generateTestEntityId } from './template-utils.js';
+import { clientFrameworkTypes, fieldTypes, validations } from '../../../lib/jhipster/index.ts';
+import type { PrimaryKey, RelationshipWithEntity } from '../../base-application/types.ts';
+import type { Entity as ClientEntity, Field as ClientField, Relationship as ClientRelationship } from '../types.d.ts';
+
+import { filterRelevantRelationships } from './template-utils.ts';
+import getTypescriptKeyType from './types-utils.ts';
 
 const dbTypes = fieldTypes;
 const {
@@ -60,14 +63,14 @@ const { ANGULAR, VUE } = clientFrameworkTypes;
  * @returns variablesWithTypes: Array
  */
 const generateEntityClientFields = (
-  primaryKey,
-  fields,
-  relationships,
-  dto,
+  primaryKey: PrimaryKey,
+  fields: ClientField[],
+  relationships: RelationshipWithEntity<ClientRelationship, ClientEntity<ClientField>>[],
+  _dto: any,
   customDateType = 'dayjs.Dayjs',
   embedded = false,
   clientFramework: string = ANGULAR,
-) => {
+): string[] => {
   const variablesWithTypes: string[] = [];
   if (!embedded && primaryKey) {
     const tsKeyType = getTypescriptKeyType(primaryKey);
@@ -76,22 +79,21 @@ const generateEntityClientFields = (
     }
   }
   fields.forEach(field => {
-    const fieldType = field.fieldType;
-    const fieldName = field.fieldName;
-    const nullable = !field.id && field.nullable;
+    const { fieldType, fieldName } = field;
+    const nullable = !field.id && (field as any).nullable;
     let tsType = 'any';
     if (field.fieldIsEnum) {
       tsType = `keyof typeof ${fieldType}`;
     } else if (fieldType === TYPE_BOOLEAN) {
       tsType = 'boolean';
-    } else if ([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL].includes(fieldType)) {
+    } else if (([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL] as string[]).includes(fieldType)) {
       tsType = 'number';
-    } else if ([TYPE_STRING, TYPE_UUID, TYPE_DURATION, TYPE_BYTES, TYPE_BYTE_BUFFER, TYPE_TIME].includes(fieldType)) {
+    } else if (([TYPE_STRING, TYPE_UUID, TYPE_DURATION, TYPE_BYTES, TYPE_BYTE_BUFFER, TYPE_TIME] as string[]).includes(fieldType)) {
       tsType = 'string';
-      if ([TYPE_BYTES, TYPE_BYTE_BUFFER].includes(fieldType) && field.fieldTypeBlobContent !== 'text') {
+      if (([TYPE_BYTES, TYPE_BYTE_BUFFER] as string[]).includes(fieldType) && field.fieldTypeBlobContent !== 'text') {
         variablesWithTypes.push(`${fieldName}ContentType?: ${nullable ? 'string | null' : 'string'}`);
       }
-    } else if ([TYPE_LOCAL_DATE, TYPE_INSTANT, TYPE_ZONED_DATE_TIME].includes(fieldType)) {
+    } else if (([TYPE_LOCAL_DATE, TYPE_INSTANT, TYPE_ZONED_DATE_TIME] as string[]).includes(fieldType)) {
       tsType = customDateType;
     }
     if (nullable) {
@@ -103,16 +105,16 @@ const generateEntityClientFields = (
   const relevantRelationships = filterRelevantRelationships(relationships);
 
   relevantRelationships.forEach(relationship => {
-    let fieldType;
-    let fieldName;
+    let fieldType: string;
+    let fieldName: string;
     const nullable = !relationship.relationshipValidateRules?.includes(REQUIRED);
     const relationshipType = relationship.relationshipType;
     if (relationshipType === 'one-to-many' || relationshipType === 'many-to-many') {
-      fieldType = `I${relationship.otherEntityAngularName}[]`;
-      fieldName = relationship.relationshipFieldNamePlural;
+      fieldType = `I${relationship.otherEntity.entityAngularName}[]`;
+      fieldName = relationship.relationshipFieldNamePlural!;
     } else {
-      fieldType = `I${relationship.otherEntityAngularName}`;
-      fieldName = relationship.relationshipFieldName;
+      fieldType = `I${relationship.otherEntity.entityAngularName}`;
+      fieldName = relationship.relationshipFieldName!;
     }
     if (nullable) {
       fieldType += ' | null';
@@ -120,30 +122,6 @@ const generateEntityClientFields = (
     variablesWithTypes.push(`${fieldName}?: ${fieldType}`);
   });
   return variablesWithTypes;
-};
-
-/**
- * @private
- * Generate a test entity, according to the type
- */
-export const generateTestEntity = (references, index: 0 | 1 | 'random' = 'random') => {
-  const entries = references
-    .map(reference => {
-      if (index === 'random') {
-        const field = reference.field;
-        const fakeData = field.generateFakeData('json-serializable');
-        if (reference.field.fieldWithContentType) {
-          return [
-            [reference.name, fakeData],
-            [field.contentTypeFieldName, 'unknown'],
-          ];
-        }
-        return [[reference.name, fakeData]];
-      }
-      return [[reference.name, generateTestEntityId(reference.type, index, false)]];
-    })
-    .flat();
-  return Object.fromEntries(entries);
 };
 
 export default generateEntityClientFields;

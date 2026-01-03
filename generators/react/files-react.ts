@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asWriteFilesSection, asWritingTask } from '../base-application/support/index.js';
-import { clientApplicationTemplatesBlock, clientRootTemplatesBlock } from '../client/support/files.js';
+import { asWriteFilesSection, asWritingTask } from '../base-application/support/index.ts';
+import { clientApplicationTemplatesBlock, clientRootTemplatesBlock } from '../client/support/files.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../client/types.ts';
 
 export const files = asWriteFilesSection({
   common: [
     clientRootTemplatesBlock({
       templates: [
-        { sourceFile: 'eslint.config.js.jhi.react', destinationFile: ctx => `${ctx.eslintConfigFile}.jhi.react` },
+        'eslint.config.ts.jhi.react',
         'package.json',
         'tsconfig.json',
         'tsconfig.test.json',
         'jest.conf.js',
+        'webpack/package.json',
         'webpack/environment.js',
         'webpack/webpack.common.js',
         'webpack/webpack.dev.js',
@@ -39,7 +41,7 @@ export const files = asWriteFilesSection({
   ],
   sass: [
     clientRootTemplatesBlock({
-      templates: ['postcss.config.js'],
+      templates: ['postcss.config.ts'],
     }),
   ],
   reactApp: [
@@ -302,7 +304,7 @@ export const files = asWriteFilesSection({
   ],
 });
 
-export const writeFiles = asWritingTask(async function writeFiles({ application }) {
+export const writeFiles = asWritingTask<ClientEntity, ClientApplication>(async function writeFiles({ application }) {
   if (!application.clientFrameworkReact) return;
 
   await this.writeFiles({

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,7 +18,10 @@
  */
 
 import { before, describe, expect, it } from 'esmocha';
-import { convertDeployments } from './deployment-converter.js';
+
+import type JDLDeployment from '../../core/models/jdl-deployment.ts';
+
+import { convertDeployments } from './deployment-converter.ts';
 
 describe('jdl - DeploymentConverter', () => {
   describe('convertDeployments', () => {
@@ -29,7 +32,7 @@ describe('jdl - DeploymentConverter', () => {
       });
     });
     describe('when passing deployments', () => {
-      let convertedDeployments;
+      let convertedDeployments: JDLDeployment[];
 
       before(() => {
         convertedDeployments = convertDeployments([

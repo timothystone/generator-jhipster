@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
-import { PRIORITY_NAMES as PRIORITY_NAMES_BASE, QUEUES as QUEUES_BASE, QUEUE_PREFIX } from '../base/priorities.js';
+import type { Priority } from 'yeoman-generator';
+
+import type CoreGenerator from '../base-core/generator.ts';
+import { PRIORITY_NAMES as PRIORITY_NAMES_BASE, QUEUES as QUEUES_BASE, QUEUE_PREFIX } from '../base-core/priorities.ts';
 
 const { DEFAULT } = PRIORITY_NAMES_BASE;
 
@@ -37,32 +40,34 @@ const PREPARING_WORKSPACES_QUEUE = `${QUEUE_PREFIX}${PREPARING_WORKSPACES}`;
 /**
  * Custom priorities to improve jhipster workflow.
  */
-export const CUSTOM_PRIORITIES = [
-  {
-    priorityName: PROMPTING_WORKSPACES,
-    queueName: PROMPTING_WORKSPACES_QUEUE,
-    before: CONFIGURING_WORKSPACES,
-    args: generator => generator.getArgsForPriority(PROMPTING_WORKSPACES),
-  },
-  {
-    priorityName: CONFIGURING_WORKSPACES,
-    queueName: CONFIGURING_WORKSPACES_QUEUE,
-    before: LOADING_WORKSPACES,
-    args: generator => generator.getArgsForPriority(CONFIGURING_WORKSPACES),
-  },
-  {
-    priorityName: LOADING_WORKSPACES,
-    queueName: LOADING_WORKSPACES_QUEUE,
-    before: PREPARING_WORKSPACES,
-    args: generator => generator.getArgsForPriority(LOADING_WORKSPACES),
-  },
-  {
-    priorityName: PREPARING_WORKSPACES,
-    queueName: PREPARING_WORKSPACES_QUEUE,
-    before: DEFAULT,
-    args: generator => generator.getArgsForPriority(PREPARING_WORKSPACES),
-  },
-].reverse();
+export const CUSTOM_PRIORITIES = (
+  [
+    {
+      priorityName: PROMPTING_WORKSPACES,
+      queueName: PROMPTING_WORKSPACES_QUEUE,
+      before: CONFIGURING_WORKSPACES,
+      args: generator => (generator as CoreGenerator).getArgsForPriority(PROMPTING_WORKSPACES),
+    },
+    {
+      priorityName: CONFIGURING_WORKSPACES,
+      queueName: CONFIGURING_WORKSPACES_QUEUE,
+      before: LOADING_WORKSPACES,
+      args: generator => (generator as CoreGenerator).getArgsForPriority(CONFIGURING_WORKSPACES),
+    },
+    {
+      priorityName: LOADING_WORKSPACES,
+      queueName: LOADING_WORKSPACES_QUEUE,
+      before: PREPARING_WORKSPACES,
+      args: generator => (generator as CoreGenerator).getArgsForPriority(LOADING_WORKSPACES),
+    },
+    {
+      priorityName: PREPARING_WORKSPACES,
+      queueName: PREPARING_WORKSPACES_QUEUE,
+      before: DEFAULT,
+      args: generator => (generator as CoreGenerator).getArgsForPriority(PREPARING_WORKSPACES),
+    },
+  ] satisfies Priority[]
+).reverse();
 
 const WORKSPACES_QUEUES = {
   PROMPTING_WORKSPACES_QUEUE,
@@ -76,12 +81,12 @@ export const WORKSPACES_PRIORITY_NAMES = {
   CONFIGURING_WORKSPACES,
   LOADING_WORKSPACES,
   PREPARING_WORKSPACES,
-};
+} as const;
 
 export const PRIORITY_NAMES = {
   ...PRIORITY_NAMES_BASE,
   ...WORKSPACES_PRIORITY_NAMES,
-};
+} as const;
 
 export const QUEUES = {
   ...QUEUES_BASE,

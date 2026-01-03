@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,21 +17,24 @@
  * limitations under the License.
  */
 
-import { Lexer } from 'chevrotain';
-import { KEYWORD } from './shared-tokens.js';
-import createTokenFromConfig from './token-creator.js';
+import { type ITokenConfig, Lexer } from 'chevrotain';
+
+import { KEYWORD } from './shared-tokens.ts';
+import createTokenFromConfig from './token-creator.ts';
 
 const mixMaxCategoryToken = createTokenFromConfig({ name: 'MIN_MAX_KEYWORD', pattern: Lexer.NA, categories: KEYWORD });
 
-const minMaxTokens = [
-  { name: 'MINLENGTH', pattern: 'minlength' },
-  { name: 'MAXLENGTH', pattern: 'maxlength' },
-  { name: 'MINBYTES', pattern: 'minbytes' },
-  { name: 'MAXBYTES', pattern: 'maxbytes' },
-  { name: 'MIN', pattern: 'min' },
-  { name: 'MAX', pattern: 'max' },
-].map(tokenConfig => {
-  (tokenConfig as any).categories = [mixMaxCategoryToken];
+const minMaxTokens = (
+  [
+    { name: 'MINLENGTH', pattern: 'minlength' },
+    { name: 'MAXLENGTH', pattern: 'maxlength' },
+    { name: 'MINBYTES', pattern: 'minbytes' },
+    { name: 'MAXBYTES', pattern: 'maxbytes' },
+    { name: 'MIN', pattern: 'min' },
+    { name: 'MAX', pattern: 'max' },
+  ] as ITokenConfig[]
+).map(tokenConfig => {
+  tokenConfig.categories = [mixMaxCategoryToken];
   return createTokenFromConfig(tokenConfig);
 });
 

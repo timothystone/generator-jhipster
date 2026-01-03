@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,8 +18,10 @@
  */
 
 import { describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { formatComment } from '../utils/format-utils.js';
+
+import { formatComment } from './format-utils.ts';
 
 describe('jdl - FormatUtils', () => {
   describe('formatComment', () => {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,17 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { GENERATOR_NAME } from '../../converters/exporters/export-utils.ts';
-import type { JSONEntity } from './json-config.js';
+import type { YoRcJHipsterContent } from '../../../jhipster/types/yo-rc.ts';
+import type JDLJSONEntity from '../basic-types/json-entity.ts';
 
-export type JDLJSONApplicationContent = {
-  entities?: string[];
-  creationTimestamp?: number;
-} & Record<string, any>;
+export type JDLJSONApplicationContent = Record<string, any>;
 
-export type JDLJSONApplication = {
-  [GENERATOR_NAME]: JDLJSONApplicationContent;
-  namespaceConfigs: Record<string, Record<string, any>>;
+export type JDLJSONApplication<Content extends JDLJSONApplicationContent = JDLJSONApplicationContent> = YoRcJHipsterContent<Content> & {
+  namespaceConfigs?: Record<string, Record<string, any>>;
 };
 
 export type JDLJSONBlueprint = {
@@ -37,17 +33,20 @@ export type JDLJSONMicrofrontend = {
   baseName: string;
 };
 
-export type PostProcessedJDLJSONApplication = {
-  blueprints: JDLJSONBlueprint[];
-  microfrontends: JDLJSONMicrofrontend[];
-} & JDLJSONApplication;
+export type PostProcessedJDLJSONApplication = JDLJSONApplication<
+  {
+    blueprints?: JDLJSONBlueprint[];
+    microfrontends?: JDLJSONMicrofrontend[];
+  } & JDLJSONApplicationContent
+>;
 
-export type RawJDLJSONApplication = {
-  entityNames?: string;
-  frontEndBuilder?: string;
-  blueprints?: string;
-  microfrontends?: string;
-} & JDLJSONApplication;
+export type RawJDLJSONApplication = JDLJSONApplication<
+  {
+    entityNames?: string;
+    blueprints?: string[];
+    microfrontends?: string[];
+  } & JDLJSONApplicationContent
+>;
 
 export type JhipsterJSONJDLApplicationExporter = {
   forSeveralApplications?: boolean;
@@ -56,6 +55,6 @@ export type JhipsterJSONJDLApplicationExporter = {
 };
 
 export type JhipsterJSONJDLExporterWrapper = {
-  entities: JSONEntity[];
+  entities: JDLJSONEntity[];
   application: JhipsterJSONJDLApplicationExporter;
 };

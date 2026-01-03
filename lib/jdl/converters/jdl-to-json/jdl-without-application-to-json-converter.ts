@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import type JDLObject from '../../core/models/jdl-object.js';
-import type JSONEntity from '../../core/basic-types/json-entity.js';
-import type { JdlObjectWrapper } from '../../core/models/jdl-object-wrapper.js';
-import BasicEntityConverter from './jdl-to-json-basic-entity-converter.js';
-import FieldConverter from './jdl-to-json-field-converter.js';
-import RelationshipConverter from './jdl-to-json-relationship-converter.js';
-import OptionConverter from './jdl-to-json-option-converter.js';
+import type JSONEntity from '../../core/basic-types/json-entity.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+
+import BasicEntityConverter from './jdl-to-json-basic-entity-converter.ts';
+import FieldConverter from './jdl-to-json-field-converter.ts';
+import OptionConverter from './jdl-to-json-option-converter.ts';
+import RelationshipConverter from './jdl-to-json-relationship-converter.ts';
 
 let entities: Record<string, JSONEntity> | null | undefined;
 let jdlObject: JDLObject | null | undefined;
@@ -34,31 +34,25 @@ export default {
 
 /**
  * Converts a JDLObject to ready-to-be exported JSON entities.
- * @param {Object} args - the configuration object, keys:
- * @param {JDLObject} args.jdlObject - the JDLObject to convert to JSON
- * @param {String} args.applicationName - the application's name
- * @param {String} args.databaseType - the database type
- * @param {string} args.applicationType - the application's type
- * @returns {Map} entities that can be exported to JSON
  */
-export function convert(args: JdlObjectWrapper) {
-  if (!args?.jdlObject || !args.applicationName || !args.databaseType) {
-    throw new Error("The JDL object, the application's name, and its the database type are mandatory.");
+export function convert(jdlObjectArg: JDLObject, applicationName: string) {
+  if (!jdlObjectArg || !applicationName) {
+    throw new Error("The JDL object and its application's name are mandatory.");
   }
-  init(args);
+  init(jdlObjectArg);
   setBasicEntityInformation();
   setOptions();
   setFields();
   setRelationships();
   setApplicationToEntities();
-  return new Map([[args.applicationName, Object.values(entities!)]]);
+  return new Map([[applicationName, Object.values(entities!)]]);
 }
 
-function init(args: JdlObjectWrapper) {
+function init(jdlObjectArg: JDLObject) {
   if (jdlObject) {
     resetState();
   }
-  jdlObject = args.jdlObject;
+  jdlObject = jdlObjectArg;
   entities = {};
 }
 
@@ -97,6 +91,6 @@ function setRelationships(): void {
 
 function setApplicationToEntities(): void {
   Object.keys(entities!).forEach(entityName => {
-    entities![entityName].applications = '*';
+    entities![entityName].applications.push('*');
   });
 }

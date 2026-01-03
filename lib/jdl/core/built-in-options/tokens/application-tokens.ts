@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,10 +19,11 @@
 
 import type { ITokenConfig } from 'chevrotain';
 import { Lexer } from 'chevrotain';
-import { applicationOptions } from '../../../../jhipster/index.js';
-import type { JDLTokenConfig } from '../../types/parsing.js';
-import createTokenFromConfig from '../../parsing/lexer/token-creator.js';
-import { KEYWORD, UNARY_OPTION } from '../../parsing/lexer/shared-tokens.js';
+
+import applicationOptions from '../../../../jhipster/application-options.ts';
+import { KEYWORD, UNARY_OPTION } from '../../parsing/lexer/shared-tokens.ts';
+import createTokenFromConfig from '../../parsing/lexer/token-creator.ts';
+import type { JDLTokenConfig } from '../../types/parsing.ts';
 
 const { OptionNames } = applicationOptions;
 
@@ -35,14 +36,12 @@ const {
   BUILD_TOOL,
   CACHE_PROVIDER,
   CLIENT_FRAMEWORK,
-  CLIENT_PACKAGE_MANAGER,
   CLIENT_THEME,
   CLIENT_THEME_VARIANT,
   CREATION_TIMESTAMP,
   DATABASE_TYPE,
   DEV_DATABASE_TYPE,
   DTO_SUFFIX,
-  EMBEDDABLE_LAUNCH_SCRIPT,
   ENABLE_HIBERNATE_CACHE,
   ENABLE_SWAGGER_CODEGEN,
   ENABLE_TRANSLATION,
@@ -55,6 +54,7 @@ const {
   MICROFRONTEND,
   MICROFRONTENDS,
   NATIVE_LANGUAGE,
+  NODE_PACKAGE_MANAGER,
   PACKAGE_NAME,
   PROD_DATABASE_TYPE,
   REACTIVE,
@@ -67,8 +67,8 @@ const {
   TEST_FRAMEWORKS,
   WEBSOCKET,
   WITH_ADMIN_UI,
-  ENABLE_GRADLE_ENTERPRISE,
-  GRADLE_ENTERPRISE_HOST,
+  ENABLE_GRADLE_DEVELOCITY,
+  GRADLE_DEVELOCITY_HOST,
 } = OptionNames;
 
 export const applicationConfigCategoryToken = createTokenFromConfig({ name: 'CONFIG_KEY', pattern: Lexer.NA });
@@ -78,7 +78,6 @@ export const buildApplicationTokens = (tokenConfigs: JDLTokenConfig[]) => {
     { name: 'BASE_NAME', pattern: BASE_NAME },
     { name: 'BLUEPRINTS', pattern: BLUEPRINTS },
     { name: 'BLUEPRINT', pattern: BLUEPRINT },
-    { name: 'EMBEDDABLE_LAUNCH_SCRIPT', pattern: EMBEDDABLE_LAUNCH_SCRIPT },
     { name: 'CREATION_TIMESTAMP', pattern: CREATION_TIMESTAMP },
     { name: 'GATEWAY_SERVER_PORT', pattern: GATEWAY_SERVER_PORT },
     { name: 'PACKAGE_NAME', pattern: PACKAGE_NAME },
@@ -99,7 +98,6 @@ export const buildApplicationTokens = (tokenConfigs: JDLTokenConfig[]) => {
     { name: 'JHI_PREFIX', pattern: JHI_PREFIX },
     { name: 'JWT_SECRET_KEY', pattern: JWT_SECRET_KEY },
     { name: 'JHIPSTER_VERSION', pattern: JHIPSTER_VERSION },
-    { name: 'CLIENT_PACKAGE_MANAGER', pattern: CLIENT_PACKAGE_MANAGER },
     { name: 'CLIENT_FRAMEWORK', pattern: CLIENT_FRAMEWORK },
     { name: 'CLIENT_THEME_VARIANT', pattern: CLIENT_THEME_VARIANT },
     { name: 'CLIENT_THEME', pattern: CLIENT_THEME },
@@ -114,10 +112,11 @@ export const buildApplicationTokens = (tokenConfigs: JDLTokenConfig[]) => {
     { name: 'SKIP_CLIENT', pattern: SKIP_CLIENT },
     { name: 'SKIP_SERVER', pattern: SKIP_SERVER },
     { name: 'REMEMBER_ME_KEY', pattern: REMEMBER_ME_KEY },
-    { name: 'ENABLE_GRADLE_ENTERPRISE', pattern: ENABLE_GRADLE_ENTERPRISE },
-    { name: 'GRADLE_ENTERPRISE_HOST', pattern: GRADLE_ENTERPRISE_HOST },
+    { name: 'ENABLE_GRADLE_DEVELOCITY', pattern: ENABLE_GRADLE_DEVELOCITY },
+    { name: 'GRADLE_DEVELOCITY_HOST', pattern: GRADLE_DEVELOCITY_HOST },
     { name: 'MICROFRONTENDS', pattern: MICROFRONTENDS },
     { name: 'MICROFRONTEND', pattern: MICROFRONTEND },
+    { name: 'NODE_PACKAGE_MANAGER', pattern: NODE_PACKAGE_MANAGER },
     ...tokenConfigs,
   ];
   return {

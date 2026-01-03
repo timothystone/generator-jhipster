@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -33,7 +33,7 @@ spec:
   <%_ } _%>
 ---
 <%_ } _%>
-apiVersion: <%= KUBERNETES_CORE_API_VERSION  %>
+apiVersion: <%= KUBERNETES_CORE_API_VERSION %>
 kind: Secret
 metadata:
   name: ds-secret-ref
@@ -201,7 +201,7 @@ spec:
   <%_ } _%>
 <%_ } _%>
 ---
-apiVersion: <%= KUBERNETES_CORE_API_VERSION  %>
+apiVersion: <%= KUBERNETES_CORE_API_VERSION %>
 kind: Service
 metadata:
   name: <%= app.baseName.toLowerCase() %>-couchbase-cluster-srv
@@ -236,7 +236,7 @@ spec:
   selector:
     app: <%= app.baseName.toLowerCase() %>-couchbase
 ---
-apiVersion: <%= KUBERNETES_CORE_API_VERSION  %>
+apiVersion: <%= KUBERNETES_CORE_API_VERSION %>
 kind: Service
 metadata:
   name: <%= app.baseName.toLowerCase() %>-couchbase-discovery

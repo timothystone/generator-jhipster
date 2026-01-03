@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,13 +17,19 @@
  * limitations under the License.
  */
 import assert from 'node:assert';
-import path from 'node:path';
 
-import { clientFrameworkTypes, fieldTypes } from '../../../lib/jhipster/index.js';
-import type { PrimaryKey } from '../../../lib/types/application/entity.js';
-import type { FieldType } from '../../../lib/application/field-types.js';
-import type { Field } from '../../../lib/types/application/field.js';
-import { getEntryIfTypeOrTypeAttribute } from './types-utils.js';
+import type { FieldType } from '../../../lib/jhipster/field-types.ts';
+import { clientFrameworkTypes, fieldTypes } from '../../../lib/jhipster/index.ts';
+import { normalizePathEnd } from '../../../lib/utils/path.ts';
+import type {
+  Field as BaseApplicationField,
+  PrimaryKey,
+  Relationship as BaseApplicationRelationship,
+  RelationshipWithEntity,
+} from '../../base-application/types.ts';
+import type { Entity as ClientEntity, Field as ClientField, Relationship as ClientRelationship } from '../types.ts';
+
+import { getEntryIfTypeOrTypeAttribute } from './types-utils.ts';
 
 const { STRING: TYPE_STRING, UUID: TYPE_UUID } = fieldTypes.CommonDBTypes;
 const { ANGULAR, VUE } = clientFrameworkTypes;
@@ -34,7 +40,7 @@ const { ANGULAR, VUE } = clientFrameworkTypes;
  * @param {Array|Object} relationships - array of relationships
  * @returns {Array|Object} filtered relationships
  */
-export const filterRelevantRelationships = relationships =>
+export const filterRelevantRelationships = <const R extends BaseApplicationRelationship>(relationships: R[]): R[] =>
   relationships.filter(rel => rel.persistableRelationship || rel.relationshipEagerLoad);
 
 /**
@@ -46,22 +52,25 @@ export const filterRelevantRelationships = relationships =>
  * @param {string} clientFramework the client framework, 'angular', 'vue' or 'react'.
  * @returns typeImports: Map
  */
-export const generateEntityClientImports = (relationships, dto?, clientFramework?) => {
-  const typeImports = new Map();
+export const generateEntityClientImports = (
+  relationships: RelationshipWithEntity<ClientRelationship, ClientEntity>[],
+  _dto?: string,
+  clientFramework?: string,
+): Map<string, string> => {
+  const typeImports = new Map<string, string>();
 
   const relevantRelationships = filterRelevantRelationships(relationships);
 
   relevantRelationships.forEach(relationship => {
-    const otherEntityAngularName = relationship.otherEntityAngularName;
-    const importType = `I${otherEntityAngularName}`;
-    let importPath;
+    const importType = `I${relationship.otherEntity.entityAngularName}`;
+    let importPath: string;
     if (relationship.otherEntity?.builtInUser) {
       importPath = clientFramework === ANGULAR ? 'app/entities/user/user.model' : 'app/shared/model/user.model';
     } else {
       importPath =
         clientFramework === ANGULAR
-          ? `app/entities/${relationship.otherEntityClientRootFolder}${relationship.otherEntityFolderName}/${relationship.otherEntityFileName}.model`
-          : `app/shared/model/${relationship.otherEntityClientRootFolder}${relationship.otherEntityFileName}.model`;
+          ? `app/entities/${normalizePathEnd(relationship.otherEntity.clientRootFolder)}${relationship.otherEntity.entityFileName}.model`
+          : `app/shared/model/${normalizePathEnd(relationship.otherEntity.clientRootFolder)}${relationship.otherEntity.entityFileName}.model`;
     }
     typeImports.set(importType, importPath);
   });
@@ -71,14 +80,10 @@ export const generateEntityClientImports = (relationships, dto?, clientFramework
 /**
  * @private
  * Generate Entity Client Enum Imports
- *
- * @param {Array|Object} fields - array of the entity fields
- * @param {string} clientFramework the client framework, 'angular' or 'react'.
- * @returns typeImports: Map
  */
-export const generateEntityClientEnumImports = (fields: Field[], clientFramework: string) => {
+export const generateEntityClientEnumImports = (fields: BaseApplicationField[], clientFramework: string): Map<string, string> => {
   const typeImports = new Map();
-  const uniqueEnums = {};
+  const uniqueEnums: Record<string, string> = {};
   for (const field of fields) {
     const { enumFileName, fieldType } = field;
     if (field.fieldIsEnum && (!uniqueEnums[fieldType] || (uniqueEnums[fieldType] && field.fieldValues?.length !== 0))) {
@@ -114,7 +119,7 @@ export const generateTestEntityId = (primaryKey: FieldType | PrimaryKey, index: 
   } else {
     value = index === 0 ? 123 : 456;
   }
-  if (wrapped && [TYPE_UUID, TYPE_STRING].includes(primaryKeyType)) {
+  if (wrapped && ([TYPE_UUID, TYPE_STRING] as string[]).includes(primaryKeyType)) {
     return `'${value}'`;
   }
   return value;
@@ -123,7 +128,7 @@ export const generateTestEntityId = (primaryKey: FieldType | PrimaryKey, index: 
 /**
  * Generate a test entity, according to the type
  */
-export const generateTsTestEntityForFields = (fields: Field[]): Record<string, string | number | boolean> => {
+export const generateTsTestEntityForFields = (fields: ClientField[]): Record<string, string | number | boolean> => {
   const entries = fields
     .map(field => {
       const { fieldWithContentType, contentTypeFieldName, fieldTypeTimed, fieldTypeLocalDate } = field;
@@ -153,101 +158,23 @@ export const stringifyTsEntity = (data: Record<string, any>, options: { sep?: st
  * @private
  * @deprecated
  * Generate a test entity, according to the type
- *
- * @param references
- * @param {number} [index] - index of the primary key sample, pass undefined for a random key.
  */
-export const generateTestEntity = (references, index: 0 | 1 | 'random' = 'random') => {
-  const entries = references
-    .map(reference => {
+export const generateTestEntity = (fields: BaseApplicationField[], index: 0 | 1 | 'random' = 'random') => {
+  const entries = fields
+    .map(field => {
       if (index === 'random') {
-        const field = reference.field;
         const { fieldWithContentType, contentTypeFieldName } = field;
-        const fakeData = field.generateFakeData('json-serializable');
+        const fakeData = field.generateFakeData!('json-serializable');
         if (fieldWithContentType) {
           return [
-            [reference.name, fakeData],
+            [field.propertyName, fakeData],
             [contentTypeFieldName, 'unknown'],
           ];
         }
-        return [[reference.name, fakeData]];
+        return [[field.propertyName, fakeData]];
       }
-      return [[reference.name, generateTestEntityId(reference.type, index, false)]];
+      return [[field.propertyName, generateTestEntityId(field.fieldType as FieldType, index, false)]];
     })
     .flat();
   return Object.fromEntries(entries);
-};
-
-/**
- * @deprecated
- * Generate a test entity, according to the references
- *
- * @param references
- * @param additionalFields
- * @return {String} test sample
- */
-export const generateTypescriptTestEntity = (references, additionalFields = {}) => {
-  const entries = references
-    .map(reference => {
-      if (reference.field) {
-        const field = reference.field;
-        const { fieldIsEnum, fieldTypeTimed, fieldTypeLocalDate, fieldWithContentType, fieldName, contentTypeFieldName } = field;
-
-        const fakeData = field.generateFakeData('ts');
-        if (fieldWithContentType) {
-          return [
-            [fieldName, fakeData],
-            [contentTypeFieldName, "'unknown'"],
-          ];
-        }
-        if (fieldIsEnum) {
-          return [[fieldName, fakeData]];
-        }
-        if (fieldTypeTimed || fieldTypeLocalDate) {
-          return [[fieldName, `dayjs(${fakeData})`]];
-        }
-        return [[fieldName, fakeData]];
-      }
-      return [[reference.name, generateTestEntityId(reference.type, 'random', false)]];
-    })
-    .flat();
-  return `{
-  ${[...entries, ...Object.entries(additionalFields)].map(([key, value]) => `${key}: ${value}`).join(',\n  ')}
-}`;
-};
-
-/**
- * @deprecated
- * Generate a test entity for the PK references (when the PK is a composite key)
- */
-export const generateTestEntityPrimaryKey = (primaryKey, index: 0 | 1 | 'random') => {
-  return JSON.stringify(
-    generateTestEntity(
-      primaryKey.fields.map(f => f.reference),
-      index,
-    ),
-  );
-};
-
-/**
- * @private
- * Get a parent folder path addition for entity
- * @param {string} clientRootFolder
- */
-export const getEntityParentPathAddition = (clientRootFolder: string) => {
-  if (!clientRootFolder) {
-    return '';
-  }
-  const relative = path.relative(`/app/entities/${clientRootFolder}/`, '/app/entities/');
-  if (relative.includes('app')) {
-    // Relative path outside angular base dir.
-    throw new Error(`
-    "clientRootFolder outside app base dir '${clientRootFolder}'"
-`);
-  }
-  const entityFolderPathAddition = relative.replace(/[/|\\]?..[/|\\]entities/, '').replace('entities', '..');
-  if (!entityFolderPathAddition) {
-    return '';
-  }
-  return `${entityFolderPathAddition}/`;
 };

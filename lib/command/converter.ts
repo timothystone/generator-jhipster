@@ -1,7 +1,11 @@
-import type { JHipsterOptionDefinition } from '../jdl/core/types/parsing.js';
-import type { ConfigSpec, JHipsterArguments, JHipsterChoices, JHipsterConfigs, JHipsterOption } from './types.js';
-
-type JHipsterArgumentsWithChoices = JHipsterArguments & { choices?: JHipsterChoices };
+import type {
+  CliSpec,
+  CommandConfigDefault,
+  CommandConfigScope,
+  ConfigSpec,
+  JHipsterArgumentsWithChoices,
+  JHipsterConfigs,
+} from './types.ts';
 
 export const extractArgumentsFromConfigs = (configs: JHipsterConfigs | undefined): JHipsterArgumentsWithChoices => {
   if (!configs) return {};
@@ -20,26 +24,25 @@ export const extractArgumentsFromConfigs = (configs: JHipsterConfigs | undefined
   ) as JHipsterArgumentsWithChoices;
 };
 
-export const extractJdlDefinitionFromCommandConfig = (configs: JHipsterConfigs = {}): JHipsterOptionDefinition[] =>
-  Object.entries(configs)
-    .filter(([_name, def]) => def.jdl)
-    .map(([name, def]) => ({
-      ...(def.jdl as Omit<JHipsterOptionDefinition, 'name' | 'knownChoices'>),
-      name,
-      knownChoices: def.choices?.map(choice => (typeof choice === 'string' ? choice : choice.value)),
-    }))
-    .sort((a, b) => (b.name.startsWith(a.name) ? 1 : a.name.localeCompare(b.name)));
+export type JHipsterCommandOptions = CliSpec & {
+  choices?: string[];
+  scope: CommandConfigScope;
+  default?: CommandConfigDefault<any>;
+};
 
-export const convertConfigToOption = (name: string, config?: ConfigSpec<any>): JHipsterOption | undefined => {
-  if (!config?.cli?.type && config?.internal !== true) return undefined;
-  const choices = config.choices?.map(choice => (typeof choice === 'string' ? choice : choice.value)) as any;
+export const convertConfigToOption = <const T extends ConfigSpec<any>>(name: string, config: T): JHipsterCommandOptions | undefined => {
+  const { cli } = config;
+  const type = cli?.type ?? config.internal?.type;
+  if (!type && config?.internal) return undefined;
+
+  const choices = config.choices?.map(choice => (typeof choice === 'string' ? choice : choice.value));
   return {
-    name,
-    default: config.default,
-    description: config.description,
+    ...cli,
+    name: cli?.name ?? name,
+    default: config.default ?? cli?.default,
+    description: config.description ?? cli?.description,
     choices,
-    scope: config.scope ?? 'storage',
-    type: val => val,
-    ...config.cli,
+    scope: config.scope,
+    type: type!,
   };
 };

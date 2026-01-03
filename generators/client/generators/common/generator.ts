@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import BaseApplicationGenerator from '../../../base-application/index.js';
-import { clientApplicationTemplatesBlock } from '../../support/index.js';
+import BaseApplicationGenerator from '../../../base-application/index.ts';
+import { clientApplicationTemplatesBlock } from '../../support/index.ts';
 
 export default class CommonGenerator extends BaseApplicationGenerator {
   async beforeQueue() {
@@ -26,7 +26,7 @@ export default class CommonGenerator extends BaseApplicationGenerator {
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('client');
     }
   }
 
@@ -36,7 +36,7 @@ export default class CommonGenerator extends BaseApplicationGenerator {
         await this.writeFiles({
           blocks: [
             clientApplicationTemplatesBlock({
-              templates: ['shared/jhipster/problem-details.ts', 'shared/jhipster/headers.ts'],
+              templates: ['shared/jhipster/constants.ts', 'shared/jhipster/problem-details.ts', 'shared/jhipster/headers.ts'],
             }),
           ],
           context: application,

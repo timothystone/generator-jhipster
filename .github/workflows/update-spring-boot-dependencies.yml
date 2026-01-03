@@ -47,18 +47,20 @@ jobs:
     name: update spring-boot-dependencies bom
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.destBranch }}
           fetch-depth: 0
-      - uses: jhipster/actions/setup-git@v0
-      - name: Download spring-boot-dependencies bom
-        run: |
-          wget -O spring-boot-dependencies.pom ${{ inputs.repository }}/org/springframework/boot/spring-boot-dependencies/${{ inputs.springBootVersion }}/spring-boot-dependencies-${{ inputs.springBootVersion }}.pom
-          git add .
-        working-directory: generators/spring-boot/resources
+      - run: echo "node-version=$(cat ${{ github.workspace }}/generators/init/resources/.node-version)" >> $GITHUB_OUTPUT
+        id: node-version
+      - uses: jhipster/actions/setup-runner@v1
+        with:
+          node-version: ${{ steps.node-version.outputs.node-version }}
+          binary-dir: ${{ github.workspace }}/generator-jhipster/bin
+      - name: Parse POM
+        run: bin/jhipster.cjs update-spring-boot ${{ inputs.springBootVersion }} ${{ inputs.repository }} --force
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: spring-boot/v${{ inputs.springBootVersion }}

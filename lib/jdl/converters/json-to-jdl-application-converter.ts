@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,28 +17,28 @@
  * limitations under the License.
  */
 
-import JDLObject from '../core/models/jdl-object.js';
-import { createJDLApplication } from '../core/models/jdl-application-factory.js';
-import type { JDLRuntime } from '../core/types/runtime.js';
-import type { JHipsterYoRcContent, JHipsterYoRcContentWrapper } from '../core/types/json-config.js';
+import { createJDLApplication } from '../core/models/jdl-application-factory.ts';
+import type JDLApplication from '../core/models/jdl-application.ts';
+import JDLObject from '../core/models/jdl-object.ts';
+import type { RawJDLJSONApplication } from '../core/types/exporter.ts';
+import type { JDLRuntime } from '../core/types/runtime.ts';
 
 const GENERATOR_NAME = 'generator-jhipster';
 
 export type JHipsterYoRcContentAndJDLWrapper = {
-  applications?: JHipsterYoRcContent[];
+  applications: RawJDLJSONApplication[];
   jdl?: JDLObject;
 };
 
 export function convertApplicationsToJDL({ applications, jdl }: JHipsterYoRcContentAndJDLWrapper, runtime: JDLRuntime) {
-  const jsonApplications: JHipsterYoRcContent[] = applications || [];
-  const jdlObject: JDLObject = jdl || new JDLObject();
-  jsonApplications.forEach((application: JHipsterYoRcContent) => {
-    const convertedApplication = convertApplicationToJDL({ application }, runtime);
-    jdlObject.addApplication(convertedApplication);
+  jdl ??= new JDLObject();
+  applications?.forEach((application: RawJDLJSONApplication) => {
+    const convertedApplication = convertApplicationToJDL(application, runtime);
+    jdl.addApplication(convertedApplication);
   });
-  return jdlObject;
+  return jdl;
 }
 
-export function convertApplicationToJDL({ application }: JHipsterYoRcContentWrapper = {}, runtime: JDLRuntime) {
-  return createJDLApplication(application![GENERATOR_NAME], undefined, runtime);
+export function convertApplicationToJDL(application: RawJDLJSONApplication, runtime: JDLRuntime): JDLApplication {
+  return createJDLApplication(application![GENERATOR_NAME], runtime);
 }

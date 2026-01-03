@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-import BinaryOptions from '../built-in-options/binary-options.js';
-import { join } from '../utils/set-utils.js';
-import type { JDLOptionParams } from './abstract-jdl-option.js';
-import AbstractJDLOption from './abstract-jdl-option.js';
+import BinaryOptions from '../built-in-options/binary-options.ts';
+import { join } from '../utils/set-utils.ts';
+
+import type { JDLOptionParams } from './abstract-jdl-option.ts';
+import AbstractJDLOption from './abstract-jdl-option.ts';
 
 /**
  * For options like the DTO, the service, etc.

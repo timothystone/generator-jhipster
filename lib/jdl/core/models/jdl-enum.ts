@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-import { merge } from '../utils/object-utils.js';
-import type { ParsedJDLEnumValue } from '../types/parsed.js';
-import JDLEnumValue from './jdl-enum-value.js';
+import type { ParsedJDLEnumValue } from '../types/parsed.ts';
+import { merge } from '../utils/object-utils.ts';
+
+import JDLEnumValue from './jdl-enum-value.ts';
 
 export default class JDLEnum {
   comment?: string;
@@ -43,7 +44,7 @@ export default class JDLEnum {
   }
 
   getValueJavadocs(): Record<string, string> {
-    const documentations = {};
+    const documentations: Record<string, string> = {};
     this.values.forEach(jdlEnumValue => {
       if (jdlEnumValue.comment) {
         documentations[jdlEnumValue.name] = jdlEnumValue.comment;

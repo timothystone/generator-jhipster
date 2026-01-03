@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,14 +18,29 @@
  */
 
 import { intersection } from 'lodash-es';
-import BaseApplicationGenerator from '../base-application/index.js';
-import { createDockerComposeFile, createDockerExtendedServices } from '../docker/support/index.js';
-import { createFaker, stringHashCode } from '../base/support/index.js';
-import { getJdbcUrl, getR2dbcUrl } from '../spring-data-relational/support/index.js';
-import { dockerFiles } from './files.js';
-import { SERVICE_COMPLETED_SUCCESSFULLY, SERVICE_HEALTHY } from './constants.js';
 
-export default class DockerGenerator extends BaseApplicationGenerator {
+import { stringHashCode } from '../../lib/utils/index.ts';
+import { createFaker } from '../base-application/support/index.ts';
+import BaseApplicationGenerator from '../base-simple-application/index.ts';
+import type { Application as SpringBootApplication } from '../spring-boot/index.ts';
+import type { Application as SpringDataRelationalApplication } from '../spring-data/generators/relational/index.ts';
+import { getJdbcUrl, getR2dbcUrl } from '../spring-data/generators/relational/support/index.ts';
+
+import { SERVICE_COMPLETED_SUCCESSFULLY, SERVICE_HEALTHY } from './constants.ts';
+import { dockerFiles } from './files.ts';
+import { createDockerComposeFile, createDockerExtendedServices } from './support/index.ts';
+import type {
+  Application as DockerApplication,
+  Config as DockerConfig,
+  Options as DockerOptions,
+  Source as DockerSource,
+} from './types.ts';
+
+// Current implementation adds support for docker services and add docker services based on SpringBoot generated application.
+// Splitting this generator into bootstrap generator (only injects docker support) and jhipster(adds docker service based on spring-boot implementation) should be considered.
+type Application = DockerApplication & SpringDataRelationalApplication<any> & SpringBootApplication<any>;
+
+export default class DockerGenerator extends BaseApplicationGenerator<Application, DockerConfig, DockerOptions, DockerSource> {
   hasServicesFile = false;
 
   async beforeQueue() {
@@ -34,8 +49,8 @@ export default class DockerGenerator extends BaseApplicationGenerator {
     }
 
     if (!this.delegateToBlueprint) {
-      // TODO depend on GENERATOR_BOOTSTRAP_APPLICATION_SERVER.
-      await this.dependsOnBootstrapApplicationServer();
+      await this.dependsOnBootstrap('common');
+      await this.dependsOnBootstrap('docker');
     }
   }
 
@@ -55,10 +70,14 @@ export default class DockerGenerator extends BaseApplicationGenerator {
 
   get preparing() {
     return this.asPreparingTaskGroup({
-      dockerServices({ application }) {
+      async dockerServices({ application }) {
         const dockerServices = application.dockerServices!;
         if (application.authenticationTypeOauth2) {
           dockerServices.push('keycloak');
+
+          const faker = await createFaker();
+          faker.seed(stringHashCode(application.baseName));
+          application.keycloakSecrets = Array.from(Array(6), () => faker.string.uuid());
         }
         if (application.searchEngineElasticsearch) {
           dockerServices.push('elasticsearch');
@@ -149,11 +168,6 @@ export default class DockerGenerator extends BaseApplicationGenerator {
   get writing() {
     return this.asWritingTaskGroup({
       async writeDockerFiles({ application }) {
-        if (application.authenticationTypeOauth2) {
-          const faker = await createFaker();
-          faker.seed(stringHashCode(application.baseName));
-          application.keycloakSecrets = Array.from(Array(6), () => faker.string.uuid());
-        }
         await this.writeFiles({
           sections: dockerFiles,
           context: application,
@@ -231,11 +245,11 @@ export default class DockerGenerator extends BaseApplicationGenerator {
 
       packageJsonScripts({ application }) {
         const scriptsStorage = this.packageJson.createStorage('scripts');
-        const { databaseType, databaseTypeSql, prodDatabaseType, prodDatabaseTypeNo, prodDatabaseTypeOracle } = application;
+        const { databaseType, databaseTypeSql, prodDatabaseType, prodDatabaseTypeOracle } = application;
         let postServicesSleep;
 
         if (databaseTypeSql) {
-          if (prodDatabaseTypeNo || prodDatabaseTypeOracle) {
+          if (prodDatabaseTypeOracle) {
             scriptsStorage.set(
               'docker:db:up',
               `echo "Docker for db ${prodDatabaseType} not configured for application ${application.baseName}"`,
@@ -302,7 +316,7 @@ export default class DockerGenerator extends BaseApplicationGenerator {
   get end() {
     return this.asEndTaskGroup({
       async dockerComposeUp({ control }) {
-        if (!control.enviromentHasDockerCompose) {
+        if (!control.environmentHasDockerCompose) {
           this.log('');
           this.log.warn(
             'Docker Compose V2 is not installed on your computer. Some features may not work as expected. Read https://docs.docker.com/compose/install/',
@@ -315,12 +329,9 @@ export default class DockerGenerator extends BaseApplicationGenerator {
   /**
    * @private
    * Returns the JDBC URL for a databaseType
-   *
-   * @param {string} databaseType
-   * @param {*} options: databaseName, and required infos that depends of databaseType (hostname, localDirectory, ...)
    */
-  getJDBCUrl(databaseType, options = {}) {
-    return getJdbcUrl(databaseType, options);
+  getJDBCUrl(...args: Parameters<typeof getJdbcUrl>) {
+    return getJdbcUrl(...args);
   }
 
   /**
@@ -330,7 +341,7 @@ export default class DockerGenerator extends BaseApplicationGenerator {
    * @param {string} databaseType
    * @param {*} options: databaseName, and required infos that depends of databaseType (hostname, localDirectory, ...)
    */
-  getR2DBCUrl(databaseType, options = {}) {
-    return getR2dbcUrl(databaseType, options);
+  getR2DBCUrl(...args: Parameters<typeof getR2dbcUrl>) {
+    return getR2dbcUrl(...args);
   }
 }

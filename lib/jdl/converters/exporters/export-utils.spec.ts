@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,12 @@
  * limitations under the License.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
 import { beforeEach, describe, expect, it } from 'esmocha';
-import { writeConfigFile } from '../exporters/export-utils.js';
-import { basicHelpers as helpers } from '../../../../lib/testing/index.js';
+import { readFileSync, writeFileSync } from 'node:fs';
+
+import helpers from 'yeoman-test';
+
+import { writeConfigFile } from './export-utils.ts';
 
 describe('jdl - ExportUtils', () => {
   beforeEach(async () => {
@@ -28,7 +30,7 @@ describe('jdl - ExportUtils', () => {
   });
   describe('writeConfigFile', () => {
     describe('when there is no .yo-rc.json file present', () => {
-      let exportedConfig;
+      let exportedConfig: any;
 
       beforeEach(() => {
         const config = {
@@ -36,7 +38,6 @@ describe('jdl - ExportUtils', () => {
             jhipsterVersion: '7.0.0',
           },
         };
-        // @ts-expect-error
         writeConfigFile(config);
         exportedConfig = JSON.parse(readFileSync('.yo-rc.json', { encoding: 'utf-8' }));
       });
@@ -52,7 +53,7 @@ describe('jdl - ExportUtils', () => {
       });
     });
     describe('when there is a .yo-rc.json file present', () => {
-      let exportedConfig;
+      let exportedConfig: any;
 
       beforeEach(() => {
         const existingConfig = {
@@ -72,7 +73,6 @@ describe('jdl - ExportUtils', () => {
             question: 'No comment',
           },
         };
-        // @ts-expect-error
         writeConfigFile(newConfig);
         exportedConfig = JSON.parse(readFileSync('.yo-rc.json', { encoding: 'utf-8' }));
       });
@@ -95,7 +95,7 @@ describe('jdl - ExportUtils', () => {
     });
 
     describe('when there is a .yo-rc.json file present with creationTimestamp', () => {
-      let exportedConfig;
+      let exportedConfig: any;
 
       beforeEach(() => {
         const existingConfig = {
@@ -117,7 +117,6 @@ describe('jdl - ExportUtils', () => {
             question: 'No comment',
           },
         };
-        // @ts-expect-error
         writeConfigFile(newConfig);
         exportedConfig = JSON.parse(readFileSync('.yo-rc.json', { encoding: 'utf-8' }));
       });
@@ -141,7 +140,7 @@ describe('jdl - ExportUtils', () => {
     });
 
     describe('when there is a .yo-rc.json file present without creationTimestamp', () => {
-      let exportedConfig;
+      let exportedConfig: any;
 
       beforeEach(() => {
         const existingConfig = {
@@ -162,7 +161,6 @@ describe('jdl - ExportUtils', () => {
             question: 'No comment',
           },
         };
-        // @ts-expect-error
         writeConfigFile(newConfig);
         exportedConfig = JSON.parse(readFileSync('.yo-rc.json', { encoding: 'utf-8' }));
       });

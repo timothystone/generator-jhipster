@@ -28,8 +28,6 @@ on:
       - 'dependabot/**'
   pull_request:
     types: [closed, opened, synchronize, reopened]
-    branches:
-      - '*'
 permissions:
   contents: read
 
@@ -37,17 +35,17 @@ jobs:
   check-npm-test:
     if: >-
       github.event.action != 'closed'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     # Windows requires 60 min to finish
     timeout-minutes: 20
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-default-node-java
         with:
           generator-path: '.'
-      - uses: jhipster/actions/setup-runner@v0
+      - uses: jhipster/actions/setup-runner@v1
       - run: git --no-pager log -n 10 --graph --pretty='%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue) <%an>%Creset' --abbrev-commit
         shell: bash
       - run: npm ci

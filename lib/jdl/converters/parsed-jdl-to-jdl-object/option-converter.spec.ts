@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,8 +18,13 @@
  */
 
 import { before, describe, expect, it } from 'esmocha';
-import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.js';
-import { convertOptions } from './option-converter.js';
+
+import { binaryOptions, unaryOptions } from '../../core/built-in-options/index.ts';
+import type { ParsedJDLOption } from '../../core/types/parsed.ts';
+
+import { convertOptions } from './option-converter.ts';
+
+type ConverterOptions = ReturnType<typeof convertOptions>;
 
 describe('jdl - OptionConverter', () => {
   describe('convertOptions', () => {
@@ -32,12 +37,12 @@ describe('jdl - OptionConverter', () => {
     describe('when passing options', () => {
       unaryOptions.forEach(unaryOptionName => {
         describe(`such as ${unaryOptionName}`, () => {
-          let convertedOptions;
+          let convertedOptions: ConverterOptions;
 
           before(() => {
             convertedOptions = convertOptions(
               {
-                [unaryOptionName]: { list: ['A'], excluded: ['B'] },
+                [unaryOptionName]: { list: ['A'], excluded: ['B'] } as ParsedJDLOption,
               },
               [],
             );
@@ -59,13 +64,13 @@ describe('jdl - OptionConverter', () => {
       ]);
       BinaryOptions.forEach((optionValue, optionName) => {
         describe(`such as ${optionName}`, () => {
-          let convertedOptions;
+          let convertedOptions: ConverterOptions;
 
           before(() => {
             convertedOptions = convertOptions(
               {
                 [optionName]: {
-                  [optionValue]: { list: ['A'], excluded: ['B'] },
+                  [optionValue]: { list: ['A'], excluded: ['B'] } as ParsedJDLOption,
                 },
               },
               [],
@@ -80,7 +85,7 @@ describe('jdl - OptionConverter', () => {
     });
     describe('when passing use options', () => {
       describe('that exist', () => {
-        let convertedOptions;
+        let convertedOptions: ConverterOptions;
 
         before(() => {
           convertedOptions = convertOptions({}, [
@@ -133,7 +138,7 @@ describe('jdl - OptionConverter', () => {
         });
       });
       describe('that do not exist', () => {
-        let convertedOptions;
+        let convertedOptions: ConverterOptions;
 
         before(() => {
           convertedOptions = convertOptions({}, [

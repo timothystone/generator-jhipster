@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,15 +19,24 @@
 
 import { lowerFirst, upperFirst } from 'lodash-es';
 
-import type { ValidationResult } from '../../base/api.js';
-import type { Entity } from '../../../lib/types/application/entity.js';
-import type { Relationship } from '../../../lib/types/application/relationship.js';
-import { findEntityInEntities } from './entity.js';
-import { stringifyApplicationData } from './debug.js';
+import type { ValidationResult } from '../../base-core/api.d.ts';
+import type {
+  Application as BaseApplicationApplication,
+  Entity as BaseApplicationEntity,
+  Relationship as BaseApplicationRelationship,
+  RelationshipWithEntity,
+} from '../types.ts';
 
-export const otherRelationshipType = relationshipType => relationshipType.split('-').reverse().join('-');
+import { stringifyApplicationData } from './debug.ts';
+import { findEntityInEntities } from './entity.ts';
 
-export const findOtherRelationshipInRelationships = (entityName: string, relationship: Relationship, inRelationships: Relationship[]) => {
+export const otherRelationshipType = (relationshipType: string): string => relationshipType.split('-').reverse().join('-');
+
+export const findOtherRelationshipInRelationships = (
+  entityName: string,
+  relationship: BaseApplicationRelationship,
+  inRelationships: BaseApplicationRelationship[],
+): BaseApplicationRelationship | undefined => {
   return inRelationships.find(otherRelationship => {
     if (upperFirst(otherRelationship.otherEntityName) !== entityName) {
       return false;
@@ -44,7 +53,7 @@ export const findOtherRelationshipInRelationships = (entityName: string, relatio
   });
 };
 
-export const loadEntitiesAnnotations = (entities: Entity[]) => {
+export const loadEntitiesAnnotations = (entities: BaseApplicationEntity[]): void => {
   for (const entity of entities) {
     // Load field annotations
     for (const field of entity.fields ?? []) {
@@ -62,7 +71,10 @@ export const loadEntitiesAnnotations = (entities: Entity[]) => {
   }
 };
 
-export const loadEntitiesOtherSide = (entities: Entity[], { application }: { application?: any } = {}): ValidationResult => {
+export const loadEntitiesOtherSide = (
+  entities: BaseApplicationEntity[],
+  { application }: { application?: BaseApplicationApplication<BaseApplicationEntity> } = {},
+): ValidationResult => {
   const result: { warning: string[] } = { warning: [] };
   for (const entity of entities) {
     for (const relationship of entity.relationships ?? []) {
@@ -86,7 +98,7 @@ export const loadEntitiesOtherSide = (entities: Entity[], { application }: { app
       relationship.otherEntity = otherEntity;
       const otherRelationship = findOtherRelationshipInRelationships(entity.name, relationship, otherEntity.relationships ?? []);
       if (otherRelationship) {
-        relationship.otherRelationship = otherRelationship;
+        relationship.otherRelationship = otherRelationship as RelationshipWithEntity<BaseApplicationRelationship, BaseApplicationEntity>;
         otherRelationship.otherEntityRelationshipName = otherRelationship.otherEntityRelationshipName ?? relationship.relationshipName;
         relationship.otherEntityRelationshipName = relationship.otherEntityRelationshipName ?? otherRelationship.relationshipName;
         if (
@@ -112,7 +124,11 @@ export const loadEntitiesOtherSide = (entities: Entity[], { application }: { app
   return result;
 };
 
-export const addOtherRelationship = (entity: Entity, otherEntity: Entity, relationship: Relationship): Relationship => {
+export const addOtherRelationship = <const R extends BaseApplicationRelationship>(
+  entity: BaseApplicationEntity,
+  otherEntity: BaseApplicationEntity,
+  relationship: R,
+): RelationshipWithEntity<R, BaseApplicationEntity> => {
   relationship.otherEntityRelationshipName = relationship.otherEntityRelationshipName ?? lowerFirst(entity.name);
   const otherRelationship = {
     otherEntityName: lowerFirst(entity.name),

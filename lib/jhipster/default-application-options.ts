@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,17 +17,17 @@
  * limitations under the License.
  */
 
-import type { ApplicationConfiguration } from '../types/application/yo-rc.js';
-import applicationTypes from './application-types.js';
-import authenticationTypes from './authentication-types.js';
-import databaseTypes from './database-types.js';
-import applicationOptions from './application-options.js';
-import cacheTypes from './cache-types.js';
-import serviceDiscoveryTypes from './service-discovery-types.js';
-import clientFrameworkTypes from './client-framework-types.js';
-import buildToolTypes from './build-tool-types.js';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../core/application-types.ts';
+import type { ConfigAll } from '../types/command-all.ts';
 
-const { MONOLITH, MICROSERVICE, GATEWAY } = applicationTypes;
+import applicationOptions from './application-options.ts';
+import authenticationTypes from './authentication-types.ts';
+import buildToolTypes from './build-tool-types.ts';
+import cacheTypes from './cache-types.ts';
+import clientFrameworkTypes from './client-framework-types.ts';
+import databaseTypes from './database-types.ts';
+import serviceDiscoveryTypes from './service-discovery-types.ts';
+
 const { CONSUL } = serviceDiscoveryTypes;
 const { SQL, POSTGRESQL } = databaseTypes;
 const { OptionNames, OptionValues } = applicationOptions;
@@ -71,11 +71,11 @@ const {
   SKIP_USER_MANAGEMENT,
   TEST_FRAMEWORKS,
   WEBSOCKET,
-  ENABLE_GRADLE_ENTERPRISE,
-  GRADLE_ENTERPRISE_HOST,
+  ENABLE_GRADLE_DEVELOCITY,
+  GRADLE_DEVELOCITY_HOST,
 } = OptionNames;
 
-type ApplicationDefaults = Partial<ApplicationConfiguration>;
+type ApplicationDefaults = Partial<ConfigAll>;
 
 const commonDefaultOptions: ApplicationDefaults = {
   [AUTHENTICATION_TYPE]: JWT,
@@ -86,22 +86,22 @@ const commonDefaultOptions: ApplicationDefaults = {
   [ENTITY_SUFFIX]: OptionValues[ENTITY_SUFFIX],
   [JHI_PREFIX]: OptionValues[JHI_PREFIX],
   messageBroker: 'no',
-  [SEARCH_ENGINE]: (OptionValues[SEARCH_ENGINE] as Record<string, string>).no,
-  [WEBSOCKET]: (OptionValues[WEBSOCKET] as Record<string, string>).no,
+  [SEARCH_ENGINE]: OptionValues[SEARCH_ENGINE].no,
+  [WEBSOCKET]: OptionValues[WEBSOCKET].no,
 };
 
-export function getConfigWithDefaults(customOptions: ApplicationDefaults = {}) {
+export function getConfigWithDefaults(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
   const applicationType = customOptions.applicationType;
-  if (applicationType === GATEWAY) {
+  if (applicationType === APPLICATION_TYPE_GATEWAY) {
     return getConfigForGatewayApplication(customOptions);
   }
-  if (applicationType === MICROSERVICE) {
+  if (applicationType === APPLICATION_TYPE_MICROSERVICE) {
     return getConfigForMicroserviceApplication(customOptions);
   }
   return getConfigForMonolithApplication(customOptions);
 }
 
-export function getConfigForClientApplication(options: ApplicationDefaults = {}): ApplicationDefaults {
+function getConfigForClientApplication(options: ApplicationDefaults = {}): ApplicationDefaults {
   if (options[SKIP_CLIENT]) {
     options[CLIENT_FRAMEWORK] = NO_CLIENT_FRAMEWORK;
   }
@@ -109,12 +109,9 @@ export function getConfigForClientApplication(options: ApplicationDefaults = {})
   if (clientFramework === NO_CLIENT_FRAMEWORK) {
     return options;
   }
-  if (options[OptionNames.MICROFRONTEND] === undefined) {
-    options[OptionNames.MICROFRONTEND] = Boolean(options[OptionNames.MICROFRONTENDS]?.length);
-  }
+  options[OptionNames.MICROFRONTEND] ??= Boolean(options[OptionNames.MICROFRONTENDS]?.length);
   if (!options[CLIENT_THEME]) {
     options[CLIENT_THEME] = OptionValues[CLIENT_THEME];
-    options[CLIENT_THEME_VARIANT] = '';
   } else if (options[CLIENT_THEME] !== OptionValues[CLIENT_THEME] && !options[CLIENT_THEME_VARIANT]) {
     options[CLIENT_THEME_VARIANT] = 'primary';
   }
@@ -125,7 +122,7 @@ export function getConfigForClientApplication(options: ApplicationDefaults = {})
     options.clientBundler ??= 'webpack';
     options.devServerPort ??= 9060;
   } else if (clientFramework === 'angular') {
-    options.clientBundler ??= 'webpack';
+    options.clientBundler ??= options.microfrontend || options.applicationType === 'microservice' ? 'webpack' : 'esbuild';
     options.devServerPort ??= 4200;
   } else {
     options.devServerPort ??= 9060;
@@ -135,7 +132,7 @@ export function getConfigForClientApplication(options: ApplicationDefaults = {})
   return options;
 }
 
-export function getConfigForAuthenticationType(options: ApplicationDefaults = {}): ApplicationDefaults {
+function getConfigForAuthenticationType(options: ApplicationDefaults = {}): ApplicationDefaults {
   if (typeof options[SKIP_USER_MANAGEMENT] !== 'boolean') {
     if (options[AUTHENTICATION_TYPE] === OAUTH2) {
       options[SKIP_USER_MANAGEMENT] = true;
@@ -146,66 +143,55 @@ export function getConfigForAuthenticationType(options: ApplicationDefaults = {}
   return options;
 }
 
-export function getConfigForPackageName(options: ApplicationDefaults = {}): ApplicationDefaults {
-  if (!options[PACKAGE_NAME] && !options[PACKAGE_FOLDER]) {
-    options[PACKAGE_FOLDER] = OptionValues[PACKAGE_FOLDER];
-  }
-  if (!options[PACKAGE_NAME] && options[PACKAGE_FOLDER]) {
-    options[PACKAGE_NAME] = options[PACKAGE_FOLDER].replace(/\//g, '.');
-  }
-  if (!options[PACKAGE_FOLDER] && options[PACKAGE_NAME]) {
-    options[PACKAGE_FOLDER] = options[PACKAGE_NAME].replace(/\./g, '/');
+function getConfigForPackageName(options: ApplicationDefaults = {}): ApplicationDefaults {
+  if (!options[PACKAGE_NAME]) {
+    if (!options[PACKAGE_FOLDER]) {
+      options[PACKAGE_NAME] = OptionValues[PACKAGE_NAME];
+    } else {
+      options[PACKAGE_NAME] = options[PACKAGE_FOLDER].split('/').filter(Boolean).join('.');
+    }
   }
   return options;
 }
 
-export function getConfigForCacheProvider(options: ApplicationDefaults = {}): ApplicationDefaults {
+function getConfigForCacheProvider(options: ApplicationDefaults = {}): ApplicationDefaults {
   if (options[REACTIVE] || options[CACHE_PROVIDER] === undefined) {
     options[CACHE_PROVIDER] = NO_CACHE_PROVIDER;
   }
   options[ENABLE_HIBERNATE_CACHE] ??=
-    options[DATABASE_TYPE] === SQL && !options[REACTIVE] && ![NO_CACHE_PROVIDER, MEMCACHED].includes(options[CACHE_PROVIDER]);
+    options[DATABASE_TYPE] === SQL && !options[REACTIVE] && ![NO_CACHE_PROVIDER as string, MEMCACHED].includes(options[CACHE_PROVIDER]);
   return options;
 }
 
-export function getConfigForReactive(options: ApplicationDefaults = {}): ApplicationDefaults {
-  if (options[REACTIVE] === undefined) {
-    options[REACTIVE] = false;
-  }
+function getConfigForReactive(options: ApplicationDefaults = {}): ApplicationDefaults {
+  options[REACTIVE] ??= false;
   return options;
 }
 
-export function getConfigForTranslation(options: ApplicationDefaults = {}): ApplicationDefaults {
-  if (options[ENABLE_TRANSLATION] === undefined) {
-    options[ENABLE_TRANSLATION] = true;
-  }
-  if (options[NATIVE_LANGUAGE] === undefined) {
-    options[NATIVE_LANGUAGE] = 'en';
-  }
+function getConfigForTranslation(options: ApplicationDefaults = {}): ApplicationDefaults {
+  options[ENABLE_TRANSLATION] ??= true;
+  options[NATIVE_LANGUAGE] ??= 'en';
   if (options[ENABLE_TRANSLATION] && options[LANGUAGES] === undefined) {
     options[LANGUAGES] = [];
   }
   return options;
 }
 
-export function getConfigForDatabaseType(options: ApplicationDefaults = {}): ApplicationDefaults {
-  if (options[DATABASE_TYPE] === undefined) {
-    options[DATABASE_TYPE] = SQL;
-  }
+function getConfigForDatabaseType(options: ApplicationDefaults = {}): ApplicationDefaults {
+  options[DATABASE_TYPE] ??= SQL;
   if (options[DATABASE_TYPE] === SQL) {
-    if (options[PROD_DATABASE_TYPE] === undefined) {
-      options[PROD_DATABASE_TYPE] = POSTGRESQL;
-    }
-    if (options[DEV_DATABASE_TYPE] === undefined) {
-      options[DEV_DATABASE_TYPE] = options[PROD_DATABASE_TYPE];
-    }
+    options[PROD_DATABASE_TYPE] ??= POSTGRESQL;
+    options[DEV_DATABASE_TYPE] ??= options[PROD_DATABASE_TYPE];
+  }
+  if (options[DATABASE_TYPE] === 'no') {
+    options[SKIP_USER_MANAGEMENT] = true;
   }
   options.databaseMigration ??= options.databaseType === SQL ? 'liquibase' : 'no';
 
   return options;
 }
 
-export function getServerConfigForMonolithApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
+function getServerConfigForMonolithApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
   const options = {
     ...commonDefaultOptions,
     [CACHE_PROVIDER]: EHCACHE,
@@ -217,7 +203,7 @@ export function getServerConfigForMonolithApplication(customOptions: Application
   };
   return {
     ...options,
-    [APPLICATION_TYPE]: MONOLITH,
+    [APPLICATION_TYPE]: APPLICATION_TYPE_MONOLITH,
   };
 }
 
@@ -232,7 +218,7 @@ export function getConfigForMonolithApplication(customOptions: ApplicationDefaul
   return getConfigForAuthenticationType(options);
 }
 
-export function getServerConfigForGatewayApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
+function getServerConfigForGatewayApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
   const options = {
     ...commonDefaultOptions,
     [CLIENT_FRAMEWORK]: ANGULAR,
@@ -247,7 +233,7 @@ export function getServerConfigForGatewayApplication(customOptions: ApplicationD
   return {
     [REACTIVE]: true,
     ...options,
-    [APPLICATION_TYPE]: GATEWAY,
+    [APPLICATION_TYPE]: APPLICATION_TYPE_GATEWAY,
   };
 }
 
@@ -262,7 +248,7 @@ export function getConfigForGatewayApplication(customOptions: ApplicationDefault
   return getConfigForAuthenticationType(options);
 }
 
-export function getServerConfigForMicroserviceApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
+function getServerConfigForMicroserviceApplication(customOptions: ApplicationDefaults = {}): ApplicationDefaults {
   const DEFAULT_SERVER_PORT = 8081;
   const options = {
     ...commonDefaultOptions,
@@ -277,7 +263,7 @@ export function getServerConfigForMicroserviceApplication(customOptions: Applica
   options[WITH_ADMIN_UI] = false;
   return {
     ...options,
-    [APPLICATION_TYPE]: MICROSERVICE,
+    [APPLICATION_TYPE]: APPLICATION_TYPE_MICROSERVICE,
   };
 }
 
@@ -298,8 +284,8 @@ export function getDefaultConfigForNewApplication(customOptions: ApplicationDefa
     [BASE_NAME]: OptionValues[BASE_NAME],
     [LANGUAGES]: OptionValues[LANGUAGES],
     [TEST_FRAMEWORKS]: [],
-    [ENABLE_GRADLE_ENTERPRISE]: OptionValues[ENABLE_GRADLE_ENTERPRISE],
-    [GRADLE_ENTERPRISE_HOST]: OptionValues[GRADLE_ENTERPRISE_HOST],
+    [ENABLE_GRADLE_DEVELOCITY]: OptionValues[ENABLE_GRADLE_DEVELOCITY],
+    [GRADLE_DEVELOCITY_HOST]: OptionValues[GRADLE_DEVELOCITY_HOST],
     ...customOptions,
   };
   return getConfigWithDefaults(options);

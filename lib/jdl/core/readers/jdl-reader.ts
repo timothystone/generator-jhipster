@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { readFileSync } from 'fs';
-import logger from '../utils/objects/logger.js';
+import { readFileSync } from 'node:fs';
 
-import * as parser from '../parsing/api.js';
-import performJDLPostParsingTasks from '../parsing/jdl-post-parsing-tasks.js';
-import type { JDLRuntime } from '../types/runtime.js';
+import { getCst as apiGetCst, parse as apiParser } from '../parsing/api.ts';
+import performJDLPostParsingTasks from '../parsing/jdl-post-parsing-tasks.ts';
+import type { JDLRuntime } from '../types/runtime.ts';
+import logger from '../utils/objects/logger.ts';
 
 /**
  * Parses the given files and returns the resulting intermediate object.
@@ -67,9 +67,9 @@ function getFilesContent(files: string[]): string {
   }
 }
 
-function checkAllTheFilesAreJDLFiles(files) {
-  for (let i = 0; i < files.length; i++) {
-    checkFileIsJDLFile(files[i]);
+function checkAllTheFilesAreJDLFiles(files: string[]) {
+  for (const file of files) {
+    checkFileIsJDLFile(file);
   }
 }
 
@@ -84,7 +84,7 @@ function parse(content: string, runtime: JDLRuntime) {
   }
   try {
     const processedInput = filterJDLDirectives(removeInternalJDLComments(content));
-    const parsedContent = parser.parse(processedInput, undefined, runtime);
+    const parsedContent = apiParser(processedInput, runtime);
     return performJDLPostParsingTasks(parsedContent);
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -100,7 +100,7 @@ function getCst(content: string, runtime: JDLRuntime) {
   }
   try {
     const processedInput = filterJDLDirectives(removeInternalJDLComments(content));
-    return parser.getCst(processedInput, undefined, runtime);
+    return apiGetCst(processedInput, runtime);
   } catch (error) {
     if (error instanceof SyntaxError) {
       logger.error(`Syntax error message:\n\t${error.message}`);

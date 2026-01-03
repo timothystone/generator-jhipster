@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,12 +18,15 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import JDLValidation from '../../core/models/jdl-validation.js';
-import ValidationValidator from '../validators/validation-validator.js';
+
+import JDLValidation from '../../core/models/jdl-validation.ts';
+
+import ValidationValidator from './validation-validator.ts';
 
 describe('jdl - ValidationValidator', () => {
-  let validator;
+  let validator: ValidationValidator;
 
   before(() => {
     validator = new ValidationValidator();
@@ -32,6 +35,7 @@ describe('jdl - ValidationValidator', () => {
   describe('validate', () => {
     describe('when not passing anything', () => {
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => validator.validate()).to.throw(/^No validation\.$/);
       });
     });
@@ -43,11 +47,12 @@ describe('jdl - ValidationValidator', () => {
       });
       describe('without any of its required attributes', () => {
         it('should fail', () => {
+          // @ts-expect-error invalid api test
           expect(() => validator.validate({})).to.throw(/^The validation attribute name was not found\.$/);
         });
       });
       describe('when passing an invalid name for a validation', () => {
-        let validation;
+        let validation: JDLValidation;
 
         before(() => {
           validation = new JDLValidation({
@@ -62,7 +67,7 @@ describe('jdl - ValidationValidator', () => {
         });
       });
       describe('when not passing a value when required', () => {
-        let validation;
+        let validation: JDLValidation;
 
         before(() => {
           validation = new JDLValidation({

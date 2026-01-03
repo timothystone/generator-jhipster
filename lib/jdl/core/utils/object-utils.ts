@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -27,7 +27,7 @@
  * @returns {Object} the object result of the merge
  */
 // TODO move it to a JHipsterEntityEqualityChecker file or inside the JSONEntity
-export function merge<A, B>(object1: A, object2: B) {
+export function merge<const A, const B>(object1: A, object2: B): A | B | (A & B) {
   if (!object1 || Object.keys(object1).length === 0) {
     return object2;
   }

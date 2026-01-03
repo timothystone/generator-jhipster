@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,24 +17,28 @@
  * limitations under the License.
  */
 
-import { Lexer } from 'chevrotain';
+import { type ITokenConfig, Lexer } from 'chevrotain';
+
 import {
   JDL_RELATIONSHIP_MANY_TO_MANY,
   JDL_RELATIONSHIP_MANY_TO_ONE,
   JDL_RELATIONSHIP_ONE_TO_MANY,
   JDL_RELATIONSHIP_ONE_TO_ONE,
-} from '../../basic-types/relationships.js';
-import createTokenFromConfig from './token-creator.js';
+} from '../../basic-types/relationships.ts';
+
+import createTokenFromConfig from './token-creator.ts';
 
 const relationshipTypeCategoryToken = createTokenFromConfig({ name: 'RELATIONSHIP_TYPE', pattern: Lexer.NA });
 
-const relationshipTypeTokens = [
-  { name: 'ONE_TO_ONE', pattern: JDL_RELATIONSHIP_ONE_TO_ONE },
-  { name: 'ONE_TO_MANY', pattern: JDL_RELATIONSHIP_ONE_TO_MANY },
-  { name: 'MANY_TO_ONE', pattern: JDL_RELATIONSHIP_MANY_TO_ONE },
-  { name: 'MANY_TO_MANY', pattern: JDL_RELATIONSHIP_MANY_TO_MANY },
-].map(tokenConfig => {
-  (tokenConfig as any).categories = [relationshipTypeCategoryToken];
+const relationshipTypeTokens = (
+  [
+    { name: 'ONE_TO_ONE', pattern: JDL_RELATIONSHIP_ONE_TO_ONE },
+    { name: 'ONE_TO_MANY', pattern: JDL_RELATIONSHIP_ONE_TO_MANY },
+    { name: 'MANY_TO_ONE', pattern: JDL_RELATIONSHIP_MANY_TO_ONE },
+    { name: 'MANY_TO_MANY', pattern: JDL_RELATIONSHIP_MANY_TO_MANY },
+  ] as ITokenConfig[]
+).map(tokenConfig => {
+  tokenConfig.categories = [relationshipTypeCategoryToken];
   return createTokenFromConfig(tokenConfig);
 });
 

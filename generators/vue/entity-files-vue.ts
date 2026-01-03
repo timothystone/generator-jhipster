@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asPostWritingEntitiesTask, asWritingEntitiesTask } from '../base-application/support/index.js';
-import { clientApplicationTemplatesBlock } from '../client/support/index.js';
+import { asPostWritingEntitiesTask, asWriteFilesSection, asWritingEntitiesTask } from '../base-application/support/index.ts';
+import { clientApplicationTemplatesBlock, filterEntitiesForClient } from '../client/support/index.ts';
+import type { Application as ClientApplication, Entity as ClientEntity, Source as ClientSource } from '../client/types.ts';
 
-export const entityFiles = {
+export const entityFiles = asWriteFilesSection({
   client: [
     clientApplicationTemplatesBlock({
       relativePath: 'shared/model/',
@@ -49,10 +50,13 @@ export const entityFiles = {
       ],
     },
   ],
-};
+});
 
-export const writeEntityFiles = asWritingEntitiesTask(async function writeEntityFiles({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesAndPropertiesForClient ?? (entities => entities))(entities).filter(
+export const writeEntityFiles = asWritingEntitiesTask<ClientEntity, ClientApplication>(async function writeEntityFiles({
+  application,
+  entities,
+}) {
+  for (const entity of (application.filterEntitiesAndPropertiesForClient ?? filterEntitiesForClient)(entities).filter(
     entity => !entity.skipClient && !entity.builtInUser,
   )) {
     await this.writeFiles({
@@ -62,49 +66,27 @@ export const writeEntityFiles = asWritingEntitiesTask(async function writeEntity
   }
 });
 
-export const postWriteEntityFiles = asPostWritingEntitiesTask(async function postWriteEntityFiles({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesForClient ?? (entities => entities))(entities).filter(entity => !entity.builtInUser)) {
-    if (!entity.embedded) {
-      const { enableTranslation } = application;
-      const {
-        entityInstance,
-        entityClass,
-        entityAngularName,
-        entityFolderName,
-        entityFileName,
-        entityUrl,
-        microserviceName,
-        readOnly,
-        entityClassPlural,
-        i18nKeyPrefix,
-      } = entity;
-      const pageTitle = ((entity as any).pageTitle ?? enableTranslation) ? `${i18nKeyPrefix}.home.title` : entityClassPlural;
+export const postWriteEntityFiles = asPostWritingEntitiesTask<ClientEntity, ClientApplication, ClientSource>(
+  async function postWriteEntityFiles({ application, entities, source }) {
+    source.addEntitiesToClient({
+      application,
+      entities: (application.filterEntitiesForClient ?? (entities => entities))(entities).filter(
+        entity => !entity.builtInUser && !entity.embedded,
+      ),
+    });
+  },
+);
 
-      (this as any).addEntityToModule(
-        entityInstance,
-        entityClass,
-        entityAngularName,
-        entityFolderName,
-        entityFileName,
-        entityUrl,
-        microserviceName,
-        readOnly,
-        pageTitle,
-      );
-      (this as any).addEntityToMenu(
-        entity.entityPage,
-        application.enableTranslation,
-        entity.entityTranslationKeyMenu,
-        entity.entityClassHumanized,
-      );
-    }
-  }
-});
-
-export const cleanupEntitiesFiles = asWritingEntitiesTask(function cleanupEntitiesFiles({ control, application, entities }) {
-  for (const entity of (control.filterEntitiesForClient ?? (entities => entities))(entities).filter(entity => !entity.builtInUser)) {
+export const cleanupEntitiesFiles = asWritingEntitiesTask<ClientEntity, ClientApplication>(function cleanupEntitiesFiles({
+  application,
+  control,
+  entities,
+}) {
+  for (const entity of (application.filterEntitiesForClient ?? (entities => entities))(entities).filter(
+    entity => !entity.builtInUser && !entity.embedded,
+  )) {
     const { entityFolderName, entityFileName } = entity;
-    if (this.isJhipsterVersionLessThan('8.0.0-beta.3')) {
+    if (control.isJhipsterVersionLessThan('8.0.0-beta.3')) {
       this.removeFile(`${application.clientTestDir}/spec/app/entities/${entityFolderName}/${entityFileName}.component.spec.ts`);
       this.removeFile(`${application.clientTestDir}/spec/app/entities/${entityFolderName}/${entityFileName}-detail.component.spec.ts`);
       this.removeFile(`${application.clientTestDir}/spec/app/entities/${entityFolderName}/${entityFileName}-update.component.spec.ts`);

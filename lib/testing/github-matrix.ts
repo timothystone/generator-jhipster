@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { RECOMMENDED_JAVA_VERSION, RECOMMENDED_NODE_VERSION } from '../../generators/index.js';
-import { getSourceRoot } from '../index.js';
-import { JAVA_COMPATIBLE_VERSIONS, JAVA_VERSION, NODE_VERSION } from '../../generators/generator-constants.js';
 
-const knwonGitHubMatrixProperties = [
+import { JAVA_COMPATIBLE_VERSIONS, RECOMMENDED_JAVA_VERSION, RECOMMENDED_NODE_VERSION } from '../../generators/generator-constants.ts';
+import { getSourceRoot } from '../index.ts';
+
+const knownGitHubMatrixProperties = [
   'os',
   'node-version',
   'java-version',
@@ -40,7 +40,7 @@ export type GitHubMatrixOutput = {
 };
 
 export const getUnknownGitHubMatrixProperties = (matrix: Partial<GitHubMatrix>): string[] =>
-  Object.keys(matrix).filter(key => !knwonGitHubMatrixProperties.includes(key));
+  Object.keys(matrix).filter(key => !knownGitHubMatrixProperties.includes(key));
 
 export const getUnknownGitHubMatrixGroupProperties = (matrixRecord: GitHubMatrixGroup): string[] => {
   let unknownProperties: string[] = [];
@@ -63,7 +63,11 @@ export const defaultGithubEnvironment = {
     'ZjY4MTM4YjI5YzMwZjhjYjI2OTNkNTRjMWQ5Y2Q0Y2YwOWNmZTE2NzRmYzU3NTMwM2NjOTE3MTllOTM3MWRkMzcyYTljMjVmNmQ0Y2MxOTUzODc0MDhhMTlkMDIxMzI2YzQzZDM2ZDE3MmQ3NjVkODk3OTVmYzljYTQyZDNmMTQ=',
 };
 
-const randomReproducibleValue = <Choice = any>(seed: string, choices: Choice[], options?: { useVersionPlaceholders?: boolean }): Choice => {
+const randomReproducibleValue = <const Choice = string>(
+  seed: string,
+  choices: Choice[],
+  options?: { useVersionPlaceholders?: boolean },
+): Choice => {
   const { useVersionPlaceholders } = options ?? {};
   const index = createHash('shake256', { outputLength: 1 }).update(seed, 'utf8').digest('binary').charCodeAt(0) % choices.length;
   if (useVersionPlaceholders) {
@@ -77,8 +81,8 @@ type RandomEnvironmentOptions = { useVersionPlaceholders?: boolean; javaVersions
 const randomEnvironmentMatrix = (key: string, options: RandomEnvironmentOptions) => {
   const {
     useVersionPlaceholders,
-    javaVersions = [JAVA_VERSION, ...JAVA_COMPATIBLE_VERSIONS],
-    nodeVersions = [NODE_VERSION, '18', '20'],
+    javaVersions = [RECOMMENDED_JAVA_VERSION, ...JAVA_COMPATIBLE_VERSIONS],
+    nodeVersions = [RECOMMENDED_NODE_VERSION, '22', '24'],
   } = options;
   const javaVersion = randomReproducibleValue(`java-${key}`, javaVersions, { useVersionPlaceholders });
   const nodeVersion = randomReproducibleValue(`node-${key}`, nodeVersions, { useVersionPlaceholders });

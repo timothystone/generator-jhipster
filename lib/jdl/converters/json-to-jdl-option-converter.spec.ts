@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,18 +18,21 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import JDLObject from '../core/models/jdl-object.js';
-import JDLUnaryOption from '../core/models/jdl-unary-option.js';
-import { unaryOptions } from '../core/built-in-options/index.js';
-import { convertServerOptionsToJDL } from './json-to-jdl-option-converter.js';
+
+import { unaryOptions } from '../core/built-in-options/index.ts';
+import JDLObject from '../core/models/jdl-object.ts';
+import JDLUnaryOption from '../core/models/jdl-unary-option.ts';
+
+import { convertServerOptionsToJDL } from './json-to-jdl-option-converter.ts';
 
 const { SKIP_CLIENT } = unaryOptions;
 
 describe('jdl - JSONToJDLOptionConverter', () => {
   describe('convertToServerOptions', () => {
     describe('when not passing any argument', () => {
-      let jdlObject;
+      let jdlObject: JDLObject;
 
       before(() => {
         // @ts-expect-error
@@ -41,7 +44,7 @@ describe('jdl - JSONToJDLOptionConverter', () => {
       });
     });
     describe('when passing a jdl object', () => {
-      let jdlObject;
+      let jdlObject: JDLObject;
 
       before(() => {
         const previousJDLObject = new JDLObject();

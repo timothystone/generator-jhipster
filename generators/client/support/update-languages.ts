@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,42 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { CommonClientServerApplication } from '../../base-application/types.js';
-import type BaseGenerator from '../../base-core/index.js';
+import type { EditFileCallback } from '../../base-core/api.ts';
+import { createNeedleCallback } from '../../base-core/support/needles.ts';
+import type { Language } from '../../languages/support/languages.ts';
 
-type UpdateLanguagesApplication = Pick<
-  CommonClientServerApplication<any>,
-  'clientBundlerWebpack' | 'clientSrcDir' | 'clientRootDir' | 'enableTranslation' | 'languagesDefinition' | 'languages'
->;
+export const createDayjsUpdateLanguagesEditFileCallback = (languagesDefinition: readonly Language[], commonjs = false): EditFileCallback =>
+  createNeedleCallback({
+    contentToAdd: [...new Set(languagesDefinition.map(l => l.dayjsLocale))].map(
+      dayjsLocale => `import 'dayjs/${commonjs ? '' : 'esm/'}locale/${dayjsLocale}';`,
+    ),
+    needle: 'jhipster-needle-i18n-language-dayjs-imports',
+  });
 
-export type UpdateClientLanguagesTaskParam = {
-  application: UpdateLanguagesApplication;
-  control?: any;
-};
-
-/**
- * Update DayJS Locales.
- *
- * @param application
- * @param configurationFile
- * @param commonjs
- */
-
-export function updateLanguagesInDayjsConfigurationTask(
-  this: BaseGenerator,
-  { application, control = {} }: UpdateClientLanguagesTaskParam,
-  { configurationFile, commonjs = false }: { configurationFile: string; commonjs?: boolean },
-): void {
-  const { languagesDefinition = [] } = application;
-  const { ignoreNeedlesError: ignoreNonExisting } = control;
-
-  const uniqueDayjsLocales = [...new Map(languagesDefinition.map(v => [v.dayjsLocale, v])).values()];
-  const newContent = uniqueDayjsLocales.reduce(
-    (content, language) => `${content}import 'dayjs/${commonjs ? '' : 'esm/'}locale/${language.dayjsLocale}'\n`,
-    '// jhipster-needle-i18n-language-dayjs-imports - JHipster will import languages from dayjs here\n',
-  );
-
-  this.editFile(configurationFile, { ignoreNonExisting }, content =>
-    content.replace(/\/\/ jhipster-needle-i18n-language-dayjs-imports[\s\S]+?(?=\/\/ DAYJS CONFIGURATION)/g, `${newContent}\n`),
-  );
-}
+export const createWebpackUpdateLanguagesNeedleCallback = (allLanguages: readonly Language[], i18nRelativeDir: string) =>
+  createNeedleCallback({
+    contentToAdd: allLanguages.map(
+      language => `{ pattern: './${i18nRelativeDir}${language.languageTag}/*.json', fileName: './i18n/${language.languageTag}.json' },`,
+    ),
+    needle: 'jhipster-needle-i18n-language-webpack',
+  });

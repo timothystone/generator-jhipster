@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -22,4 +22,4 @@ export const ALPHANUMERIC = /^[A-Za-z][A-Za-z0-9]*$/;
 export const ALPHANUMERIC_DASH = /^[A-Za-z][A-Za-z0-9-]*$/;
 export const ALPHABETIC_DASH_LOWER = /^[a-z][a-z-]*$/;
 export const ALPHANUMERIC_SPACE = /^"?[A-Za-z][A-Za-z0-9- ]*"?$/;
-export const ALPHANUMERIC_UNDERSCORE = /^[A-Za-z][A-Za-z0-9_]*$/;
+export const ALPHANUMERIC_UNDERSCORE = /^[A-Za-z]\w*$/;

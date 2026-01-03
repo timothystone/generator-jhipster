@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -91,10 +91,6 @@
     <logger name="io.asyncer.r2dbc.mysql" level="WARN"/>
     <%_ } _%>
     <logger name="io.r2dbc" level="WARN"/>
-<%_ } _%>
-<%_ if (!reactive) { _%>
-    <logger name="io.undertow" level="WARN"/>
-    <logger name="io.undertow.websockets.jsr" level="ERROR"/>
 <%_ } _%>
 <%_ if (cacheProviderEhcache) { _%>
     <logger name="org.ehcache" level="WARN"/>

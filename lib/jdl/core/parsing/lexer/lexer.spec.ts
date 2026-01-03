@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,14 +18,16 @@
  */
 
 import { before, describe, it } from 'esmocha';
-import { expect } from 'chai';
-import { getDefaultRuntime } from '../../runtime.js';
 
-const { lexer: JDLLexer } = getDefaultRuntime();
+import { expect } from 'chai';
+
+import { createRuntime } from '../../runtime.ts';
+
+const { lexer: JDLLexer } = createRuntime();
 
 describe('jdl - JDLLexer', () => {
   describe('when passing a valid JDL input', () => {
-    let lexingResult;
+    let lexingResult: ReturnType<typeof JDLLexer.tokenize>;
 
     before(() => {
       const input = `
@@ -64,7 +66,7 @@ describe('jdl - JDLLexer', () => {
   });
 
   describe('when passing an invalid JDL input', () => {
-    let lexingResult;
+    let lexingResult: ReturnType<typeof JDLLexer.tokenize>;
 
     before(() => {
       const input = `

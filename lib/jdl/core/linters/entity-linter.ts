@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import type { CstNode, IToken } from 'chevrotain';
 
-import { shouldWriteEntityTableName } from '../utils/entity-table-name-creator.js';
-import EntityIssue from './issues/entity-issue.js';
-import { rulesNames } from './rules.js';
+import EntityIssue from './issues/entity-issue.ts';
+import { rulesNames } from './rules.ts';
 
 let issues: EntityIssue[];
-
-export type EntityDeclaration = {
-  children: {
-    entityTableNameDeclaration: any;
-    NAME: [any, ...any];
-    entityBody: [any, ...any];
-  };
-};
 
 /**
  * Check entities for lint issues.
@@ -37,7 +29,7 @@ export type EntityDeclaration = {
  * @param entityDeclarations - the list of entity declarations
  * @return the found entity issues.
  */
-export function checkEntities(entityDeclarations: EntityDeclaration[]): EntityIssue[] {
+export function checkEntities(entityDeclarations: CstNode[]): EntityIssue[] {
   if (!entityDeclarations) {
     return [];
   }
@@ -45,16 +37,15 @@ export function checkEntities(entityDeclarations: EntityDeclaration[]): EntityIs
   checkForDuplicatedEntities(entityDeclarations);
   entityDeclarations.forEach(entityDeclaration => {
     checkForUselessEntityBraces(entityDeclaration);
-    checkForUselessTableName(entityDeclaration);
   });
   return issues;
 }
 
-function checkForDuplicatedEntities(entityDeclarations: EntityDeclaration[]) {
+function checkForDuplicatedEntities(entityDeclarations: CstNode[]) {
   const entityNames = new Set();
   const duplicatedEntityIssues = new Map(); // key: entityName, value: issue
   entityDeclarations.forEach(entityDeclaration => {
-    const entityName = entityDeclaration.children.NAME[0].image;
+    const entityName = (entityDeclaration.children.NAME[0] as IToken).image;
     if (entityNames.has(entityName)) {
       if (!duplicatedEntityIssues.has(entityName)) {
         duplicatedEntityIssues.set(
@@ -74,32 +65,16 @@ function checkForDuplicatedEntities(entityDeclarations: EntityDeclaration[]) {
   });
 }
 
-function checkForUselessEntityBraces(entityDeclaration: EntityDeclaration) {
+function checkForUselessEntityBraces(entityDeclaration: CstNode) {
   const entityBody = entityDeclaration.children.entityBody;
-  const nextTokensAfterRelationshipType = entityBody?.[0].children;
+  const nextTokensAfterRelationshipType = (entityBody?.[0] as CstNode)?.children;
   const onlyCurlyBracesAsRelationshipBody = entityBody && Object.keys(nextTokensAfterRelationshipType).length === 2;
   if (onlyCurlyBracesAsRelationshipBody) {
     issues.push(
       new EntityIssue({
         ruleName: rulesNames.ENT_SHORTER_DECL,
-        entityName: entityDeclaration.children.NAME[0].image,
+        entityName: (entityDeclaration.children.NAME[0] as IToken).image,
       }),
     );
-  }
-}
-
-function checkForUselessTableName(entityDeclaration: EntityDeclaration) {
-  const entityName = entityDeclaration.children.NAME[0].image;
-  const entityTableNameDeclaration = entityDeclaration.children.entityTableNameDeclaration;
-  if (entityTableNameDeclaration) {
-    const tableName = entityTableNameDeclaration[0].children.NAME[0].image;
-    if (!shouldWriteEntityTableName(entityName, tableName)) {
-      issues.push(
-        new EntityIssue({
-          ruleName: rulesNames.ENT_OPTIONAL_TABLE_NAME,
-          entityName,
-        }),
-      );
-    }
   }
 }

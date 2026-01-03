@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,29 +16,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { extname } from 'path';
-import { readFile } from 'fs/promises';
+import { readFile } from 'node:fs/promises';
+import { extname } from 'node:path';
+
 import { upperFirst } from 'lodash-es';
 import { type Store as MemFs, create as createMemFs } from 'mem-fs';
 import { type MemFsEditor, create as createMemFsEditor } from 'mem-fs-editor';
 
-import BaseGenerator from '../base/index.js';
-import { downloadJdlFile } from '../../cli/download.mjs';
-import EnvironmentBuilder from '../../cli/environment-builder.mjs';
-import { CLI_NAME } from '../../cli/utils.mjs';
-import { GENERATOR_APP, GENERATOR_ENTITIES, GENERATOR_WORKSPACES } from '../generator-list.js';
-import type { ApplicationWithEntities } from '../../lib/jdl/jdl-importer.js';
-import { createImporterFromContent } from '../../lib/jdl/jdl-importer.js';
-import { GENERATOR_JHIPSTER, JHIPSTER_CONFIG_DIR } from '../generator-constants.js';
-import { mergeYoRcContent } from '../../lib/utils/yo-rc.js';
-import { normalizeBlueprintName } from '../base/internal/blueprint.js';
-import { updateApplicationEntitiesTransform } from '../base-application/support/update-application-entities-transform.js';
-import { addApplicationIndex, allNewApplications, customizeForMicroservices } from './internal/index.js';
+import { downloadJdlFile } from '../../cli/download.ts';
+import EnvironmentBuilder from '../../cli/environment-builder.ts';
+import { CLI_NAME } from '../../cli/utils.ts';
+import type { ApplicationWithEntities } from '../../lib/jdl/jdl-importer.ts';
+import { createImporterFromContent } from '../../lib/jdl/jdl-importer.ts';
+import { mergeYoRcContent } from '../../lib/utils/yo-rc.ts';
+import BaseGenerator from '../base/index.ts';
+import { normalizeBlueprintName } from '../base/internal/blueprint.ts';
+import { updateApplicationEntitiesTransform } from '../base-application/support/update-application-entities-transform.ts';
+import { GENERATOR_JHIPSTER, JHIPSTER_CONFIG_DIR } from '../generator-constants.ts';
+import type { Options as GitOptions } from '../git/types.d.ts';
+
+import { addApplicationIndex, allNewApplications, customizeForMicroservices } from './internal/index.ts';
+import type { Config as JdlConfig, Options as JdlOptions } from './types.ts';
 
 /**
  * Add jdl extension to the file
  */
-const toJdlFile = file => {
+const toJdlFile = (file: string): string => {
   if (!extname(file)) {
     return `${file}.jdl`;
   }
@@ -47,13 +50,13 @@ const toJdlFile = file => {
 
 type ApplicationWithEntitiesAndPath = ApplicationWithEntities & { folder?: string; sharedFs?: MemFs };
 
-export default class JdlGenerator extends BaseGenerator {
+export default class JdlGenerator extends BaseGenerator<JdlConfig, JdlOptions> {
   jdlFiles?: string[];
   inline?: string;
   jdlContents: string[] = [];
-  entrypointGenerator = `${CLI_NAME}:${GENERATOR_APP}`;
-  entitiesGenerator = GENERATOR_ENTITIES;
-  workspacesGenerator = GENERATOR_WORKSPACES;
+  entrypointGenerator = `${CLI_NAME}:app`;
+  entitiesGenerator = 'entities';
+  workspacesGenerator = 'workspaces';
 
   interactive?: boolean;
   jsonOnly?: boolean;
@@ -84,7 +87,7 @@ export default class JdlGenerator extends BaseGenerator {
         }
       },
       existingProject() {
-        this.existingProject = this.jhipsterConfig.baseName !== undefined && (this.config as any).existed;
+        this.existingProject = this.jhipsterConfig.baseName !== undefined && this.config.existed;
       },
       checkOptions() {
         if (!this.skipChecks && !this.inline && !this.jdlFiles?.length) {
@@ -127,14 +130,14 @@ export default class JdlGenerator extends BaseGenerator {
         }
       },
       async parseJDL() {
-        const configuration = {
-          applicationName: this.options.baseName ?? (this.existingProject ? this.jhipsterConfig.baseName : undefined),
-          databaseType: this.options.db ?? (this.existingProject ? this.jhipsterConfigWithDefaults.prodDatabaseType : undefined),
-          applicationType: this.options.applicationType,
-          skipUserManagement: this.options.skipUserManagement,
-        };
-
-        const importer = createImporterFromContent(this.jdlContents.join('\n'), configuration, this.options.jdlDefinition);
+        const importer = createImporterFromContent(
+          this.jdlContents.join('\n'),
+          {
+            applicationName: this.options.baseName ?? (this.existingProject ? this.jhipsterConfig.baseName : undefined),
+            applicationType: this.options.applicationType ?? (this.existingProject ? this.jhipsterConfig.applicationType : undefined),
+          },
+          this.options.jdlDefinition,
+        );
 
         const importState = importer.import();
 
@@ -213,9 +216,10 @@ export default class JdlGenerator extends BaseGenerator {
           }
         } else if (this.applications.length > 1) {
           this.log.info(`Generating ${this.applications.length} applications`);
-          await this.composeWithJHipster(this.workspacesGenerator, {
+          await this.composeWithJHipster(this.workspacesGenerator as 'workspaces', {
             generatorOptions: {
-              workspacesFolders: this.applications.map(app => app.folder),
+              /** TODO types contains appsFolders which is not correctly handled, {@see file:../workspaces/command.ts} */
+              workspacesFolders: this.applications.map(app => app.folder!),
               generateApplications: async () => this.runNonInteractive(this.applications, generatorOptions),
             } as any,
           });
@@ -253,8 +257,7 @@ export default class JdlGenerator extends BaseGenerator {
             generatorOptions: {
               destinationRoot: this.destinationPath(deploymentType),
               force: true,
-              skipPrompts: true,
-            } as any,
+            },
           });
         }
       },
@@ -265,7 +268,7 @@ export default class JdlGenerator extends BaseGenerator {
     return this.delegateTasksToBlueprint(() => this.end);
   }
 
-  async runNonInteractive(applications: ApplicationWithEntitiesAndPath[], options) {
+  async runNonInteractive(applications: ApplicationWithEntitiesAndPath[], options: any) {
     await Promise.all(
       applications.map(async application => {
         const rootCwd = this.destinationPath();
@@ -274,11 +277,8 @@ export default class JdlGenerator extends BaseGenerator {
         const envOptions: any = { cwd, logCwd: rootCwd, sharedFs: application.sharedFs, adapter };
         const generatorOptions = { ...this.options, ...options, skipPriorities: ['prompting'] };
 
-        // We should not reuse sharedData at non interactive runs
-        delete generatorOptions.sharedData;
-
         // Install should happen at the root of the monorepository. Force skip install at childs.
-        if (this.options.monorepository) {
+        if ((this.options as GitOptions).monorepository) {
           generatorOptions.skipInstall = true;
         }
         const envBuilder = await this.createEnvBuilder(envOptions);

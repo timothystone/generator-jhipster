@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asWritingTask } from '../base-application/support/task-type-inference.js';
-import { clientRootTemplatesBlock, clientSrcTemplatesBlock } from './support/files.js';
+import { asWriteFilesSection, asWritingTask } from '../base-application/support/task-type-inference.ts';
 
-export const files = {
+import { clientRootTemplatesBlock, clientSrcTemplatesBlock } from './support/files.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from './types.ts';
+
+export const files = asWriteFilesSection({
   common: [
     {
       templates: ['README.md.jhi.client', '.prettierignore.jhi.client'],
@@ -74,9 +76,9 @@ export const files = {
       templates: ['swagger-ui/index.html'],
     },
   ],
-};
+});
 
-export const writeFiles = asWritingTask(async function writeFiles({ application }) {
+export const writeFiles = asWritingTask<ClientEntity, ClientApplication>(async function writeFiles({ application }) {
   if (!application.clientFrameworkBuiltIn) {
     return;
   }

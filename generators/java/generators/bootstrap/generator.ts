@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,126 +16,103 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isFileStateModified } from 'mem-fs-editor/state';
-import BaseApplicationGenerator from '../../../base-application/index.js';
-import { JAVA_COMPATIBLE_VERSIONS } from '../../../generator-constants.js';
-import {
-  addJavaAnnotation,
-  addJavaImport,
-  checkJava,
-  generatedAnnotationTransform,
-  isReservedJavaKeyword,
-  javaMainPackageTemplatesBlock,
-  matchMainJavaFiles,
-  packageInfoTransform,
-} from '../../support/index.js';
 
-export default class BootstrapGenerator extends BaseApplicationGenerator {
-  packageInfoFile!: boolean;
+import { upperFirst } from 'lodash-es';
+import pluralize from 'pluralize';
 
+import { mutateData } from '../../../../lib/utils/index.ts';
+import { mutateApplication } from '../../application.ts';
+import { JavaApplicationGenerator } from '../../generator.ts';
+import { prepareEntity } from '../../support/index.ts';
+
+export default class JavaBootstrapGenerator extends JavaApplicationGenerator {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
+    const projectNameGenerator = await this.dependsOnJHipster('project-name');
+    projectNameGenerator.javaApplication = true;
+    await this.dependsOnBootstrap('base-application');
+    await this.dependsOnBootstrap('java-simple-application');
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
+      await this.dependsOnBootstrap('server');
     }
-  }
-
-  get initializing() {
-    return this.asInitializingTaskGroup({
-      validateJava() {
-        if (!this.skipChecks) {
-          this.checkJava();
-        }
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.INITIALIZING]() {
-    return this.delegateTasksToBlueprint(() => this.initializing);
-  }
-
-  get configuring() {
-    return this.asConfiguringTaskGroup({
-      checkConfig() {
-        const { packageName } = this.jhipsterConfigWithDefaults;
-        const reservedKeywork = packageName!.split('.').find(isReservedJavaKeyword);
-        if (reservedKeywork) {
-          throw new Error(`The package name "${packageName}" contains a reserved Java keyword "${reservedKeywork}".`);
-        }
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.CONFIGURING]() {
-    return this.delegateTasksToBlueprint(() => this.configuring);
   }
 
   get loading() {
     return this.asLoadingTaskGroup({
-      loadEnvironmentVariables({ application }) {
-        application.packageInfoJavadocs?.push(
-          { packageName: `${application.packageName}.aop.logging`, documentation: 'Logging aspect.' },
-          { packageName: `${application.packageName}.management`, documentation: 'Application management.' },
-          { packageName: `${application.packageName}.repository.rowmapper`, documentation: 'Webflux database column mapper.' },
-          { packageName: `${application.packageName}.security`, documentation: 'Application security utilities.' },
-          { packageName: `${application.packageName}.service.dto`, documentation: 'Data transfer objects for rest mapping.' },
-          { packageName: `${application.packageName}.service.mapper`, documentation: 'Data transfer objects mappers.' },
-          { packageName: `${application.packageName}.web.filter`, documentation: 'Request chain filters.' },
-          { packageName: `${application.packageName}.web.rest.errors`, documentation: 'Rest layer error handling.' },
-          { packageName: `${application.packageName}.web.rest.vm`, documentation: 'Rest layer visual models.' },
+      loading({ application, applicationDefaults }) {
+        applicationDefaults(
+          {
+            __override__: false,
+            useNpmWrapper: application => Boolean(application.clientFramework ?? 'no' !== 'no'),
+          },
+          {
+            __override__: true,
+            nodePackageManagerCommand: data => (data.useNpmWrapper ? './npmw' : data.nodePackageManagerCommand),
+          },
+          mutateApplication,
         );
-
-        if (application.defaultPackaging === 'war') {
-          this.log.info(`Using ${application.defaultPackaging} as default packaging`);
+        if (application.prettierFolders && !application.prettierFolders.includes('src/**/')) {
+          application.prettierFolders.push('src/**/');
         }
       },
     });
   }
 
-  get [BaseApplicationGenerator.LOADING]() {
+  get [JavaApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
   }
 
-  get preparing() {
-    return this.asPreparingTaskGroup({
-      applicationDefaults({ application }) {
-        application.addPrettierExtensions?.(['java']);
+  get preparingEachEntity() {
+    return this.asPreparingEachEntityTaskGroup({
+      prepareEntity({ application, entity }) {
+        prepareEntity(entity, application);
       },
-      prepareJavaApplication({ application, source }) {
-        source.hasJavaProperty = (property: string) => application.javaProperties![property] !== undefined;
-        source.hasJavaManagedProperty = (property: string) => application.javaManagedProperties![property] !== undefined;
-      },
-      needles({ source }) {
-        source.editJavaFile = (file, { staticImports = [], imports = [], annotations = [] }, ...editFileCallback) =>
-          this.editFile(
-            file,
-            ...staticImports.map(classPath => addJavaImport(classPath, { staticImport: true })),
-            ...imports.map(classPath => addJavaImport(classPath)),
-            ...annotations.map(annotation => addJavaAnnotation(annotation)),
-            ...editFileCallback,
-          );
-      },
-      imperativeOrReactive({ applicationDefaults }) {
-        applicationDefaults({
-          optionalOrMono: ({ reactive }) => (reactive ? 'Mono' : 'Optional'),
-          optionalOrMonoOfNullable: ({ reactive }) => (reactive ? 'Mono.justOrEmpty' : 'Optional.ofNullable'),
-          optionalOrMonoClassPath: ({ reactive }) => (reactive ? 'reactor.core.publisher.Mono' : 'java.util.Optional'),
-          wrapMono:
-            ({ reactive }) =>
-            className =>
-              reactive ? `Mono<${className}>` : className,
-          listOrFlux: ({ reactive }) => (reactive ? 'Flux' : 'List'),
-          listOrFluxClassPath: ({ reactive }) => (reactive ? 'reactor.core.publisher.Flux' : 'java.util.List'),
+    });
+  }
+
+  get [JavaApplicationGenerator.PREPARING_EACH_ENTITY]() {
+    return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
+  }
+
+  get preparingEachEntityRelationship() {
+    return this.asPreparingEachEntityRelationshipTaskGroup({
+      prepareRelationship({ application, relationship }) {
+        mutateData(relationship, {
+          relationshipNameCapitalizedPlural: ({ relationshipNameCapitalized, relationshipName }) =>
+            relationshipName.length > 1 ? pluralize(relationshipNameCapitalized) : upperFirst(pluralize(relationshipName)),
+          relationshipUpdateBackReference: ({ ownerSide, relationshipRightSide, otherEntity }) =>
+            !otherEntity.embedded && (application.databaseTypeNeo4j ? relationshipRightSide : !ownerSide),
         });
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING]() {
-    return this.delegateTasksToBlueprint(() => this.preparing);
+  get [JavaApplicationGenerator.PREPARING_EACH_ENTITY_RELATIONSHIP]() {
+    return this.delegateTasksToBlueprint(() => this.preparingEachEntityRelationship);
+  }
+
+  get postPreparingEachEntity() {
+    return this.asPostPreparingEachEntityTaskGroup({
+      postPreparingEntity({ entity, application }) {
+        entity.relationships
+          .filter(relationship => relationship.ignoreOtherSideProperty === undefined)
+          .forEach(relationship => {
+            relationship.ignoreOtherSideProperty =
+              (application as any).databaseType !== 'neo4j' &&
+              !entity.embedded &&
+              !relationship.otherEntity.embedded &&
+              relationship.otherEntity.relationships.length > 0;
+          });
+        entity.relationshipsContainOtherSideIgnore = entity.relationships.some(relationship => relationship.ignoreOtherSideProperty);
+      },
+    });
+  }
+
+  get [JavaApplicationGenerator.POST_PREPARING_EACH_ENTITY]() {
+    return this.delegateTasksToBlueprint(() => this.postPreparingEachEntity);
   }
 
   get default() {
@@ -144,118 +121,13 @@ export default class BootstrapGenerator extends BaseApplicationGenerator {
         const entityPackages = [
           ...new Set([application.packageName, ...entities.map(entity => entity.entityAbsolutePackage).filter(Boolean)]),
         ] as string[];
-        application.entityPackages = entityPackages;
-        application.domains = entityPackages;
-      },
-      generatedAnnotation({ application }) {
-        if (this.jhipsterConfig.withGeneratedFlag && application.backendTypeJavaAny) {
-          this.queueTransformStream(
-            {
-              name: 'adding @GeneratedByJHipster annotations',
-              filter: file => isFileStateModified(file) && file.path.startsWith(this.destinationPath()) && file.path.endsWith('.java'),
-              refresh: false,
-            },
-            generatedAnnotationTransform(application.packageName),
-          );
-        }
-      },
-      generatedPackageInfo({ application }) {
-        if (!application.backendTypeJavaAny) return;
-
-        const { srcMainJava } = application;
-        if (this.packageInfoFile && srcMainJava) {
-          const mainPackageMatch = matchMainJavaFiles(srcMainJava);
-          const root = this.destinationPath(srcMainJava);
-          this.queueTransformStream(
-            {
-              name: 'adding package-info.java files',
-              filter: file =>
-                isFileStateModified(file) && file.path.startsWith(this.destinationPath()) && mainPackageMatch.match(file.path),
-              refresh: true,
-            },
-            packageInfoTransform({
-              javaRoots: [root],
-              javadocs: {
-                ...Object.fromEntries(application.packageInfoJavadocs!.map(doc => [doc.packageName, doc.documentation])),
-                [`${application.packageName}`]: 'Application root.',
-                [`${application.packageName}.config`]: 'Application configuration.',
-                ...Object.fromEntries(
-                  application
-                    .entityPackages!.map(pkg => [
-                      [`${pkg}.domain`, 'Domain objects.'],
-                      [`${pkg}.repository`, 'Repository layer.'],
-                      [`${pkg}.service`, 'Service layer.'],
-                      [`${pkg}.web.rest`, 'Rest layer.'],
-                    ])
-                    .flat(),
-                ),
-              },
-            }),
-          );
-        }
+        application.entityPackages.push(...entityPackages);
+        application.domains.push(...entityPackages);
       },
     });
   }
 
-  get [BaseApplicationGenerator.DEFAULT]() {
+  get [JavaApplicationGenerator.DEFAULT]() {
     return this.delegateTasksToBlueprint(() => this.default);
-  }
-
-  get writing() {
-    return this.asWritingTaskGroup({
-      async writing({ application }) {
-        if (!application.backendTypeJavaAny) return;
-
-        await this.writeFiles({
-          blocks: [
-            javaMainPackageTemplatesBlock({
-              templates: ['GeneratedByJHipster.java'],
-            }),
-            { templates: ['.editorconfig.jhi.java'] },
-          ],
-          context: application,
-        });
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.WRITING]() {
-    return this.delegateTasksToBlueprint(() => this.writing);
-  }
-
-  get postWriting() {
-    return this.asPostWritingTaskGroup({
-      addPrettierJava({ application, source }) {
-        if (source.mergePrettierConfig) {
-          source.mergePrettierConfig({ plugins: ['prettier-plugin-java'], overrides: [{ files: '*.java', options: { tabWidth: 4 } }] });
-          this.packageJson.merge({
-            devDependencies: {
-              'prettier-plugin-java': application.nodeDependencies['prettier-plugin-java'],
-            },
-          });
-        }
-      },
-    });
-  }
-
-  get [BaseApplicationGenerator.POST_WRITING]() {
-    return this.delegateTasksToBlueprint(() => this.postWriting);
-  }
-
-  /**
-   * Check if a supported Java is installed
-   *
-   * Blueprints can customize or disable java checks versions by overriding this method.
-   * @example
-   * // disable checks
-   * checkJava() {}
-   * @examples
-   * // enforce java lts versions
-   * checkJava() {
-   *   super.checkJava(['8', '11', '17'], { throwOnError: true });
-   * }
-   */
-  checkJava(javaCompatibleVersions = JAVA_COMPATIBLE_VERSIONS, checkResultValidation?) {
-    this.validateResult(checkJava(javaCompatibleVersions), { throwOnError: false, ...checkResultValidation });
   }
 }

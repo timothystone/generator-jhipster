@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,12 +17,14 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-
 import { after, beforeEach, describe, it } from 'esmocha';
+import fs from 'node:fs';
+
 import { expect } from 'chai';
-import { basicHelpers as helpers } from '../../../../lib/testing/index.js';
-import { getTestFile, parseFromContent, parseFromFiles } from '.././__test-support__/index.js';
+import helpers from 'yeoman-test';
+
+import { getTestFile, parseFromContent, parseFromFiles } from '../__test-support__/index.ts';
+import type { ParsedJDLApplications } from '../types/parsed.ts';
 
 describe('jdl - JDLReader', () => {
   beforeEach(async () => {
@@ -95,7 +97,7 @@ describe('jdl - JDLReader', () => {
         });
       });
       describe('when reading a single JDL file', () => {
-        let content;
+        let content: ParsedJDLApplications;
 
         beforeEach(() => {
           content = parseFromFiles([getTestFile('valid_jdl.jdl')]);
@@ -106,7 +108,7 @@ describe('jdl - JDLReader', () => {
         });
       });
       describe('when reading more than one JDL file', () => {
-        let content;
+        let content: ParsedJDLApplications;
 
         beforeEach(() => {
           content = parseFromFiles([getTestFile('valid_jdl.jdl'), getTestFile('valid_jdl2.jdl')]);
@@ -117,7 +119,7 @@ describe('jdl - JDLReader', () => {
         });
       });
       describe('when reading a complex JDL file', () => {
-        let content;
+        let content: ParsedJDLApplications;
 
         beforeEach(() => {
           content = parseFromFiles([getTestFile('complex_jdl.jdl')]);
@@ -145,7 +147,7 @@ describe('jdl - JDLReader', () => {
       });
     });
     describe('when passing a valid content', () => {
-      let content;
+      let content: ParsedJDLApplications;
 
       beforeEach(() => {
         content = parseFromContent('entity A');
@@ -157,7 +159,7 @@ describe('jdl - JDLReader', () => {
     });
   });
   describe('when parsing a JDL application', () => {
-    let parsed;
+    let parsed: ParsedJDLApplications;
 
     beforeEach(() => {
       parsed = parseFromContent(`application {

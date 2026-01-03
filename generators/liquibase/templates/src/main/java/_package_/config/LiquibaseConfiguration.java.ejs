@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,17 +24,17 @@ import java.util.Optional;
 import tech.jhipster.config.liquibase.AsyncSpringLiquibase;
 <%_ } else { _%>
 import tech.jhipster.config.liquibase.SpringLiquibaseUtil;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
+import org.springframework.boot.liquibase.autoconfigure.LiquibaseDataSource;
 import org.springframework.beans.factory.ObjectProvider;
 <%_ } _%>
 <%_ if (databaseTypeSql && reactive) { _%>
-import org.springframework.boot.autoconfigure.r2dbc.R2dbcProperties;
+import org.springframework.boot.r2dbc.autoconfigure.R2dbcProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 <%_ } _%>
 <%_ if (databaseTypeNeo4j) { _%>
 import liquibase.ext.neo4j.database.jdbc.Neo4jDriver;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
+import org.springframework.boot.neo4j.autoconfigure.Neo4jProperties;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 <%_ } _%>
 
@@ -45,7 +45,7 @@ import liquibase.integration.spring.SpringLiquibase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
+import org.springframework.boot.liquibase.autoconfigure.LiquibaseProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -84,7 +84,7 @@ public class LiquibaseConfiguration {
         liquibase.setDataSource(createLiquibaseDataSource(liquibaseProperties, dataSourceProperties));
 <%_ } else { _%>
         SpringLiquibase liquibase;
-        if (Boolean.TRUE.equals( applicationProperties.getLiquibase().getAsyncStart())) {
+        if (Boolean.TRUE.equals(applicationProperties.getLiquibase().getAsyncStart())) {
             liquibase = SpringLiquibaseUtil.createAsyncSpringLiquibase(this.env, executor, liquibaseDataSource.getIfAvailable(), liquibaseProperties, dataSource.getIfUnique(), dataSourceProperties);
         } else {
             liquibase = SpringLiquibaseUtil.createSpringLiquibase(liquibaseDataSource.getIfAvailable(), liquibaseProperties, dataSource.getIfUnique(), dataSourceProperties);

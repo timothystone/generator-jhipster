@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,17 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getFKConstraintName } from '../../server/support/index.js';
-import { mutateData } from '../../base/support/index.js';
-import type { Relationship } from '../../../lib/types/application/relationship.js';
+import { mutateData } from '../../../lib/utils/index.ts';
+import { getFKConstraintName, prepareRelationshipForDatabase } from '../../server/support/index.ts';
+import type { Application as LiquibaseApplication, Entity as LiquibaseEntity, Relationship as LiquibaseRelationship } from '../types.ts';
 
-function relationshipBaseDataEquals(relationshipA: any, relationshipB: any) {
+function relationshipBaseDataEquals(relationshipA: LiquibaseRelationship, relationshipB: LiquibaseRelationship) {
   return (
     // name is the same
     relationshipA.relationshipName === relationshipB.relationshipName &&
     relationshipA.relationshipType === relationshipB.relationshipType &&
-    // related entities same
-    relationshipA.entityName === relationshipB.entityName &&
     relationshipA.otherEntityName === relationshipB.otherEntityName
   );
 }
@@ -37,7 +35,7 @@ function relationshipBaseDataEquals(relationshipA: any, relationshipB: any) {
  * @param relationshipB
  * @returns
  */
-export function relationshipEquals(relationshipA: Relationship, relationshipB: Relationship) {
+export function relationshipEquals(relationshipA: LiquibaseRelationship, relationshipB: LiquibaseRelationship) {
   return (
     relationshipBaseDataEquals(relationshipA, relationshipB) &&
     // relevant options the very same
@@ -52,7 +50,7 @@ export function relationshipEquals(relationshipA: Relationship, relationshipB: R
  * @param relationshipB
  * @returns
  */
-export function relationshipNeedsForeignKeyRecreationOnly(relationshipA: Relationship, relationshipB: Relationship) {
+export function relationshipNeedsForeignKeyRecreationOnly(relationshipA: LiquibaseRelationship, relationshipB: LiquibaseRelationship) {
   return (
     relationshipBaseDataEquals(relationshipA, relationshipB) &&
     (relationshipA.options?.onDelete !== relationshipB.options?.onDelete ||
@@ -60,25 +58,39 @@ export function relationshipNeedsForeignKeyRecreationOnly(relationshipA: Relatio
   );
 }
 
-export function prepareRelationshipForLiquibase(entity: any, relationship: any) {
+export function prepareRelationshipForLiquibase({
+  application,
+  entity,
+  relationship,
+}: {
+  application: LiquibaseApplication<LiquibaseEntity>;
+  entity: LiquibaseEntity;
+  relationship: LiquibaseRelationship;
+}) {
+  prepareRelationshipForDatabase({ application: application as any, entity, relationship });
+  mutateData(relationship, {
+    unique: ({ id, ownerSide, relationshipOneToOne }) => id || (ownerSide && relationshipOneToOne),
+    nullable: ({ relationshipValidate, relationshipRequired }) => !(relationshipValidate === true && relationshipRequired),
+  });
+
   relationship.shouldWriteRelationship =
     relationship.relationshipType === 'many-to-one' || (relationship.relationshipType === 'one-to-one' && relationship.ownerSide === true);
 
   if (relationship.shouldWriteJoinTable) {
-    const joinTableName = relationship.joinTable.name;
-    const prodDatabaseType = entity.prodDatabaseType;
-    mutateData(relationship.joinTable, {
+    const joinTableName = relationship.joinTable!.name;
+    const prodDatabaseType = (entity as any).prodDatabaseType;
+    mutateData(relationship.joinTable!, {
       constraintName: getFKConstraintName(joinTableName, entity.entityTableName, { prodDatabaseType }).value,
-      otherConstraintName: getFKConstraintName(joinTableName, relationship.columnName, { prodDatabaseType }).value,
-    } as any);
+      otherConstraintName: getFKConstraintName(joinTableName, relationship.columnName!, { prodDatabaseType }).value,
+    });
   }
 
   mutateData(relationship, {
     __override__: false,
-    columnDataType: data => data.otherEntity.columnType,
+    columnDataType: (data: any) => data.otherEntity.columnType,
     columnRequired: data => data.nullable === false || data.relationshipRequired,
     liquibaseGenerateFakeData: data => data.columnRequired && data.persistableRelationship && !data.collection,
-  } as any);
+  });
 
   return relationship;
 }

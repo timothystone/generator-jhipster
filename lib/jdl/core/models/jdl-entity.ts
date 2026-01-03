@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,9 +18,10 @@
  */
 
 import { upperFirst } from 'lodash-es';
-import { merge } from '../utils/object-utils.js';
-import { shouldWriteEntityTableName } from '../utils/entity-table-name-creator.js';
-import type JDLField from './jdl-field.js';
+
+import { merge } from '../utils/object-utils.ts';
+
+import type JDLField from './jdl-field.ts';
 
 export default class JDLEntity {
   name: string;
@@ -82,7 +83,7 @@ export default class JDLEntity {
       }
     });
     stringifiedEntity += `entity ${this.name}`;
-    if (this.tableName && shouldWriteEntityTableName(this.name, this.tableName)) {
+    if (this.tableName) {
       stringifiedEntity += ` (${this.tableName})`;
     }
     if (Object.keys(this.fields).length !== 0) {
@@ -99,7 +100,7 @@ function defaults(): Pick<JDLEntity, 'fields' | 'annotations'> {
   };
 }
 
-function formatFieldObjects(jdlFieldObjects) {
+function formatFieldObjects(jdlFieldObjects: Record<string, JDLField>): string {
   let string = '';
   Object.keys(jdlFieldObjects).forEach(jdlField => {
     string += `${formatFieldObject(jdlFieldObjects[jdlField])}`;
@@ -108,11 +109,11 @@ function formatFieldObjects(jdlFieldObjects) {
   return string;
 }
 
-function formatFieldObject(jdlFieldObject) {
+function formatFieldObject(jdlFieldObject: JDLField): string {
   let string = '';
   const lines = jdlFieldObject.toString().split('\n');
-  for (let j = 0; j < lines.length; j++) {
-    string += `  ${lines[j]}\n`;
+  for (const line of lines) {
+    string += `  ${line}\n`;
   }
   string = `${string.slice(0, string.length - 1)}\n`;
   return string;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asWriteFilesSection } from '../base-application/support/index.js';
-import { LOCAL_BLUEPRINT_OPTION } from './constants.js';
+import { asWriteFilesSection } from '../base-application/support/index.ts';
 
-export const files = asWriteFilesSection<any>({
+import { LOCAL_BLUEPRINT_OPTION } from './constants.ts';
+import type { Application as GenerateBlueprintApplication, TemplateData } from './types.ts';
+
+export const files = asWriteFilesSection<GenerateBlueprintApplication>({
   baseFiles: [
     {
       condition: ctx => !ctx[LOCAL_BLUEPRINT_OPTION],
@@ -27,7 +29,7 @@ export const files = asWriteFilesSection<any>({
         '.github/workflows/generator.yml',
         '.gitignore.jhi.blueprint',
         '.prettierignore.jhi.blueprint',
-        { sourceFile: 'eslint.config.js.jhi.blueprint', destinationFile: ctx => `${ctx.eslintConfigFile}.jhi.blueprint` },
+        'eslint.config.ts.jhi.blueprint',
         'README.md',
         'tsconfig.json',
         'vitest.config.ts',
@@ -65,11 +67,11 @@ export const files = asWriteFilesSection<any>({
   ],
 });
 
-export const generatorFiles = asWriteFilesSection<any>({
+export const generatorFiles = asWriteFilesSection<TemplateData>({
   generator: [
     {
       path: 'generators/generator',
-      to: ctx => `${ctx.application.blueprintsPath}${ctx.generator}`,
+      to: ctx => `${ctx.application.blueprintsPath}${ctx.generator.replaceAll(':', '/generators/')}`,
       templates: [
         { sourceFile: 'index.mjs', destinationFile: ctx => `index.${ctx.blueprintMjsExtension}` },
         {
@@ -92,9 +94,9 @@ export const generatorFiles = asWriteFilesSection<any>({
     },
     {
       path: 'generators/generator',
-      to: ctx => `${ctx.application.blueprintsPath}${ctx.generator}`,
+      to: ctx => `${ctx.application.blueprintsPath}${ctx.generator.replaceAll(':', '/generators/')}`,
       condition(ctx) {
-        return !ctx.written && ctx.priorities.find(priority => priority.name === 'writing');
+        return !ctx.written && ctx.priorities.some(priority => priority.name === 'writing');
       },
       transform: false,
       templates: [

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,19 +18,23 @@
  */
 
 import { before, describe, it } from 'esmocha';
-import { expect } from 'chai';
-import { getDefaultRuntime } from '../runtime.js';
-import { getSyntacticAutoCompleteSuggestions, parse } from './api.js';
 
-const { tokens } = getDefaultRuntime();
+import { expect } from 'chai';
+
+import { createRuntime } from '../runtime.ts';
+
+import { getSyntacticAutoCompleteSuggestions, parse } from './api.ts';
 
 describe('jdl - JDL DSL API', () => {
+  const jdlRuntime = createRuntime();
+  const { tokens } = jdlRuntime;
+
   describe('when wanting an AST', () => {
     describe('with a valid input', () => {
-      let ast;
+      let ast: any;
 
       before(() => {
-        ast = parse('@service(serviceClass) entity A {@Id field String}');
+        ast = parse('@service(serviceClass) entity A {@Id field String}', jdlRuntime);
       });
 
       it('should return an AST', () => {
@@ -54,10 +58,10 @@ describe('jdl - JDL DSL API', () => {
     });
 
     describe('with a lexing error', () => {
-      let parseInvalidToken;
+      let parseInvalidToken: () => any;
 
       before(() => {
-        parseInvalidToken = () => parse('entity ± {');
+        parseInvalidToken = () => parse('entity ± {', jdlRuntime);
       });
 
       it('should throw an error with the offset information', () => {
@@ -71,10 +75,10 @@ describe('jdl - JDL DSL API', () => {
 
     describe('with a parsing error', () => {
       describe('with an unexpected token', () => {
-        let parseWrongClosingBraces;
+        let parseWrongClosingBraces: () => any;
 
         before(() => {
-          parseWrongClosingBraces = () => parse('entity Person { ]');
+          parseWrongClosingBraces = () => parse('entity Person { ]', jdlRuntime);
         });
 
         it('should throw an error with position information', () => {
@@ -87,10 +91,10 @@ describe('jdl - JDL DSL API', () => {
       });
 
       describe('with a missing token at EOF', () => {
-        let parseMissingClosingBraces;
+        let parseMissingClosingBraces: () => any;
 
         before(() => {
-          parseMissingClosingBraces = () => parse('entity Person {');
+          parseMissingClosingBraces = () => parse('entity Person {', jdlRuntime);
         });
 
         it('should throw an error with typeof MismatchTokenException', () => {
@@ -110,17 +114,17 @@ describe('jdl - JDL DSL API', () => {
       it('should throw an error', () => {
         // lower case entityName first char
         const invalidInput = 'entity person { }';
-        expect(() => parse(invalidInput)).to.throw(/.+\/\^\[A-Z][^]+line: 1.+column: 8/);
+        expect(() => parse(invalidInput, jdlRuntime)).to.throw(/.+\/\^\[A-Z][^]+line: 1.+column: 8/);
       });
     });
   });
 
   describe('when wanting an auto-completion', () => {
     describe('with an empty text', () => {
-      let result;
+      let result: ReturnType<typeof getSyntacticAutoCompleteSuggestions>;
 
       before(() => {
-        result = getSyntacticAutoCompleteSuggestions('');
+        result = getSyntacticAutoCompleteSuggestions('', jdlRuntime);
       });
 
       it('should provide suggestions', () => {
@@ -141,11 +145,11 @@ describe('jdl - JDL DSL API', () => {
       });
     });
     describe('with a custom start rule', () => {
-      let result;
+      let result: ReturnType<typeof getSyntacticAutoCompleteSuggestions>;
 
       before(() => {
         const input = 'lastName string ';
-        result = getSyntacticAutoCompleteSuggestions(input, 'fieldDeclaration');
+        result = getSyntacticAutoCompleteSuggestions(input, jdlRuntime, { startRule: 'fieldDeclaration' });
       });
 
       it('should provide suggestions', () => {
@@ -156,11 +160,11 @@ describe('jdl - JDL DSL API', () => {
       });
     });
     describe('with a default start rule', () => {
-      let result;
+      let result: ReturnType<typeof getSyntacticAutoCompleteSuggestions>;
 
       before(() => {
         const input = 'entity person { lastName string ';
-        result = getSyntacticAutoCompleteSuggestions(input);
+        result = getSyntacticAutoCompleteSuggestions(input, jdlRuntime);
       });
 
       it('should provide suggestions', () => {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,11 +18,10 @@
  */
 /* eslint-disable no-useless-escape */
 
-import { first, flatten, includes } from 'lodash-es';
-import type { ICstVisitor, IToken, TokenType } from 'chevrotain';
+import type { CstElement, CstNode, ICstVisitor, IToken, TokenType } from 'chevrotain';
 import { tokenMatcher as matchesToken } from 'chevrotain';
+import { first, flatten, includes } from 'lodash-es';
 
-import type { JDLRuntime } from '../types/runtime.js';
 import {
   ALPHABETIC,
   ALPHABETIC_DASH_LOWER,
@@ -31,14 +30,16 @@ import {
   ALPHANUMERIC_DASH,
   ALPHANUMERIC_SPACE,
   ALPHANUMERIC_UNDERSCORE,
-} from '../built-in-options/validation-patterns.js';
+} from '../built-in-options/validation-patterns.ts';
+import type { JDLValidatorOptionType } from '../types/parsing.ts';
+import type { JDLRuntime } from '../types/runtime.ts';
 
 const CONSTANT_PATTERN = /^[A-Z_]+$/;
 const ENTITY_NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
 const TYPE_NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
 const ENUM_NAME_PATTERN = /^[A-Z][A-Za-z0-9]*$/;
-const ENUM_PROP_NAME_PATTERN = /^[A-Z][A-Za-z0-9_]*$/;
-const ENUM_PROP_VALUE_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
+const ENUM_PROP_NAME_PATTERN = /^[A-Z]\w*$/;
+const ENUM_PROP_VALUE_PATTERN = /^[A-Za-z]\w*$/;
 const METHOD_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9-_]*$/;
 
 // const PASSWORD_PATTERN = /^(.+)$/;
@@ -134,10 +135,9 @@ const deploymentConfigPropsValidations = {
     pattern: ALPHABETIC_LOWER,
     msg: 'storageType property',
   },
-};
+} as const;
 
 interface JDLCstVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
-  // eslint-disable-next-line @typescript-eslint/no-misused-new
   new (): JDLCstVisitor<IN, OUT>;
   constantDeclaration(context: any): void;
   entityDeclaration(context: any): void;
@@ -151,7 +151,7 @@ interface JDLCstVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   exclusion(context: any): void;
 }
 
-export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) {
+export default function performAdditionalSyntaxChecks(cst: CstNode, runtime: JDLRuntime) {
   const parser = runtime.parser;
   parser.parse();
   const BaseJDLCSTVisitorWithDefaults = parser.getBaseCstVisitorConstructorWithDefaults() as unknown as JDLCstVisitor<any, any>;
@@ -171,7 +171,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
 
     validateVisitor() {}
 
-    checkNameSyntax(token, expectedPattern, errorMessagePrefix) {
+    checkNameSyntax(token: IToken, expectedPattern: RegExp, errorMessagePrefix: string) {
       if (!expectedPattern.test(token.image)) {
         this.errors.push({
           message: `The ${errorMessagePrefix} name must match: ${trimAnchors(expectedPattern.toString())}, got ${token.image}.`,
@@ -180,14 +180,13 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       }
     }
 
-    checkIsSingleName(fqnCstNode) {
+    checkIsSingleName(fqnCstNode: CstElement): boolean {
       // A Boolean is allowed as a single name as it is a keyword.
       // Other keywords do not need special handling as they do not explicitly appear in the rule
       // of config values
-      if (fqnCstNode.tokenType?.CATEGORIES.includes(this.tokens.BOOLEAN)) {
-        return false;
+      if ('tokenType' in fqnCstNode) {
+        return !fqnCstNode.tokenType?.CATEGORIES?.includes(this.tokens.BOOLEAN);
       }
-
       const dots = fqnCstNode.children.DOT;
       if (dots && dots.length >= 1) {
         this.errors.push({
@@ -199,11 +198,11 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       return true;
     }
 
-    checkExpectedValueType(expected, actual) {
+    checkExpectedValueType(expected: JDLValidatorOptionType, actual: CstElement): boolean {
       switch (expected) {
         case 'NAME':
           if (
-            actual.name !== 'qualifiedName' &&
+            'tokenType' in actual &&
             // a Boolean (true/false) is also a valid name.
             actual.tokenType &&
             !includes(actual.tokenType.CATEGORIES, this.tokens.BOOLEAN)
@@ -217,7 +216,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return this.checkIsSingleName(actual);
 
         case 'qualifiedName':
-          if (actual.name !== 'qualifiedName') {
+          if (!('name' in actual) || actual.name !== 'qualifiedName') {
             this.errors.push({
               message: `A fully qualified name is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -227,7 +226,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return true;
 
         case 'list':
-          if (actual.name !== 'list') {
+          if (!('name' in actual) || actual.name !== 'list') {
             this.errors.push({
               message: `An array of names is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -237,7 +236,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return true;
 
         case 'quotedList':
-          if (actual.name !== 'quotedList') {
+          if (!('name' in actual) || actual.name !== 'quotedList') {
             this.errors.push({
               message: `An array of names is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -247,7 +246,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return true;
 
         case 'INTEGER':
-          if (actual.tokenType !== this.tokens.INTEGER) {
+          if (!('tokenType' in actual) || actual.tokenType !== this.tokens.INTEGER) {
             this.errors.push({
               message: `An integer literal is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -257,7 +256,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return true;
 
         case 'STRING':
-          if (actual.tokenType !== this.tokens.STRING) {
+          if (!('tokenType' in actual) || actual.tokenType !== this.tokens.STRING) {
             this.errors.push({
               message: `A string literal is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -267,7 +266,7 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
           return true;
 
         case 'BOOLEAN':
-          if (!matchesToken(actual, this.tokens.BOOLEAN)) {
+          if (!('tokenType' in actual) || !matchesToken(actual, this.tokens.BOOLEAN)) {
             this.errors.push({
               message: `A boolean literal is expected, but found: "${getFirstToken(actual).image}"`,
               token: getFirstToken(actual),
@@ -281,65 +280,71 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       }
     }
 
-    checkConfigPropSyntax(key, value) {
+    checkConfigPropSyntax(key: IToken, value: CstElement) {
       const propertyName = key.tokenType.name;
       const validation = runtime.propertyValidations[propertyName];
       if (!validation) {
         throw Error(`Got an invalid application config property: '${propertyName}'.`);
       }
 
-      if (this.checkExpectedValueType(validation.type, value) && validation.pattern && value.children) {
+      if (this.checkExpectedValueType(validation.type, value) && validation.pattern && 'children' in value && value.children) {
         if (value.children.NAME) {
-          value.children.NAME.forEach(nameTok => this.checkNameSyntax(nameTok, validation.pattern, validation.msg));
+          value.children.NAME.forEach(nameTok => this.checkNameSyntax(nameTok as IToken, validation.pattern!, validation.msg!));
         }
         if (value.children.STRING) {
-          value.children.STRING.forEach(nameTok => this.checkNameSyntax(nameTok, validation.pattern, validation.msg));
+          value.children.STRING.forEach(nameTok => this.checkNameSyntax(nameTok as IToken, validation.pattern!, validation.msg!));
         }
       }
     }
 
-    checkDeploymentConfigPropSyntax(key, value) {
+    checkDeploymentConfigPropSyntax(key: IToken, value: CstElement) {
       const propertyName = key.tokenType.name;
-      const validation = deploymentConfigPropsValidations[propertyName];
+      const validation = deploymentConfigPropsValidations[propertyName as keyof typeof deploymentConfigPropsValidations];
       if (!validation) {
         throw Error(`Got an invalid deployment config property: '${propertyName}'.`);
       }
 
-      if (this.checkExpectedValueType(validation.type, value) && validation.pattern && value.children?.NAME) {
-        value.children.NAME.forEach(nameTok => this.checkNameSyntax(nameTok, validation.pattern, validation.msg));
-      } else if (value.image && validation.pattern) {
+      if (
+        this.checkExpectedValueType(validation.type, value) &&
+        'pattern' in validation &&
+        validation.pattern &&
+        'children' in value &&
+        value.children?.NAME
+      ) {
+        value.children.NAME.forEach(nameTok => this.checkNameSyntax(nameTok as IToken, validation.pattern, validation.msg));
+      } else if ('image' in value && value.image && 'pattern' in validation && validation.pattern) {
         this.checkNameSyntax(value, validation.pattern, validation.msg);
       }
     }
 
-    constantDeclaration(context) {
+    constantDeclaration(context: Record<'NAME', IToken[]>) {
       super.constantDeclaration(context);
       this.checkNameSyntax(context.NAME[0], CONSTANT_PATTERN, 'constant');
     }
 
-    entityDeclaration(context) {
+    entityDeclaration(context: Record<'NAME', IToken[]>) {
       super.entityDeclaration(context);
       this.checkNameSyntax(context.NAME[0], ENTITY_NAME_PATTERN, 'entity');
     }
 
-    fieldDeclaration(context) {
+    fieldDeclaration(context: Record<'NAME', IToken[]>) {
       super.fieldDeclaration(context);
       this.checkNameSyntax(context.NAME[0], ALPHANUMERIC, 'fieldName');
     }
 
-    type(context) {
+    type(context: Record<'NAME', IToken[]>) {
       super.type(context);
       this.checkNameSyntax(context.NAME[0], TYPE_NAME_PATTERN, 'typeName');
     }
 
-    minMaxValidation(context) {
+    minMaxValidation(context: Record<'NAME', IToken[]>) {
       super.minMaxValidation(context);
       if (context.NAME) {
         this.checkNameSyntax(context.NAME[0], CONSTANT_PATTERN, 'constant');
       }
     }
 
-    relationshipSide(context) {
+    relationshipSide(context: Record<'NAME' | 'injectedField' | 'injectedFieldParam', IToken[]>) {
       super.relationshipSide(context);
       this.checkNameSyntax(context.NAME[0], ENTITY_NAME_PATTERN, 'entity');
 
@@ -351,24 +356,24 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       }
     }
 
-    enumDeclaration(context) {
+    enumDeclaration(context: Record<'NAME', IToken[]>) {
       super.enumDeclaration(context);
       this.checkNameSyntax(context.NAME[0], ENUM_NAME_PATTERN, 'enum');
     }
 
-    enumPropList(context) {
+    enumPropList(context: Record<'enumProp', CstNode[]>) {
       super.enumPropList(context);
       context.enumProp.forEach(nameToken => {
         const propKey = nameToken.children.enumPropKey[0];
-        this.checkNameSyntax(propKey, ENUM_PROP_NAME_PATTERN, 'enum property name');
+        this.checkNameSyntax(propKey as IToken, ENUM_PROP_NAME_PATTERN, 'enum property name');
         const propValue = nameToken.children.enumPropValue;
         if (propValue) {
-          this.checkNameSyntax(propValue[0], ENUM_PROP_VALUE_PATTERN, 'enum property value');
+          this.checkNameSyntax(propValue[0] as IToken, ENUM_PROP_VALUE_PATTERN, 'enum property value');
         }
       });
     }
 
-    entityList(context) {
+    entityList(context: Record<'NAME' | 'method' | 'methodPath', IToken[]>) {
       super.entityList(context);
       if (context.NAME) {
         context.NAME.forEach(nameToken => {
@@ -388,14 +393,14 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       }
     }
 
-    exclusion(context) {
+    override exclusion(context: Record<'NAME', IToken[]>) {
       super.exclusion(context);
       context.NAME.forEach(nameToken => {
         this.checkNameSyntax(nameToken, ENTITY_NAME_PATTERN, 'entity');
       });
     }
 
-    filterDef(context) {
+    filterDef(context: Record<'NAME', IToken[]>) {
       if (context.NAME) {
         context.NAME.forEach(nameToken => {
           // we don't want this validated as it's an alias for '*'
@@ -407,22 +412,22 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
       }
     }
 
-    applicationConfigDeclaration(context) {
+    applicationConfigDeclaration(context: Record<'CONFIG_KEY', IToken[]> & Record<'configValue', CstNode[]>) {
       this.visit(context.configValue, context.CONFIG_KEY[0]);
     }
 
-    configValue(context: Record<string, any>, configKey: IToken) {
+    configValue(context: Record<string, CstElement[]>, configKey: IToken) {
       const configValue = first(first(Object.values(context)));
-      this.checkConfigPropSyntax(configKey, configValue);
+      this.checkConfigPropSyntax(configKey, configValue!);
     }
 
-    deploymentConfigDeclaration(context) {
+    deploymentConfigDeclaration(context: Record<'DEPLOYMENT_KEY', IToken[]> & Record<'deploymentConfigValue', CstNode[]>) {
       this.visit(context.deploymentConfigValue, context.DEPLOYMENT_KEY[0]);
     }
 
-    deploymentConfigValue(context: Record<string, any>, configKey: IToken) {
+    deploymentConfigValue(context: Record<string, CstElement[]>, configKey: IToken) {
       const configValue = first(first(Object.values(context)));
-      this.checkDeploymentConfigPropSyntax(configKey, configValue);
+      this.checkDeploymentConfigPropSyntax(configKey, configValue!);
     }
   }
   const syntaxValidatorVisitor = new JDLSyntaxValidatorVisitor(runtime);
@@ -431,12 +436,12 @@ export default function performAdditionalSyntaxChecks(cst, runtime: JDLRuntime) 
   return syntaxValidatorVisitor.errors;
 }
 
-function trimAnchors(str) {
+function trimAnchors(str: string): string {
   return str.replace(/^\^/, '').replace(/\$$/, '');
 }
 
-function getFirstToken(tokOrCstNode) {
-  if (tokOrCstNode.tokenType) {
+function getFirstToken(tokOrCstNode: CstElement): IToken {
+  if ('tokenType' in tokOrCstNode) {
     return tokOrCstNode;
   }
 

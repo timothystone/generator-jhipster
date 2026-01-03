@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,9 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { SERVER_MAIN_RES_DIR } from '../generator-constants.js';
+import { asWriteFilesSection } from '../base-application/support/task-type-inference.ts';
+import type { BaseChangelog } from '../base-entity-changes/types.ts';
+import { SERVER_MAIN_RES_DIR } from '../generator-constants.ts';
 
-export const addEntityFiles = {
+import type { Application as TemplateData, Entity as LiquibaseEntity } from './types.ts';
+
+export const addEntityFiles = asWriteFilesSection<TemplateData<LiquibaseEntity> & BaseChangelog<LiquibaseEntity>>({
   dbChangelog: [
     {
       path: SERVER_MAIN_RES_DIR,
@@ -41,9 +45,9 @@ export const addEntityFiles = {
       ],
     },
   ],
-};
+});
 
-export const updateEntityFiles = {
+export const updateEntityFiles = asWriteFilesSection<any>({
   dbChangelog: [
     {
       path: SERVER_MAIN_RES_DIR,
@@ -56,9 +60,9 @@ export const updateEntityFiles = {
       ],
     },
   ],
-};
+});
 
-export const updateConstraintsFiles = {
+export const updateConstraintsFiles = asWriteFilesSection<any>({
   dbChangelog: [
     {
       path: SERVER_MAIN_RES_DIR,
@@ -71,9 +75,9 @@ export const updateConstraintsFiles = {
       ],
     },
   ],
-};
+});
 
-export const updateMigrateFiles = {
+export const updateMigrateFiles = asWriteFilesSection<any>({
   dbChangelog: [
     {
       path: SERVER_MAIN_RES_DIR,
@@ -86,9 +90,9 @@ export const updateMigrateFiles = {
       ],
     },
   ],
-};
+});
 
-export const fakeFiles = {
+export const fakeFiles = asWriteFilesSection<any>({
   fakeData: [
     {
       path: SERVER_MAIN_RES_DIR,
@@ -111,7 +115,7 @@ export const fakeFiles = {
       templates: [
         {
           file: 'config/liquibase/fake-data/blob/hipster.png',
-          noEjs: true,
+          transform: false,
         },
       ],
     },
@@ -121,4 +125,4 @@ export const fakeFiles = {
       templates: ['config/liquibase/fake-data/blob/hipster.txt'],
     },
   ],
-};
+});

@@ -1,14 +1,15 @@
-import { readFile } from 'fs/promises';
 import { describe, expect } from 'esmocha';
-import { getPackageRoot } from '../../../lib/index.js';
-import { YO_RC_FILE } from '../../generator-constants.js';
-import { extractDataFromInfo } from './extract-info.js';
-import { markdownDetails } from './markdown-content.js';
+import { readFile } from 'node:fs/promises';
+
+import { getPackageRoot } from '../../../lib/index.ts';
+import { YO_RC_FILE } from '../../generator-constants.ts';
+
+import { extractDataFromInfo } from './extract-info.ts';
+import { markdownDetails } from './markdown-content.ts';
 
 describe('extract-info', () => {
   it('should extract empty object from the jhipster info template', async () => {
-    await expect(extractDataFromInfo((await readFile(getPackageRoot('.github/ISSUE_TEMPLATE/BUG_REPORT.md'))).toString()))
-      .toMatchInlineSnapshot(`
+    expect(extractDataFromInfo((await readFile(getPackageRoot('.github/ISSUE_TEMPLATE/BUG_REPORT.md'))).toString())).toMatchInlineSnapshot(`
 {
   "files": [],
   "yoRcBlank": true,
@@ -16,8 +17,8 @@ describe('extract-info', () => {
 `);
   });
 
-  it('should extract info from jhipster info', async () => {
-    await expect(
+  it('should extract info from jhipster info', () => {
+    expect(
       extractDataFromInfo(
         markdownDetails({
           title: `${YO_RC_FILE} file`,
@@ -40,8 +41,8 @@ describe('extract-info', () => {
 `);
   });
 
-  it('should extract info from jhipster info with 2 .yo-rc files', async () => {
-    await expect(
+  it('should extract info from jhipster info with 2 .yo-rc files', () => {
+    expect(
       extractDataFromInfo(
         markdownDetails({
           title: `${YO_RC_FILE} file`,
@@ -74,7 +75,7 @@ describe('extract-info', () => {
   });
 
   it('should extract empty object from the jdl template', async () => {
-    await expect(extractDataFromInfo((await readFile(getPackageRoot('.github/ISSUE_TEMPLATE/BUG_REPORT_JDL.md'))).toString()))
+    expect(extractDataFromInfo((await readFile(getPackageRoot('.github/ISSUE_TEMPLATE/BUG_REPORT_JDL.md'))).toString()))
       .toMatchInlineSnapshot(`
 {
   "files": [],
@@ -83,8 +84,8 @@ describe('extract-info', () => {
 `);
   });
 
-  it('should extract empty from non-jdl JDL definitions', async () => {
-    await expect(extractDataFromInfo(markdownDetails({ title: 'JDL definitions', content: 'foo' }))).toMatchInlineSnapshot(`
+  it('should extract empty from non-jdl JDL definitions', () => {
+    expect(extractDataFromInfo(markdownDetails({ title: 'JDL definitions', content: 'foo' }))).toMatchInlineSnapshot(`
 {
   "files": [],
   "yoRcBlank": true,
@@ -92,9 +93,8 @@ describe('extract-info', () => {
 `);
   });
 
-  it('should extract application from JDL definitions', async () => {
-    await expect(extractDataFromInfo(markdownDetails({ title: 'JDL definitions', content: 'application { config {} }' })))
-      .toMatchInlineSnapshot(`
+  it('should extract application from JDL definitions', () => {
+    expect(extractDataFromInfo(markdownDetails({ title: 'JDL definitions', content: 'application { config {} }' }))).toMatchInlineSnapshot(`
 {
   "files": [
     {
@@ -110,8 +110,8 @@ describe('extract-info', () => {
 `);
   });
 
-  it('should extract more than one application from JDL definitions', async () => {
-    await expect(
+  it('should extract more than one application from JDL definitions', () => {
+    expect(
       extractDataFromInfo(
         markdownDetails({ title: 'JDL definitions', content: 'application { config { baseName first } }' }) +
           markdownDetails({ title: 'JDL definitions', content: 'application { config { baseName second } }' }),

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -27,7 +27,7 @@ const addJavaImportToContent = (content: string, identifier: string, { staticImp
     : content.replace(/(package [\w.]+;\n\n?)/, `$1${importStatement}\n`);
 };
 
-export function addJavaImport(indentifier: string, type?: JavaImportType): (content: string) => string;
+export function addJavaImport(identifier: string, type?: JavaImportType): (content: string) => string;
 export function addJavaImport(content: string, identifierOrType: string, type?: JavaImportType): string;
 export function addJavaImport(
   contentOrIdentifier: string,
@@ -47,11 +47,11 @@ const addJavaAnnotationToContent = (content: string, annotationDef: JavaAnnotati
   if (packageName) {
     content = addJavaImport(content, `${packageName}.${annotation}`);
   }
-  const annotationToAdd = parameters ? `${annotation}(${parameters()})` : annotation;
-  if (!new RegExp(escapeRegExp(`\n@${annotationToAdd}\n`)).test(content)) {
-    if (new RegExp(escapeRegExp(`\n@${annotation}(`)).test(content)) {
-      throw new Error(`Annotation already exists: ${annotation} replace is not implemented yet.`);
-    }
+  const annotationWithParametersMatches = content.match(new RegExp(`@${annotation}\\((?<oldParameters>[^)]*)\\)`));
+  const annotationToAdd = parameters ? `${annotation}(${parameters(annotationWithParametersMatches?.groups?.oldParameters)})` : annotation;
+  if (annotationWithParametersMatches) {
+    content = content.replace(new RegExp(`@${annotation}\\((?<oldParameters>[^)]*)\\)`), `@${annotationToAdd}`);
+  } else if (!new RegExp(escapeRegExp(`\n@${annotationToAdd}\n`)).test(content)) {
     // add the annotation before class or interface
     content = content.replace(/\n([a-w ]*(class|@?interface|enum) )/, `\n@${annotationToAdd}\n$1`);
   }

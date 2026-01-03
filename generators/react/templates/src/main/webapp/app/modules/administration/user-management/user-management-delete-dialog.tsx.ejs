@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -21,6 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from 'reactstrap';
 import { Translate } from 'react-jhipster';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBan, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 import { getUser, deleteUser } from './user-management.reducer';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
@@ -49,7 +50,7 @@ export const UserManagementDeleteDialog = () => {
 
   return (
     <Modal isOpen toggle={handleClose}>
-      <ModalHeader toggle={handleClose}>
+      <ModalHeader toggle={handleClose} data-cy="userManagementDeleteDialogHeading">
         <Translate contentKey="entity.delete.title">Confirm delete operation</Translate>
       </ModalHeader>
       <ModalBody>
@@ -59,12 +60,12 @@ export const UserManagementDeleteDialog = () => {
       </ModalBody>
       <ModalFooter>
         <Button color="secondary" onClick={handleClose}>
-          <FontAwesomeIcon icon="ban" />
+          <FontAwesomeIcon icon={faBan} />
           &nbsp;
           <Translate contentKey="entity.action.cancel">Cancel</Translate>
         </Button>
-        <Button color="danger" onClick={confirmDelete}>
-          <FontAwesomeIcon icon="trash" />
+        <Button color="danger" onClick={confirmDelete} data-cy="entityConfirmDeleteButton">
+          <FontAwesomeIcon icon={faTrash} />
           &nbsp;
           <Translate contentKey="entity.action.delete">Delete</Translate>
         </Button>

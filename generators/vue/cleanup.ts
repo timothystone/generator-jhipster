@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,29 +17,30 @@
  * limitations under the License.
  */
 
-import { asWritingTask } from '../base-application/support/task-type-inference.js';
+import { asWritingTask } from '../base-application/support/task-type-inference.ts';
+import type { Application as ClientApplication, Entity as ClientEntity } from '../client/types.ts';
 
 /**
  * Removes files that where generated in previous JHipster versions and therefore
  * need to be removed.
  */
-export default asWritingTask(function cleanupOldFilesTask({ application }) {
-  if (this.isJhipsterVersionLessThan('7.0.0-beta.0')) {
+export default asWritingTask<ClientEntity, ClientApplication>(async function cleanupOldFilesTask({ application, control }) {
+  if (control.isJhipsterVersionLessThan('7.0.0-beta.0')) {
     this.removeFile(`${application.clientSrcDir}app/admin/audits/audits.component.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/audits/audits.service.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/audits/audits.vue`);
     this.removeFile(`${application.clientTestDir}spec/app/admin/audits/audits.component.spec.ts`);
   }
-  if (this.isJhipsterVersionLessThan('7.0.2')) {
+  if (control.isJhipsterVersionLessThan('7.0.2')) {
     this.removeFile('config/index.js');
     this.removeFile('config/dev.env.js');
     this.removeFile('config/prod.env.js');
   }
-  if (this.isJhipsterVersionLessThan('7.0.1')) {
+  if (control.isJhipsterVersionLessThan('7.0.1')) {
     this.removeFile('.npmrc');
   }
 
-  if (this.isJhipsterVersionLessThan('7.3.1')) {
+  if (control.isJhipsterVersionLessThan('7.3.1')) {
     this.removeFile('webpack/env.js');
     this.removeFile('webpack/dev.env.js');
     this.removeFile('webpack/prod.env.js');
@@ -47,10 +48,10 @@ export default asWritingTask(function cleanupOldFilesTask({ application }) {
     this.removeFile('webpack/loader.conf.js');
   }
 
-  if (this.isJhipsterVersionLessThan('7.4.2')) {
+  if (control.isJhipsterVersionLessThan('7.4.2')) {
     this.removeFile(`${application.clientSrcDir}app/entities/user/user.oauth2.service.ts`);
   }
-  if (this.isJhipsterVersionLessThan('7.10.1')) {
+  if (control.isJhipsterVersionLessThan('7.10.1')) {
     this.removeFile('tsconfig.spec.json');
     this.removeFile(`${application.clientSrcDir}app/shared/config/formatter.ts`);
     this.removeFile(`${application.clientTestDir}spec/app/shared/config/formatter.spec.ts`);
@@ -58,7 +59,7 @@ export default asWritingTask(function cleanupOldFilesTask({ application }) {
     this.removeFile(`${application.clientTestDir}jest.conf.js`);
     this.removeFile(`${application.clientTestDir}spec/setup.js`);
   }
-  if (this.isJhipsterVersionLessThan('8.0.0-beta.3')) {
+  if (control.isJhipsterVersionLessThan('8.0.0-beta.3')) {
     this.removeFile(`${application.clientTestDir}spec/setup.ts`);
     this.removeFile(`${application.clientTestDir}spec/tsconfig.json`);
     this.removeFile(`${application.clientTestDir}spec/app/account/account.service.spec.ts`);
@@ -95,7 +96,7 @@ export default asWritingTask(function cleanupOldFilesTask({ application }) {
     this.removeFile(`${application.clientTestDir}spec/app/admin/gateway/gateway.component.spec.ts`);
     this.removeFile(`${application.clientTestDir}spec/app/entities/entities-menu.spec.ts`);
   }
-  if (this.isJhipsterVersionLessThan('8.0.0-beta.4') && !application.microfrontend) {
+  if (control.isJhipsterVersionLessThan('8.0.0-beta.4') && !application.microfrontend) {
     this.removeFile('.eslintrc.js');
     this.removeFile('tsconfig.test.json');
     this.removeFile('webpack/config.js');
@@ -104,8 +105,15 @@ export default asWritingTask(function cleanupOldFilesTask({ application }) {
     this.removeFile('webpack/webpack.dev.js');
     this.removeFile('webpack/webpack.prod.js');
   }
-  if (this.isJhipsterVersionLessThan('8.1.1')) {
+  if (control.isJhipsterVersionLessThan('8.1.1')) {
     this.removeFile('vite.config.ts');
     this.removeFile('vitest.config.ts');
   }
+
+  await control.cleanupFiles({
+    '8.10.1': [
+      [application.authenticationTypeJwt, `${application.clientSrcDir}app/account/login.service.ts`],
+      [application.authenticationTypeJwt, `${application.clientSrcDir}app/account/login.service.spec.ts`],
+    ],
+  });
 });

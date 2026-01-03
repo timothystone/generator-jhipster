@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-const ValidationTypes = {
+export const validationTypes = {
   REQUIRED: 'required',
   UNIQUE: 'unique',
   MIN: 'min',
@@ -27,37 +27,35 @@ const ValidationTypes = {
   PATTERN: 'pattern',
   MINBYTES: 'minbytes',
   MAXBYTES: 'maxbytes',
+} as const;
+
+export type ValidationType = (typeof validationTypes)[keyof typeof validationTypes];
+
+const exists = (validation: string) => (Object.values(validationTypes) as string[]).includes(validation);
+
+const needsValuedMap = {
+  required: false,
+  unique: false,
+  min: true,
+  max: true,
+  minlength: true,
+  maxlength: true,
+  pattern: true,
+  minbytes: true,
+  maxbytes: true,
+} as const;
+
+const needsValue = (validation: keyof typeof needsValuedMap | string) => {
+  return needsValuedMap[validation as keyof typeof needsValuedMap];
 };
 
-const exists = validation =>
-  Object.keys(ValidationTypes)
-    .map(key => ValidationTypes[key])
-    .includes(validation);
-
-const needsValue = validation => {
-  const valuedMap = {
-    required: false,
-    unique: false,
-    min: true,
-    max: true,
-    minlength: true,
-    maxlength: true,
-    pattern: true,
-    minbytes: true,
-    maxbytes: true,
-  };
-  return valuedMap[validation];
-};
-
-const SUPPORTED_VALIDATION_RULES = Object.keys(ValidationTypes)
-  .map(key => ValidationTypes[key])
-  .filter(e => typeof e === 'string');
+const SUPPORTED_VALIDATION_RULES = Object.values(validationTypes) as string[];
 
 const Validations = {
-  ...ValidationTypes,
+  ...validationTypes,
   exists,
   needsValue,
 };
 
-export { Validations, SUPPORTED_VALIDATION_RULES };
+export { SUPPORTED_VALIDATION_RULES, Validations };
 export default { Validations, SUPPORTED_VALIDATION_RULES };

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -70,7 +70,7 @@ describe('Service Tests', () => {
 <%_ fields.filter(field => !field.id).forEach((field) => {
     const fieldType = field.fieldType; _%>
   <%_ if (field.fieldIsEnum) { _%>
-        '<%= field.enumValues[0].name  %>',
+        '<%= field.enumValues[0].name %>',
   <%_ } else if (field.fieldTypeBoolean) { _%>
         false,
   <%_ } else if (field.fieldTypeDuration) { _%>

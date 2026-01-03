@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,40 +16,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isFileStateModified } from 'mem-fs-editor/state';
 import chalk from 'chalk';
-import { camelCase, startCase } from 'lodash-es';
+import { isFileStateModified } from 'mem-fs-editor/state';
 
-import BaseApplicationGenerator from '../base-application/index.js';
-import { GENERATOR_CLIENT, GENERATOR_LANGUAGES, GENERATOR_REACT } from '../generator-list.js';
-import { clientFrameworkTypes, fieldTypes } from '../../lib/jhipster/index.js';
+import { clientFrameworkTypes, fieldTypes } from '../../lib/jhipster/index.ts';
+import { upperFirstCamelCase } from '../../lib/utils/index.ts';
+import { createNeedleCallback } from '../base-core/support/index.ts';
+import { ClientApplicationGenerator } from '../client/generator.ts';
 import {
-  generateEntityClientImports as formatEntityClientImports,
   generateEntityClientEnumImports as getClientEnumImportsFormat,
   generateEntityClientFields as getHydratedEntityClientFields,
-} from '../client/support/index.js';
-import { createNeedleCallback, upperFirstCamelCase } from '../base/support/index.js';
-import { writeEslintClientRootConfigFile } from '../javascript/generators/eslint/support/tasks.js';
-import { cleanupEntitiesFiles, postWriteEntitiesFiles, writeEntitiesFiles } from './entity-files-react.js';
-import cleanupOldFilesTask from './cleanup.js';
-import { writeFiles } from './files-react.js';
-import { prepareEntity } from './application/entities/index.js';
-import { isTranslatedReactFile, translateReactFilesTransform } from './support/index.js';
+  generateEntityClientImports as formatEntityClientImports,
+} from '../client/support/index.ts';
+import type { Entity as ClientEntity, Field as ClientField } from '../client/types.ts';
+import { JAVA_WEBAPP_SOURCES_DIR } from '../index.ts';
+import { writeEslintClientRootConfigFile } from '../javascript-simple-application/generators/eslint/support/tasks.ts';
+import type { Config as SpringBootConfig } from '../spring-boot/types.d.ts';
+
+import cleanupOldFilesTask from './cleanup.ts';
+import { cleanupEntitiesFiles, postWriteEntitiesFiles, writeEntitiesFiles } from './entity-files-react.ts';
+import { writeFiles } from './files-react.ts';
+import { isTranslatedReactFile, translateReactFilesTransform } from './support/index.ts';
 
 const { CommonDBTypes } = fieldTypes;
 const TYPE_BOOLEAN = CommonDBTypes.BOOLEAN;
 const { REACT } = clientFrameworkTypes;
 
-export default class ReactGenerator extends BaseApplicationGenerator {
+export default class ReactGenerator extends ClientApplicationGenerator<
+  ClientEntity<ClientField & { fieldValidateRulesPatternReact?: string }> & { entityReactState?: string }
+> {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
+    await this.dependsOnBootstrap('react');
     if (!this.delegateToBlueprint) {
-      await this.dependsOnJHipster('jhipster:javascript:bootstrap');
-      await this.dependsOnJHipster(GENERATOR_CLIENT);
-      await this.dependsOnJHipster(GENERATOR_LANGUAGES);
+      await this.dependsOnJHipster('jhipster:client:i18n');
+      await this.dependsOnJHipster('client');
+      await this.dependsOnJHipster('languages');
     }
   }
 
@@ -57,11 +62,14 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     return this.asComposingTaskGroup({
       async composing() {
         await this.composeWithJHipster('jhipster:client:common');
+        if ((this.jhipsterConfigWithDefaults as SpringBootConfig).websocket === 'spring-websocket') {
+          await this.composeWithJHipster('jhipster:client:encode-csrf-token');
+        }
       },
     });
   }
 
-  get [BaseApplicationGenerator.COMPOSING]() {
+  get [ClientApplicationGenerator.COMPOSING]() {
     return this.delegateTasksToBlueprint(() => this.composing);
   }
 
@@ -70,10 +78,10 @@ export default class ReactGenerator extends BaseApplicationGenerator {
       loadPackageJson({ application }) {
         this.loadNodeDependenciesFromPackageJson(
           application.nodeDependencies,
-          this.fetchFromInstalledJHipster(GENERATOR_REACT, 'resources', 'package.json'),
+          this.fetchFromInstalledJHipster('react', 'resources', 'package.json'),
         );
       },
-      applicationDefauts({ applicationDefaults }) {
+      applicationDefaults({ applicationDefaults }) {
         applicationDefaults({
           __override__: true,
           typescriptEslint: true,
@@ -82,18 +90,24 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.LOADING]() {
+  get [ClientApplicationGenerator.LOADING]() {
     return this.delegateTasksToBlueprint(() => this.loading);
   }
 
   get preparing() {
     return this.asPreparingTaskGroup({
-      applicationDefauts({ application, applicationDefaults }) {
-        application.addPrettierExtensions?.(['html', 'tsx', 'css', 'scss']);
+      applicationDefaults({ application, applicationDefaults }) {
+        application.prettierExtensions.push('html', 'tsx', 'css', 'scss');
+        if (application.clientBundlerWebpack) {
+          application.prettierFolders.push('webpack/');
+        }
+        if (!application.backendTypeJavaAny && application.clientSrcDir !== JAVA_WEBAPP_SOURCES_DIR) {
+          // When we have a java backend, 'src/**' is already added by java:bootstrap
+          application.prettierFolders.push(`${application.clientSrcDir}**/`);
+        }
 
         applicationDefaults({
           __override__: true,
-          eslintConfigFile: app => `eslint.config.${app.packageJsonType === 'module' ? 'js' : 'mjs'}`,
           webappEnumerationsDir: app => `${app.clientSrcDir}app/shared/model/enumerations/`,
         });
       },
@@ -108,7 +122,7 @@ export default class ReactGenerator extends BaseApplicationGenerator {
       prepareForTemplates({ application, source }) {
         source.addWebpackConfig = args => {
           const webpackPath = `${application.clientRootDir}webpack/webpack.common.js`;
-          const ignoreNonExisting = this.sharedData.getControl().ignoreNeedlesError && 'Webpack configuration file not found';
+          const ignoreNonExisting = this.ignoreNeedlesError && 'Webpack configuration file not found';
           this.editFile(
             webpackPath,
             { ignoreNonExisting },
@@ -118,29 +132,110 @@ export default class ReactGenerator extends BaseApplicationGenerator {
             }),
           );
         };
+
+        source.addClientStyle = ({ style, comment }) => {
+          comment = comment
+            ? `/* ==========================================================================
+${comment}
+========================================================================== */
+`
+            : '';
+          this.editFile(
+            `${application.clientSrcDir}app/app.scss`,
+            createNeedleCallback({
+              needle: 'scss-add-main',
+              contentToAdd: `${comment}${style}`,
+              contentToCheck: style,
+            }),
+          );
+        };
+
+        source.addEntitiesToClient = ({ application, entities }) => {
+          const entityRoutes = `${application.clientSrcDir}app/entities/routes.tsx`;
+          const entityReducers = `${application.clientSrcDir}app/entities/reducers.ts`;
+          const entityMenu = `${application.clientSrcDir}app/entities/menu.tsx`;
+          for (const entity of entities) {
+            const {
+              entityAngularName,
+              entityInstance,
+              entityFolderName,
+              entityFileName,
+              entityPage,
+              entityUrl,
+              entityTranslationKeyMenu,
+              entityNameHumanized,
+            } = entity;
+
+            this.editFile(
+              entityMenu,
+              createNeedleCallback({
+                needle: 'add-entity-to-menu',
+                contentToAdd: `<MenuItem icon="asterisk" to="/${entityPage}">
+  ${application.enableTranslation ? `<Translate contentKey="global.menu.entities.${entityTranslationKeyMenu}" />` : `${entityNameHumanized}`}
+</MenuItem>`,
+              }),
+            );
+            this.editFile(
+              entityRoutes,
+              createNeedleCallback({
+                needle: 'add-route-import',
+                contentToAdd: `import ${entityAngularName} from './${entityFolderName}';`,
+              }),
+              createNeedleCallback({
+                needle: 'add-route-path',
+                contentToAdd: `<Route path="/${entityUrl}/*" element={<${entityAngularName} />} />`,
+              }),
+            );
+            this.editFile(
+              entityReducers,
+              createNeedleCallback({
+                needle: 'add-reducer-import',
+                contentToAdd: `import ${entityInstance} from 'app/entities/${entityFolderName}/${entityFileName}.reducer';`,
+              }),
+              createNeedleCallback({
+                needle: 'add-reducer-combine',
+                contentToAdd: `${entityInstance},`,
+              }),
+            );
+          }
+        };
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING]() {
+  get [ClientApplicationGenerator.PREPARING]() {
     return this.delegateTasksToBlueprint(() => this.preparing);
   }
 
   get preparingEachEntity() {
     return this.asPreparingEachEntityTaskGroup({
       react({ application, entity }) {
-        prepareEntity({ entity, application });
+        entity.entityReactState = application.applicationTypeMonolith
+          ? entity.entityInstance
+          : `${application.lowercaseBaseName}.${entity.entityInstance}`;
       },
     });
   }
 
-  get [BaseApplicationGenerator.PREPARING_EACH_ENTITY]() {
+  get [ClientApplicationGenerator.PREPARING_EACH_ENTITY]() {
     return this.delegateTasksToBlueprint(() => this.preparingEachEntity);
+  }
+
+  get preparingEachEntityField() {
+    return this.asPreparingEachEntityFieldTaskGroup({
+      react({ field }) {
+        field.fieldValidateRulesPatternReact ??= field.fieldValidateRulesPattern?.replace(/'/g, "\\'");
+      },
+    });
+  }
+
+  get [ClientApplicationGenerator.PREPARING_EACH_ENTITY_FIELD]() {
+    return this.delegateTasksToBlueprint(() => this.preparingEachEntityField);
   }
 
   get default() {
     return this.asDefaultTaskGroup({
-      queueTranslateTransform({ control, application }) {
+      queueTranslateTransform({ application }) {
         if (!application.enableTranslation) {
           this.queueTransformStream(
             {
@@ -148,28 +243,26 @@ export default class ReactGenerator extends BaseApplicationGenerator {
               filter: file => isFileStateModified(file) && file.path.startsWith(this.destinationPath()) && isTranslatedReactFile(file),
               refresh: false,
             },
-            translateReactFilesTransform(control.getWebappTranslation!),
+            translateReactFilesTransform(application.getWebappTranslation!),
           );
         }
       },
     });
   }
 
-  get [BaseApplicationGenerator.DEFAULT]() {
+  get [ClientApplicationGenerator.DEFAULT]() {
     return this.delegateTasksToBlueprint(() => this.default);
   }
 
   get writing() {
     return this.asWritingTaskGroup({
-      async cleanup({ control, application }) {
+      async cleanup({ control }) {
         await control.cleanupFiles({
-          '8.6.1': ['.eslintrc.json', '.eslintignore'],
-          '8.7.4': [
-            [
-              Boolean(application.microfrontend && application.applicationTypeGateway),
-              `${application.srcMainWebapp}microfrontends/entities-menu.tsx`,
-              `${application.srcMainWebapp}microfrontends/entities-routes.tsx`,
-            ],
+          '9.0.0-alpha.0': [
+            // Try to remove possibles old eslint config files
+            'eslint.config.js',
+            'eslint.config.mjs',
+            'postcss.config.js',
           ],
         });
       },
@@ -179,7 +272,7 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.WRITING]() {
+  get [ClientApplicationGenerator.WRITING]() {
     return this.delegateTasksToBlueprint(() => this.writing);
   }
 
@@ -190,14 +283,8 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     };
   }
 
-  get [BaseApplicationGenerator.WRITING_ENTITIES]() {
+  get [ClientApplicationGenerator.WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.writingEntities);
-  }
-
-  get postWritingEntities() {
-    return {
-      postWriteEntitiesFiles,
-    };
   }
 
   get postWriting() {
@@ -241,21 +328,40 @@ export default class ReactGenerator extends BaseApplicationGenerator {
           });
         }
       },
+      sonar({ application, source }) {
+        const { clientI18nDir, clientDistDir, clientSrcDir, temporaryDir } = application;
+        source.addSonarProperties?.([
+          { key: 'sonar.test.inclusions', value: `${clientSrcDir}app/**/*.spec.ts, ${clientSrcDir}app/**/*.spec.tsx`, valueSep: ', ' },
+          { key: 'sonar.testExecutionReportPaths', value: `${temporaryDir}test-results/jest/TESTS-results-sonar.xml` },
+          { key: 'sonar.javascript.lcov.reportPaths', value: `${temporaryDir}test-results/lcov.info` },
+          {
+            key: 'sonar.exclusions',
+            value: `${clientSrcDir}content/**/*.*, ${clientI18nDir}*.ts, ${clientDistDir}**/*.*`,
+            valueSep: ', ',
+          },
+        ]);
+      },
     });
   }
 
-  get [BaseApplicationGenerator.POST_WRITING]() {
+  get [ClientApplicationGenerator.POST_WRITING]() {
     return this.delegateTasksToBlueprint(() => this.postWriting);
   }
 
-  get [BaseApplicationGenerator.POST_WRITING_ENTITIES]() {
+  get postWritingEntities() {
+    return {
+      postWriteEntitiesFiles,
+    };
+  }
+
+  get [ClientApplicationGenerator.POST_WRITING_ENTITIES]() {
     return this.delegateTasksToBlueprint(() => this.postWritingEntities);
   }
 
   get end() {
     return this.asEndTaskGroup({
       end({ application }) {
-        this.log.ok('React application generated successfully.');
+        this.log.ok(`React ${application.nodeDependencies.react} application generated successfully.`);
         this.log.log(
           chalk.green(`  Start your Webpack development server with:
   ${chalk.yellow.bold(`${application.nodePackageManager} start`)}
@@ -265,65 +371,18 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     });
   }
 
-  get [BaseApplicationGenerator.END]() {
+  get [ClientApplicationGenerator.END]() {
     return this.delegateTasksToBlueprint(() => this.end);
   }
 
   /**
    * @private
-   * Add a new entity in the "entities" menu.
-   *
-   * @param {string} routerName - The name of the Angular router (which by default is the name of the entity).
-   * @param {boolean} enableTranslation - If translations are enabled or not
-   * @param {string} entityTranslationKeyMenu - i18n key for entity entry in menu
-   * @param {string} entityTranslationValue - i18n value for entity entry in menu
-   */
-  addEntityToMenu(
-    routerName,
-    enableTranslation,
-    entityTranslationKeyMenu = camelCase(routerName),
-    entityTranslationValue = startCase(routerName),
-  ) {
-    this.needleApi.clientReact.addEntityToMenu(routerName, enableTranslation, entityTranslationKeyMenu, entityTranslationValue);
-  }
-
-  /**
-   * @experimental
-   * Add a new entity in the TS modules file.
-   *
-   * @param {string} entityInstance - Entity Instance
-   * @param {string} entityClass - Entity Class
-   * @param {string} entityName - Entity Name
-   * @param {string} entityFolderName - Entity Folder Name
-   * @param {string} entityFileName - Entity File Name
-   * @param {string} entityUrl - Entity router URL
-   */
-  addEntityToModule(
-    entityInstance,
-    entityClass,
-    entityName,
-    entityFolderName,
-    entityFileName,
-    { applicationTypeMicroservice, clientSrcDir },
-  ) {
-    this.needleApi.clientReact.addEntityToModule(entityInstance, entityClass, entityName, entityFolderName, entityFileName, {
-      applicationTypeMicroservice,
-      clientSrcDir,
-    });
-  }
-
-  /**
-   * @private
    * Generate Entity Client Field Default Values
-   *
-   * @param {Array|Object} fields - array of fields
-   * @returns {Array} defaultVariablesValues
    */
-  generateEntityClientFieldDefaultValues(fields) {
-    const defaultVariablesValues = {};
+  generateEntityClientFieldDefaultValues(fields: ClientField[]): Record<string, string> {
+    const defaultVariablesValues: Record<string, string> = {};
     fields.forEach(field => {
-      const fieldType = field.fieldType;
-      const fieldName = field.fieldName;
+      const { fieldType, fieldName } = field;
       if (fieldType === TYPE_BOOLEAN) {
         defaultVariablesValues[fieldName] = `${fieldName}: false,`;
       }
@@ -331,47 +390,33 @@ export default class ReactGenerator extends BaseApplicationGenerator {
     return defaultVariablesValues;
   }
 
-  generateEntityClientFields(primaryKey, fields, relationships, dto, customDateType = 'dayjs.Dayjs', embedded = false) {
+  generateEntityClientFields(
+    primaryKey: Parameters<typeof getHydratedEntityClientFields>[0],
+    fields: Parameters<typeof getHydratedEntityClientFields>[1],
+    relationships: Parameters<typeof getHydratedEntityClientFields>[2],
+    dto: Parameters<typeof getHydratedEntityClientFields>[3],
+    customDateType: Parameters<typeof getHydratedEntityClientFields>[4],
+    embedded: Parameters<typeof getHydratedEntityClientFields>[5] = false,
+  ) {
     return getHydratedEntityClientFields(primaryKey, fields, relationships, dto, customDateType, embedded, REACT);
   }
 
-  generateEntityClientImports(relationships, dto) {
+  generateEntityClientImports(
+    relationships: Parameters<typeof formatEntityClientImports>[0],
+    dto: Parameters<typeof formatEntityClientImports>[1],
+  ) {
     return formatEntityClientImports(relationships, dto, REACT);
   }
 
-  generateEntityClientEnumImports(fields) {
+  generateEntityClientEnumImports(fields: ClientField[]) {
     return getClientEnumImportsFormat(fields, REACT);
-  }
-
-  /**
-   * @private
-   * Add new scss style to the react application in "app.scss".
-   *
-   * @param {string} style - css to add in the file
-   * @param {string} comment - comment to add before css code
-   *
-   * example:
-   *
-   * style = '.jhipster {\n     color: #baa186;\n}'
-   * comment = 'New JHipster color'
-   *
-   * * ==========================================================================
-   * New JHipster color
-   * ========================================================================== *
-   * .jhipster {
-   *     color: #baa186;
-   * }
-   *
-   */
-  addAppSCSSStyle(style, comment?) {
-    this.needleApi.clientReact.addAppSCSSStyle(style, comment);
   }
 
   /**
    * get the an upperFirst camelCase value.
    * @param {string} value string to convert
    */
-  upperFirstCamelCase(value) {
+  upperFirstCamelCase(value: string): string {
     return upperFirstCamelCase(value);
   }
 }

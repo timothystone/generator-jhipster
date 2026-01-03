@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -45,14 +45,14 @@
         <spring.profiles.active>dev</spring.profiles.active>
         <maven.version>3.2.5</maven.version>
         <resource.delimiter>@</resource.delimiter>
-        <java.version><%= JAVA_VERSION %></java.version>
+        <java.version><%= javaVersion %></java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <start-class><%= packageName %>.<%= mainClass %></start-class>
-        <argLine>-Djava.security.egd=file:/dev/./urandom -Xmx1G</argLine>
+        <argLine>-Xmx1G</argLine>
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
         <run.addResources>false</run.addResources>
         <profile.api-docs />
@@ -60,252 +60,10 @@
         <profile.e2e />
         <profile.test />
 
-<%_ if (reactive) { _%>
-        <blockhound-junit-platform.version><%- javaDependencies['blockhound-junit-platform'] %></blockhound-junit-platform.version>
-        <micrometer-context-propagation.version><%- javaDependencies['micrometer-context-propagation'] %></micrometer-context-propagation.version>
-<%_ } _%>
-        <archunit-junit5.version><%- javaDependencies['archunit-junit5'] %></archunit-junit5.version>
-        <mapstruct.version><%- javaDependencies.mapstruct %></mapstruct.version>
-        <git-commit-id-maven-plugin.version><%- javaDependencies['git-commit-id-maven-plugin'] %></git-commit-id-maven-plugin.version>
         <lifecycle-mapping.version><%- javaDependencies['lifecycle-mapping'] %></lifecycle-mapping.version>
-        <maven-clean-plugin.version><%- javaDependencies['maven-clean-plugin'] %></maven-clean-plugin.version>
-        <maven-compiler-plugin.version><%- javaDependencies['maven-compiler-plugin'] %></maven-compiler-plugin.version>
-        <maven-enforcer-plugin.version><%- javaDependencies['maven-enforcer-plugin'] %></maven-enforcer-plugin.version>
-        <maven-failsafe-plugin.version><%- javaDependencies['maven-failsafe-plugin'] %></maven-failsafe-plugin.version>
-        <maven-javadoc-plugin.version><%- javaDependencies['maven-javadoc-plugin'] %></maven-javadoc-plugin.version>
-        <maven-jar-plugin.version><%- javaDependencies['maven-jar-plugin'] %></maven-jar-plugin.version>
-        <maven-resources-plugin.version><%- javaDependencies['maven-resources-plugin'] %></maven-resources-plugin.version>
-        <maven-site-plugin.version><%- javaDependencies['maven-site-plugin'] %></maven-site-plugin.version>
-        <maven-surefire-plugin.version><%- javaDependencies['maven-surefire-plugin'] %></maven-surefire-plugin.version>
-        <maven-war-plugin.version><%- javaDependencies['maven-war-plugin'] %></maven-war-plugin.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-hppc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-<%_ if (authenticationTypeOauth2) { _%>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-api</artifactId>
-            <version>${archunit-junit5.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <!-- Adding the engine dependency to the surefire-plugin unfortunately does not work in the current version. -->
-            <!-- https://www.archunit.org/userguide/html/000_Index.html#_junit_5 -->
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5-engine</artifactId>
-            <version>${archunit-junit5.version}</version>
-            <scope>test</scope>
-        </dependency>
-<%_ if (reactive) { _%>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>context-propagation</artifactId>
-            <version>${micrometer-context-propagation.version}</version>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
-        </dependency>
-<%_ if (reactive) { _%>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-resolver-dns-native-macos</artifactId>
-            <classifier>osx-aarch_64</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor.tools</groupId>
-            <artifactId>blockhound-junit-platform</artifactId>
-            <version>${blockhound-junit-platform.version}</version>
-            <scope>test</scope>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>${mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>${mapstruct.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-configuration-processor</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-loader-tools</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-logging</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-<%_ if (authenticationTypeOauth2) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-client</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (authenticationTypeOauth2 || authenticationTypeJwt) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (authenticationTypeJwt || authenticationTypeSession) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-<%_ if (!reactive) { _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-undertow</artifactId>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web<% if (reactive) { %>flux<% } %></artifactId>
-<%_ if (!reactive) { _%>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
-            </exclusions>
-<%_ } _%>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-<%_ if (applicationTypeMicroservice || applicationTypeGateway) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (serviceDiscoveryAny) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-bootstrap</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (applicationTypeMicroservice || applicationTypeGateway) { _%>
-  <%_ if (reactive) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
-        </dependency>
-  <%_ } else { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
-        </dependency>
-  <%_ } _%>
-<%_ } _%>
-<%_ if (serviceDiscoveryAny && serviceDiscoveryEureka) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (applicationTypeGateway && !reactive) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (serviceDiscoveryAny && serviceDiscoveryConsul) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-consul-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (serviceDiscoveryAny && serviceDiscoveryEureka) { _%>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (reactive) { _%>
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
-        </dependency>
-<%_ } _%>
-<%_ if (applicationTypeMicroservice || applicationTypeGateway) { _%>
-        <dependency>
-            <groupId>org.springframework.retry</groupId>
-            <artifactId>spring-retry</artifactId>
-        </dependency>
-<%_ } _%>
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -360,7 +118,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
@@ -381,7 +138,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <source>${maven.compiler.source}</source>
                     </configuration>
@@ -389,7 +145,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>${maven-war-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>default-war</id>
@@ -406,7 +161,7 @@
                         <warSourceDirectory><%= clientDistDir %></warSourceDirectory>
                         <webResources>
                             <resource>
-                                <directory><%= MAIN_DIR %>webapp</directory>
+                                <directory><%= srcMainWebapp %></directory>
                                 <includes>
                                     <include>WEB-INF/**</include>
                                 </includes>
@@ -418,7 +173,6 @@
                 <plugin>
                     <groupId>io.github.git-commit-id</groupId>
                     <artifactId>git-commit-id-maven-plugin</artifactId>
-                    <version>${git-commit-id-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -440,17 +194,10 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>${maven-clean-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <version>${maven-site-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>${maven-enforcer-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>enforce-versions</id>
@@ -478,8 +225,8 @@
                                 <version>[${maven.version},)</version>
                             </requireMavenVersion>
                             <requireJavaVersion>
-                                <message>You are running an incompatible version of Java. JHipster supports JDK <%= JAVA_COMPATIBLE_VERSIONS[0] %> to <%= JAVA_COMPATIBLE_VERSIONS[JAVA_COMPATIBLE_VERSIONS.length -1] %>.</message>
-                                <version><%= JAVA_COMPATIBLE_VERSIONS.map(version => parseInt(version)).map(version => `[${version},${version +1})`).join(',') %></version>
+                                <message>You are running an incompatible version of Java. JHipster supports JDK <%= javaCompatibleVersions[0] %> to <%= javaCompatibleVersions[javaCompatibleVersions.length -1] %>.</message>
+                                <version><%= javaCompatibleVersions.map(version => parseInt(version)).map(version => `[${version},${version +1})`).join(',') %></version>
                             </requireJavaVersion>
                         </rules>
                     </configuration>
@@ -487,7 +234,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <!-- Force alphabetical order to have a reproducible build -->
                         <runOrder>alphabetical</runOrder>
@@ -507,7 +253,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>${maven-jar-plugin.version}</version>
                </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
@@ -528,11 +273,8 @@
                     </executions>
                     <configuration>
                         <mainClass>${start-class}</mainClass>
-<%_ if (databaseTypeCouchbase) { _%>
+<%_ if (databaseTypeCouchbase && !springBoot4) { _%>
                         <loaderImplementation>CLASSIC</loaderImplementation>
-<%_ } _%>
-<%_ if (embeddableLaunchScript) { _%>
-                        <executable>true</executable>
 <%_ } _%>
                         <!--
                         Enable the line below to have remote debugging of your application on port 5005
@@ -546,7 +288,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${maven-failsafe-plugin.version}</version>
                     <configuration>
                         <!-- Due to spring-boot repackage, without adding this property test classes are not found
                              See https://github.com/spring-projects/spring-boot/issues/6254 -->
@@ -557,6 +298,13 @@
                             <include>**/*IT*</include>
                             <include>**/*IntTest*</include>
                         </includes>
+<%_ if (javaIntegrationTestExclude.length > 0) { _%>
+                        <excludes>
+  <%_ for (exclude of javaIntegrationTestExclude) { _%>
+                            <exclude><%- exclude %></exclude>
+  <%_ } _%>
+                        </excludes>
+<%_ } _%>
 <%_ if (reactive) { _%>
                         <!-- Fix tests at java 13+ https://github.com/reactor/BlockHound/issues/33 -->
                         <argLine>@{argLine} -XX:+AllowRedefinitionToAddDeleteMethods -Dspring.profiles.active=${profile.test}</argLine>
@@ -708,13 +456,6 @@
                     <name>m2e.version</name>
                 </property>
             </activation>
-            <dependencies>
-                <dependency>
-                    <!-- The following dependency is added due to issue #9175-->
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-undertow</artifactId>
-                </dependency>
-            </dependencies>
             <build>
                 <pluginManagement>
                     <plugins>
@@ -786,16 +527,5 @@
                 </pluginManagement>
             </build>
         </profile>
-<%_ if (cypressTests) { _%>
-        <profile>
-            <id>e2e</id>
-            <properties>
-                <profile.e2e>,e2e</profile.e2e>
-            </properties>
-            <build>
-                <finalName>e2e</finalName>
-            </build>
-        </profile>
-<%_ } _%>
     </profiles>
 </project>

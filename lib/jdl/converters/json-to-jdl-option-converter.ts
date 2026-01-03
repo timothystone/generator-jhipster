@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import JDLObject from '../core/models/jdl-object.js';
-import { unaryOptions } from '../core/built-in-options/index.js';
-import JDLUnaryOption from '../core/models/jdl-unary-option.js';
+import { unaryOptions } from '../core/built-in-options/index.ts';
+import JDLObject from '../core/models/jdl-object.ts';
+import JDLUnaryOption from '../core/models/jdl-unary-option.ts';
 
 const { SKIP_CLIENT, SKIP_SERVER } = unaryOptions;
 
@@ -33,7 +33,7 @@ export default {
  * @param jdl to which the parsed options are added. If undefined a new JDLObject is created.
  * @returns the JDLObject
  */
-export function convertServerOptionsToJDL(config, jdl: JDLObject): JDLObject {
+export function convertServerOptionsToJDL(config: any, jdl: JDLObject): JDLObject {
   const jdlObject = jdl || new JDLObject();
   const jhipsterConfig = config || {};
   [SKIP_CLIENT, SKIP_SERVER].forEach(option => {

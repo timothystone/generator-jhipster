@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,13 +17,15 @@
  * limitations under the License.
  */
 import { describe, expect, it } from 'esmocha';
-import { parseChangelog } from './timestamp.js';
+
+import { parseChangelog } from './timestamp.ts';
 
 describe('generator - base - support - timestamp', () => {
   describe('::parseChangelog', () => {
     describe('when not passing parameters', () => {
       it('throws', () => {
-        expect(() => parseChangelog(undefined as any)).toThrow(/^changelogDate is required\.$/);
+        // @ts-expect-error testing invalid argument
+        expect(() => parseChangelog(undefined)).toThrow(/^changelogDate is required\.$/);
       });
     });
     describe('when passing a number', () => {

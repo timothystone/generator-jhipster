@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -54,7 +54,11 @@ export class AuthServerProvider {
     return this.http.post(this.applicationConfigService.getEndpointFor('api/logout'), {}).pipe(
       map(() => {
         // to get a new csrf token call the api
-        this.http.get(this.applicationConfigService.getEndpointFor('api/account')).subscribe();
+        this.http.get(this.applicationConfigService.getEndpointFor('api/account')).subscribe({
+          error() {
+            // Handled by interceptor
+          },
+        });
       })
     );
   }

@@ -34,12 +34,14 @@ jobs:
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
-      - uses: actions/setup-node@v4
+      - run: echo "node-version=$(cat ${{ github.workspace }}/generators/init/resources/.node-version)" >> $GITHUB_OUTPUT
+        id: node-version
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: ${{ steps.node-version.outputs.node-version }}
       - run: npm ci --ignore-scripts
       - id: build
         run: bin/jhipster.cjs github-build-matrix graalvm --event-name ${{ github.event_name }}
@@ -60,11 +62,11 @@ jobs:
       # Install all tools and check configuration
       #----------------------------------------------------------------------
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: generator-jhipster
           fetch-depth: 2
-      - uses: jhipster/actions/setup-runner@v0
+      - uses: jhipster/actions/setup-runner@v1
         with:
           node-version: ${{ matrix.node-version }}
           java-version: ${{ matrix.java-version }}
@@ -88,7 +90,7 @@ jobs:
       #----------------------------------------------------------------------
       # Detect changes against base commit
       #----------------------------------------------------------------------
-      - uses: jhipster/actions/compare-sample@v0
+      - uses: jhipster/actions/compare-sample@v1
         id: compare
         if: >-
           github.event.pull_request &&
@@ -112,7 +114,7 @@ jobs:
           distribution: 'graalvm-community'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
-      - uses: jhipster/actions/build-jhipster-bom@v0
+      - uses: jhipster/actions/build-jhipster-bom@v1
         if: matrix.build-jhipster-bom && steps.compare.outputs.equals != 'true'
         with:
           jhipster-bom-ref: ${{ matrix.jhipster-bom-branch }}
@@ -126,7 +128,7 @@ jobs:
         id: e2e
         if: steps.compare.outputs.equals != 'true'
       - name: Store the application
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && (steps.e2e.outcome == 'failure' || steps.packaging.outcome == 'failure')
         with:
           name: app-${{ matrix.sample }}
@@ -141,7 +143,7 @@ jobs:
             !**/app/*/target/**
             !**/node_modules/**
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ matrix.sample }}

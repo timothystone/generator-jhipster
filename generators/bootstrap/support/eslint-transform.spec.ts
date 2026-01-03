@@ -1,10 +1,11 @@
-import { Readable } from 'stream';
-import { pipeline } from 'stream/promises';
 import { describe, expect, it } from 'esmocha';
-import { transform } from 'p-transform';
-import { setModifiedFileState } from 'mem-fs-editor/state';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
-import { createESLintTransform } from './eslint-transform.js';
+import { setModifiedFileState } from 'mem-fs-editor/state';
+import { transform } from 'p-transform';
+
+import { createESLintTransform } from './eslint-transform.ts';
 
 describe('generator - bootstrap - eslint', () => {
   describe('::createESLintTransform', () => {
@@ -20,7 +21,7 @@ export const foo = 'bar';
       setModifiedFileState(file);
       await pipeline(
         Readable.from([file]),
-        createESLintTransform(),
+        await createESLintTransform(),
         transform(() => undefined),
       );
       expect(file.contents.toString()).toBe(`

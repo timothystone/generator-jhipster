@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,15 +22,15 @@ services:
   mariadb:
     image: <%- dockerContainers.mariadb %>
     volumes:
-      - ./config/mariadb:/etc/mariadb/conf.d
+      - ./config/mariadb:/etc/mysql/conf.d:ro
     # volumes:
     #   - ~/volumes/jhipster/<%= baseName %>/mariadb/:/var/lib/mariadb/
     environment:
       - MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
       - MARIADB_ALLOW_EMPTY_PASSWORD=yes
       - MARIADB_DATABASE=<%= baseName.toLowerCase() %>
-<%_ if (prodDatabasePassword) { _%>
-      - MARIADB_PASSWORD=<%- prodDatabasePassword %>
+<%_ if (locals.prodDatabasePassword) { _%>
+      - MARIADB_PASSWORD=<%- locals.prodDatabasePassword %>
 <%_ } _%>
     # If you want to expose these ports outside your dev PC,
     # remove the "127.0.0.1:" prefix

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,6 +24,7 @@ import reactor.blockhound.integration.BlockHoundIntegration;
 public class JHipsterBlockHoundIntegration implements BlockHoundIntegration {
     @Override
     public void applyTo(BlockHound.Builder builder) {
+        builder.allowBlockingCallsInside("java.util.UUID", "randomUUID");
         builder.allowBlockingCallsInside("org.springframework.validation.beanvalidation.SpringValidatorAdapter", "validate");
         builder.allowBlockingCallsInside("<%= packageName %>.service.MailService", "sendEmailFromTemplate");
         builder.allowBlockingCallsInside("<%= packageName %>.security.DomainUserDetailsService", "createSpringSecurityUser");

@@ -1,39 +1,108 @@
+import type { IsNever, PascalCase, Replace, RequireAtLeastOne, SetOptional, Simplify, TupleToUnion, ValueOf } from 'type-fest';
 import type { ArgumentSpec, CliOptionSpec } from 'yeoman-generator';
-import type { IsNever, RequireAtLeastOne, SetOptional, Simplify, TupleToUnion, ValueOf } from 'type-fest';
-import type { JHipsterOptionDefinition } from '../jdl/core/types/parsing.js';
-import type { DerivedPropertiesOf } from '../types/utils/derived-properties.js';
-import type { MergeUnion } from './support/merge-union.js';
+
+import type BaseCoreGenerator from '../../generators/base-core/generator.ts';
+import type GeneratorsByNamespace from '../../generators/types.ts';
+import type { JHipsterNamedChoice } from '../core/types.ts';
+import type { JHipsterOptionDefinition } from '../jdl/core/types/parsing.ts';
+
+import type { MergeUnion } from './support/merge-union.ts';
+
+type NormalizePropertyValue<Input extends string> = Replace<Replace<Input, '[]', ''>, '.', ''>;
+
+export type DerivedProperty<
+  Property extends string,
+  Value extends string,
+> = `${Property}${Uppercase<Value> extends Value ? Value : PascalCase<NormalizePropertyValue<Value>>}`;
+
+export type DerivedPropertiesOnlyOf<Property extends string, Choices extends string> = Simplify<{
+  [K in Choices as `${Property}${Capitalize<NormalizePropertyValue<K>>}`]: boolean;
+}>;
+
+/*
+ * @example
+ * ```ts
+ * DerivedPropertiesOf<'clientFramework', 'angular' | 'no'> =
+ * { clientFrameworkAngular: boolean; clientFrameworkNo: boolean; clientFramework: 'angular' | 'no'; clientFrameworkAny: boolean; }
+ * ```
+ */
+export type DerivedPropertiesOf<Property extends string, Choices extends string> = Simplify<
+  {
+    [K in Choices as `${Property}${Capitalize<NormalizePropertyValue<K>>}`]: boolean;
+  } & Record<Property, Choices | undefined> &
+    Record<`${Property}Any`, boolean>
+>;
+
+/*
+ * @example
+ * ```ts
+ * DerivedPropertiesWithInferenceOf<'clientFramework', 'angular', 'angular', 'no'> =
+ * { clientFrameworkAngular: true; clientFrameworkNo: false; clientFramework: 'angular'; clientFrameworkAny: true; }
+ * ```
+ */
+type DerivedPropertiesWithInferenceOf<P extends string, V extends string, C extends string> = Simplify<
+  {
+    [K in C as `${P}${Capitalize<K>}`]: K extends V ? true : false;
+  } & Record<P, V> &
+    Record<`${P}Any`, V extends 'no' ? false : true>
+>;
+
+/**
+ * ```ts
+ * type ExplodedConfigChoices = ExplodeDerivedPropertiesWithInference<['angular', 'no'], 'clientFramework'>;
+ * type ExplodedConfigChoices =
+ *   | { clientFrameworkAngular: true; clientFrameworkNo: false; clientFramework: 'angular'; clientFrameworkAny: true; }
+ *   | { clientFrameworkAngular: false; clientFrameworkNo: true; clientFramework: 'no'; clientFrameworkAny: true; }
+ * ```
+ */
+export type DerivedPropertiesWithInferenceUnion<Choices extends [...string[]], Property extends string> = ValueOf<{
+  [Index in Exclude<keyof Choices, keyof any[]>]: Choices[Index] extends infer Choice
+    ? Choice extends string
+      ? DerivedPropertiesWithInferenceOf<Property, Choice, Choices[number]>
+      : never
+    : never;
+}>;
 
 type CommandConfigScope = 'storage' | 'blueprint' | 'generator' | 'context' | 'none';
 
-export type ConfigScope = CommandConfigScope | 'control';
-type CliSpecType = CliOptionSpec['type'];
+type ScopedConfig = {
+  /**
+   * Command configuration scope
+   * - `storage`: Used for storing configuration in `jhipsterConfig`.
+   * - `blueprint`: Used for storing blueprint-specific configurations in `blueprintConfig`.
+   * - `generator`: Used for generator options, will be inserted as a generator property, may conflict with existing properties.
+   * - `context`: Used for options that are specific to the template context, will be inserted in `context`.
+   * - `none`: Used for options that will be handled manually, such as options that are stored differently than they are received.
+   */
+  readonly scope: CommandConfigScope;
+};
 
-export type JHipsterNamedChoice = { value: string; name: string };
+export type CommandConfigType = typeof String | typeof Boolean | typeof Number | typeof Object | ((opt: string) => any);
+
+export type CommandConfigDefault<ConfigContext> =
+  | string
+  | boolean
+  | number
+  | readonly string[]
+  | ((this: ConfigContext | void, ctx: any) => string | boolean | number | readonly string[]);
+
+type CliSpecType = CliOptionSpec['type'] | typeof Object;
 
 export type JHipsterChoices = readonly [...(string | JHipsterNamedChoice)[]];
 
-export type JHipsterOption = SetOptional<CliOptionSpec, 'name'> & {
-  readonly name?: string;
-  readonly scope?: ConfigScope;
-  readonly env?: string;
-  readonly choices?: JHipsterChoices;
-  readonly commandName?: string;
-};
-
 export type PromptSpec = {
-  readonly type: 'input' | 'list' | 'confirm' | 'checkbox';
-  readonly message: string | ((any) => string);
-  readonly when?: boolean | ((any) => boolean);
-  readonly default?: any | ((any) => any);
-  readonly filter?: any | ((any) => any);
-  readonly transformer?: any | ((any) => any);
-  readonly validate?: any | ((any) => any);
+  readonly type: 'input' | 'select' | 'confirm' | 'checkbox';
+  readonly message: string | ((arg: any) => string);
+  readonly when?: boolean | ((arg: any) => boolean);
+  readonly default?: any;
+  readonly filter?: any;
+  readonly transformer?: any;
+  readonly validate?: any;
 };
 
-type JHipsterArgumentConfig = SetOptional<ArgumentSpec, 'name'> & { scope?: CommandConfigScope };
+type JHipsterArgumentConfig = SetOptional<ArgumentSpec, 'name'> & Partial<ScopedConfig>;
 
-type CliSpec = Omit<SetOptional<CliOptionSpec, 'name'>, 'storage'> & {
+export type CliSpec = Omit<SetOptional<CliOptionSpec, 'name'>, 'storage'> & {
   env?: string;
   /**
    * Imply other options.
@@ -46,12 +115,9 @@ export type ConfigSpec<ConfigContext> = {
   readonly choices?: JHipsterChoices;
   readonly cli?: CliSpec;
   readonly argument?: JHipsterArgumentConfig;
-  readonly internal?: true;
-  readonly prompt?:
-    | PromptSpec
-    | ((gen: ConfigContext & { jhipsterConfigWithDefaults: Record<string, any> }, config: ConfigSpec<ConfigContext>) => PromptSpec);
+  readonly internal?: { type: CommandConfigType };
+  readonly prompt?: PromptSpec | ((gen: ConfigContext, config: ConfigSpec<ConfigContext>) => PromptSpec);
   readonly jdl?: Omit<JHipsterOptionDefinition, 'name' | 'knownChoices'>;
-  readonly scope?: CommandConfigScope;
   /**
    * The callback receives the generator as input for 'generator' scope.
    * The callback receives jhipsterConfigWithDefaults as input for 'storage' (default) scope.
@@ -60,21 +126,15 @@ export type ConfigSpec<ConfigContext> = {
    * Default value will not be applied to generator (using 'generator' scope) in initializing priority. Use cli.default instead.
    * Default value will be application to templates context object (application) in loading priority.
    */
-  readonly default?:
-    | string
-    | boolean
-    | number
-    | readonly string[]
-    | ((this: ConfigContext | void, ctx: any) => string | boolean | number | readonly string[]);
+  readonly default?: CommandConfigDefault<ConfigContext>;
   /**
    * Configure the generator according to the selected configuration.
    */
-  readonly configure?: (gen: ConfigContext) => void;
-};
+  readonly configure?: (gen: ConfigContext, value: any) => void;
+} & ScopedConfig;
 
 export type JHipsterArguments = Record<string, JHipsterArgumentConfig>;
-
-export type JHipsterOptions = Record<string, JHipsterOption>;
+export type JHipsterArgumentsWithChoices = Record<string, JHipsterArgumentConfig & { choices?: JHipsterChoices }>;
 
 export type JHipsterConfig<ConfigContext = any> = RequireAtLeastOne<
   ConfigSpec<ConfigContext>,
@@ -83,58 +143,52 @@ export type JHipsterConfig<ConfigContext = any> = RequireAtLeastOne<
 
 export type JHipsterConfigs<ConfigContext = any> = Record<string, JHipsterConfig<ConfigContext>>;
 
-export type JHipsterCommandDefinition<ConfigContext = any> = {
+export type JHipsterCommandDefinition<ConfigContext = BaseCoreGenerator> = {
   readonly arguments?: JHipsterArguments;
-  readonly options?: JHipsterOptions;
   readonly configs?: JHipsterConfigs<ConfigContext>;
   /**
    * Import options from a generator.
    * @example ['server', 'jhipster-blueprint:server']
    */
-  readonly import?: readonly string[];
+  readonly import?: readonly (keyof GeneratorsByNamespace | 'base')[];
   /**
    * @experimental
    * Compose with generator.
    * @example ['server', 'jhipster-blueprint:server']
    */
-  readonly compose?: readonly string[];
+  readonly compose?: readonly (keyof GeneratorsByNamespace | 'base')[];
   /**
    * Override options from the generator been blueprinted.
    */
   readonly override?: boolean;
-  /**
-   * Load old options definition (yeoman's `this.options()`) from the generator.
-   */
-  readonly loadGeneratorOptions?: boolean;
 };
 
 /**
  * A simplified version of the `JHipsterCommandDefinition` type for types parsing.
  */
-type ParseableConfig = {
+type ParsableConfig = {
   readonly type?: CliSpecType;
   readonly cli?: {
     readonly type: CliSpecType;
   };
   readonly choices?: JHipsterChoices;
-  readonly scope: ConfigScope;
+} & ScopedConfig;
+
+type ParsableConfigs = Record<string, ParsableConfig>;
+
+export type ParsableCommand = {
+  readonly options?: ParsableConfigs;
+  readonly configs?: ParsableConfigs;
 };
 
-type ParseableConfigs = Record<string, ParseableConfig>;
-
-type ParseableCommand = {
-  readonly options?: ParseableConfigs;
-  readonly configs?: ParseableConfigs;
-};
-
-/** Extract contructor return type, eg: Boolean, String */
+/** Extract constructor return type, eg: Boolean, String */
 type ConstructorReturn<T> = T extends new () => infer R ? R : undefined;
-type FilteredConfigScope = ConfigScope | undefined;
+type FilteredConfigScope = CommandConfigScope | undefined;
 
 /** Filter Options/Config by scope */
-type FilterScope<D extends ParseableConfig, S extends FilteredConfigScope> = D extends Record<'scope', S> ? D : never;
+type FilterScope<D extends ParsableConfig, S extends FilteredConfigScope> = D extends Record<'scope', S> ? D : never;
 
-type FilterCommandScope<D extends ParseableConfigs, S extends FilteredConfigScope> = {
+type FilterCommandScope<D extends ParsableConfigs, S extends FilteredConfigScope> = {
   [K in keyof D as IsNever<FilterScope<D[K], S>> extends true ? never : K]: D[K];
 };
 
@@ -147,15 +201,19 @@ type FilterCommandScope<D extends ParseableConfigs, S extends FilteredConfigScop
  * }>
  * ```
  */
-type MergeConfigsOptions<D extends ParseableCommand, S extends FilteredConfigScope> = Simplify<
-  (D extends { configs: ParseableConfigs } ? { [K in keyof FilterCommandScope<D['configs'], S>]: D['configs'][K] } : object) &
-    (D extends { options: ParseableConfigs } ? { [K in keyof FilterCommandScope<D['options'], S>]: D['options'][K] } : object)
+type MergeConfigsOptions<D extends ParsableCommand, S extends FilteredConfigScope> = Simplify<
+  D extends { configs: ParsableConfigs } ? { [K in keyof FilterCommandScope<D['configs'], S>]: D['configs'][K] } : object
 >;
 
-type GetType<C extends ParseableConfig> =
-  C extends Record<'type', CliSpecType> ? C['type'] : C extends Record<'cli', Record<'type', CliSpecType>> ? C['cli']['type'] : undefined;
+type GetType<C extends ParsableConfig> =
+  C extends Record<'type', CliSpecType>
+    ? C['type']
+    : C extends Record<'cli', Record<'type', CliSpecType>>
+      ? C['cli']['type']
+      : C extends Record<'internal', Record<'type', CliSpecType>>
+        ? C['internal']['type']
+        : undefined;
 
-// eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
 type WrapperToPrimitive<T> = T extends Boolean ? boolean : T extends String ? string : T extends Number ? number : T;
 
 type GetChoiceValue<Choice extends string | { value: string }> = Choice extends string
@@ -179,13 +237,13 @@ type NormalizeChoices<Choices extends readonly [...(string | { value: string })[
  * type ExplodedCommandChoices = ExplodeCommandChoicesNoInference<{ clientFramework: { choices: ['angular', 'no'], scope: 'storage' }, clientTestFramework: { choices: ['cypress', 'no'], scope: 'storage' } }>
  * ```
  */
-type ExplodeCommandChoicesNoInference<U extends ParseableConfigs> = {
+type ExplodeCommandChoicesNoInference<U extends ParsableConfigs> = {
   [K in keyof U]: U[K] extends infer RequiredChoices
     ? RequiredChoices extends { choices: any }
       ? K extends infer StringKey
         ? StringKey extends string
           ? NormalizeChoices<RequiredChoices['choices']> extends infer NormalizedChoices
-            ? // @ts-expect-error Mapped typle type is loosy https://github.com/microsoft/TypeScript/issues/27995
+            ? // @ts-expect-error Mapped tuple type is loose https://github.com/microsoft/TypeScript/issues/27995
               Simplify<DerivedPropertiesOf<StringKey, NormalizedChoices[number]>>
             : never
           : never
@@ -194,7 +252,7 @@ type ExplodeCommandChoicesNoInference<U extends ParseableConfigs> = {
     : never;
 };
 
-type PrepareConfigsWithType<U extends ParseableConfigs> = Simplify<{
+type PrepareConfigsWithType<U extends ParsableConfigs> = Simplify<{
   -readonly [K in keyof U]?: U[K] extends Record<'choices', JHipsterChoices>
     ? TupleToUnion<NormalizeChoices<U[K]['choices']>>
     : WrapperToPrimitive<ConstructorReturn<GetType<U[K]>>> extends infer T
@@ -215,7 +273,7 @@ type OnlyChoices<D, C extends boolean> = D extends { choices: JHipsterChoices } 
  * type ConfigsWithChoice = OnlyConfigsWithChoice<{ clientFramework: { choices: ['angular', 'no'], scope: 'storage' }, clientTestFramework: { choices: ['cypress', 'no'], scope: 'storage' } }>
  * ```
  */
-type OnlyConfigsWithChoice<D extends ParseableConfigs, C extends boolean> = {
+type OnlyConfigsWithChoice<D extends ParsableConfigs, C extends boolean> = {
   [K in keyof D as OnlyChoices<D[K], C> extends never ? never : K]: D[K];
 };
 
@@ -225,9 +283,9 @@ type OnlyConfigsWithChoice<D extends ParseableConfigs, C extends boolean> = {
  * type Prop = ExportApplicationPropertiesFromCommand<{ configs: { clientFramework: { choices: ['angular', 'no'], scope: 'storage' }, bar: { scope: 'storage' } } }>;
  * ```
  */
-export type ExportApplicationPropertiesFromCommand<C extends ParseableCommand> =
-  MergeConfigsOptions<C, 'storage'> extends infer Merged
-    ? Merged extends ParseableConfigs
+export type ExportApplicationPropertiesFromCommand<C extends ParsableCommand> =
+  MergeConfigsOptions<C, 'storage' | 'context'> extends infer Merged
+    ? Merged extends ParsableConfigs
       ? // Add value inference to properties with choices
         // ? PrepareConfigsWithType<OnlyConfigsWithChoice<F, false>> & ValueOf<ExplodeCommandChoicesWithInference<OnlyConfigsWithChoice<F, true>>>
         Simplify<
@@ -237,11 +295,20 @@ export type ExportApplicationPropertiesFromCommand<C extends ParseableCommand> =
       : never
     : never;
 
-type ExportScopedPropertiesFromCommand<C extends ParseableCommand, S extends FilteredConfigScope> =
-  MergeConfigsOptions<C, S> extends infer Merged ? (Merged extends ParseableConfigs ? PrepareConfigsWithType<Merged> : never) : never;
+type ExportScopedPropertiesFromCommand<C extends ParsableCommand, S extends FilteredConfigScope> =
+  MergeConfigsOptions<C, S> extends infer Merged
+    ? Merged extends ParsableConfigs
+      ? PrepareConfigsWithType<Merged>
+      : Record<string, never>
+    : Record<string, never>;
 
-export type ExportStoragePropertiesFromCommand<C extends ParseableCommand> = ExportScopedPropertiesFromCommand<C, 'storage'>;
+export type ExportStoragePropertiesFromCommand<C extends ParsableCommand> = ExportScopedPropertiesFromCommand<C, 'storage'>;
 
-export type ExportGeneratorOptionsFromCommand<C extends ParseableCommand> = ExportScopedPropertiesFromCommand<C, any>;
+export type ExportGeneratorOptionsFromCommand<C extends ParsableCommand> = ExportScopedPropertiesFromCommand<C, any>;
 
-export type ExportControlPropertiesFromCommand<C extends ParseableCommand> = ExportScopedPropertiesFromCommand<C, 'control'>;
+export type ExportGeneratorPropertiesFromCommand<C extends ParsableCommand> = Readonly<ExportScopedPropertiesFromCommand<C, 'generator'>>;
+
+export type HandleCommandTypes<C1 extends ParsableCommand> = Record<'Config', ExportStoragePropertiesFromCommand<C1>> &
+  Record<'Options', ExportGeneratorOptionsFromCommand<C1>> &
+  Record<'Generator', ExportGeneratorPropertiesFromCommand<C1>> &
+  Record<'Application', ExportApplicationPropertiesFromCommand<C1>>;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,23 +16,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { describe, expect, it } from 'esmocha';
-import { snakeCase } from 'lodash-es';
+import { describe, expect } from 'esmocha';
+import { basename } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result as runResult } from '../../lib/testing/index.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
-  it('generator-list constant matches folder name', async () => {
-    await expect((await import('../generator-list.js'))[`GENERATOR_${snakeCase(generator).toUpperCase()}`]).toBe(generator);
-  });
   shouldSupportFeatures(Generator);
   describe.skip('blueprint support', () => testBlueprintSupport(generator));
+
+  describe('with default configuration', () => {
+    before(async () => {
+      await helpers
+        .runJHipster('entity')
+        .withJHipsterConfig({})
+        .withAnswers({ fieldAdd: false, relationshipAdd: false, service: 'no', dto: 'no', pagination: 'no' })
+        .withArguments(['Foo'])
+        .withMockedSource();
+    });
+
+    it('should match source calls', () => {
+      expect(runResult.sourceCallsArg).toMatchSnapshot();
+    });
+
+    it('should match files snapshot', () => {
+      expect(runResult.getStateSnapshot()).toMatchSnapshot();
+    });
+  });
 });

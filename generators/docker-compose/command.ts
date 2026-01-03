@@ -1,10 +1,11 @@
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
 
-const command: JHipsterCommandDefinition = {
+const command = {
   arguments: {
     appsFolders: {
       type: Array,
       description: 'Application folders',
+      scope: 'storage',
     },
   },
   configs: {
@@ -13,9 +14,9 @@ const command: JHipsterCommandDefinition = {
         type: String,
         env: 'JHI_JWT_SECRET_KEY',
       },
-      scope: 'generator',
+      scope: 'storage',
     },
   },
-};
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

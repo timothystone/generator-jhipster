@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,27 +17,29 @@
  * limitations under the License.
  */
 
-import { asWritingTask } from '../base-application/support/task-type-inference.js';
-import { CLIENT_WEBPACK_DIR } from '../generator-constants.js';
+import { asWritingTask } from '../base-application/support/task-type-inference.ts';
+import { CLIENT_WEBPACK_DIR } from '../generator-constants.ts';
+
+import type { Application as AngularApplication, Entity as AngularEntity } from './types.d.ts';
 
 /**
  * Removes files that where generated in previous JHipster versions and therefore
  * need to be removed.
  */
 
-export default asWritingTask(function cleanupOldFilesTask(this, { application }) {
-  if (this.isJhipsterVersionLessThan('3.2.0')) {
+export default asWritingTask<AngularEntity, AngularApplication<AngularEntity>>(function cleanupOldFilesTask({ application, control }) {
+  if (control.isJhipsterVersionLessThan('3.2.0')) {
     // removeFile and removeFolder methods should be called here for files and folders to cleanup
     this.removeFile(`${application.clientSrcDir}app/components/form/uib-pager.config.js`);
     this.removeFile(`${application.clientSrcDir}app/components/form/uib-pagination.config.js`);
   }
-  if (this.isJhipsterVersionLessThan('3.11.0')) {
+  if (control.isJhipsterVersionLessThan('3.11.0')) {
     this.removeFile(`${application.clientSrcDir}app/layouts/navbar/active-link.directive.js`);
   }
-  if (this.isJhipsterVersionLessThan('4.11.1')) {
+  if (control.isJhipsterVersionLessThan('4.11.1')) {
     this.removeFile(`${application.clientSrcDir}app/app.main-aot.ts`);
   }
-  if (this.isJhipsterVersionLessThan('5.0.0')) {
+  if (control.isJhipsterVersionLessThan('5.0.0')) {
     this.removeFile(`${application.clientSrcDir}app//app.route.ts`);
     this.removeFile(`${application.clientSrcDir}app/shared/auth/account.service.ts`);
     this.removeFile(`${application.clientSrcDir}app/shared/auth/auth-jwt.service.ts`);
@@ -63,16 +65,16 @@ export default asWritingTask(function cleanupOldFilesTask(this, { application })
     this.removeFile(`${application.clientTestDir}spec/entry.ts`);
     this.removeFile(`${application.clientTestDir}karma.conf.js`);
   }
-  if (this.isJhipsterVersionLessThan('5.8.0')) {
+  if (control.isJhipsterVersionLessThan('5.8.0')) {
     this.removeFile(`${application.clientSrcDir}app/admin/metrics/metrics-modal.component.html`);
     this.removeFile(`${application.clientSrcDir}app/admin/metrics/metrics-modal.component.ts`);
     this.removeFile(`${application.clientTestDir}spec/app/admin/metrics/metrics-modal.component.spec.ts`);
   }
-  if (this.isJhipsterVersionLessThan('6.0.0')) {
+  if (control.isJhipsterVersionLessThan('6.0.0')) {
     this.removeFolder(`${application.clientSrcDir}app/shared/layout/header/menus`);
     this.removeFolder(`${application.clientTestDir}spec/app/shared/layout/header/menus`);
   }
-  if (this.isJhipsterVersionLessThan('6.3.0')) {
+  if (control.isJhipsterVersionLessThan('6.3.0')) {
     this.removeFile(`${application.clientSrcDir}app/account/index.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/index.ts`);
     this.removeFile(`${application.clientSrcDir}app/core/index.ts`);
@@ -81,17 +83,17 @@ export default asWritingTask(function cleanupOldFilesTask(this, { application })
     this.removeFile(`${application.clientSrcDir}app/shared/index.ts`);
     this.removeFile(`${application.clientSrcDir}app/shared/shared-common.module.ts`);
   }
-  if (this.isJhipsterVersionLessThan('6.4.0')) {
+  if (control.isJhipsterVersionLessThan('6.4.0')) {
     this.removeFile(`${application.clientSrcDir}app/admin/admin.route.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/admin.module.ts`);
   }
-  if (this.isJhipsterVersionLessThan('6.6.1')) {
+  if (control.isJhipsterVersionLessThan('6.6.1')) {
     this.removeFile(`${application.clientSrcDir}app/core/language/language.helper.ts`);
   }
-  if (this.isJhipsterVersionLessThan('6.8.0')) {
+  if (control.isJhipsterVersionLessThan('6.8.0')) {
     this.removeFile(`${application.clientSrcDir}app/tsconfig-aot.json`);
   }
-  if (this.isJhipsterVersionLessThan('7.0.0-beta.0')) {
+  if (control.isJhipsterVersionLessThan('7.0.0-beta.0')) {
     this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar.component.ts`);
     this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar.scss`);
     this.removeFile(`${application.clientSrcDir}app/admin/docs/docs.scss`);
@@ -235,25 +237,25 @@ export default asWritingTask(function cleanupOldFilesTask(this, { application })
     this.removeFile(`${application.clientTestDir}spec/app/shared/sort/sort.directive.spec.ts`);
     this.removeFile(`${application.clientTestDir}jest.conf.js`);
   }
-  if (this.isJhipsterVersionLessThan('7.0.0-beta.1')) {
+  if (control.isJhipsterVersionLessThan('7.0.0-beta.1')) {
     this.removeFile(`${application.clientSrcDir}app/core/user/account.model.ts`);
     this.removeFile(`${application.clientSrcDir}app/core/user/user.model.ts`);
     this.removeFile(`${application.clientSrcDir}app/core/user/user.service.ts`);
     this.removeFile(`${application.clientSrcDir}app/core/user/user.service.spec.ts`);
   }
-  if (this.isJhipsterVersionLessThan('7.0.0-beta.2')) {
+  if (control.isJhipsterVersionLessThan('7.0.0-beta.2')) {
     this.removeFile(`${application.clientSrcDir}app/core/config/config.service.ts`);
     this.removeFile(`${application.clientSrcDir}app/core/config/config.service.spec.ts`);
     this.removeFile('.npmrc');
   }
-  if (this.isJhipsterVersionLessThan('7.1.1')) {
+  if (control.isJhipsterVersionLessThan('7.1.1')) {
     this.removeFile('.npmrc');
   }
 
-  if (this.isJhipsterVersionLessThan('7.6.1')) {
+  if (control.isJhipsterVersionLessThan('7.6.1')) {
     this.removeFile(`${application.clientSrcDir}content/scss/rtl.scss`);
   }
-  if (this.isJhipsterVersionLessThan('7.10.0')) {
+  if (control.isJhipsterVersionLessThan('7.10.0')) {
     this.removeFile('.browserslistrc');
     this.removeFile(`${application.clientSrcDir}polyfills.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/user-management/user-management.module.ts`);
@@ -280,15 +282,134 @@ export default asWritingTask(function cleanupOldFilesTask(this, { application })
     this.removeFile(`${application.clientSrcDir}app/admin/tracker/tracker.module.ts`);
     this.removeFile(`${application.clientSrcDir}app/account/account.module.ts`);
   }
-  if (this.isJhipsterVersionLessThan('8.0.1')) {
+  if (control.isJhipsterVersionLessThan('8.0.1')) {
     this.removeFile(`${application.clientSrcDir}app/layouts/main/main.module.ts`);
     this.removeFile(`${application.clientSrcDir}app/admin/admin-routing.module.ts`);
     this.removeFile(`${application.clientSrcDir}app/app.module.ts`);
     this.removeFile(`${application.clientSrcDir}app/app-routing.module.ts`);
     this.removeFile(`${application.clientSrcDir}app/entities/entity-routing.module.ts`);
   }
-  if (this.isJhipsterVersionLessThan('8.1.1')) {
+  if (control.isJhipsterVersionLessThan('8.1.1')) {
     this.removeFile(`${application.clientSrcDir}app/entities/user/user.service.ts`);
     this.removeFile(`${application.clientSrcDir}app/entities/user/user.service.spec.ts`);
+  }
+  if (control.isJhipsterVersionLessThan('8.12.0')) {
+    this.removeFile(`${application.clientSrcDir}app/account/activate/activate.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/activate/activate.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/activate/activate.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/finish/password-reset-finish.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/finish/password-reset-finish.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/finish/password-reset-finish.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/init/password-reset-init.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/init/password-reset-init.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password-reset/init/password-reset-init.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar/password-strength-bar.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar/password-strength-bar.component.scss.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar/password-strength-bar.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password-strength-bar/password-strength-bar.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/password/password.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/register/register.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/register/register.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/register/register.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/sessions/sessions.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/sessions/sessions.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/sessions/sessions.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/settings/settings.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/settings/settings.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/account/settings/settings.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/configuration/configuration.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/configuration/configuration.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/configuration/configuration.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/docs/docs.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/docs/docs.component.scss.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/docs/docs.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/gateway/gateway.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/gateway/gateway.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/health.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/health.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/health.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/modal/health-modal.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/modal/health-modal.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/health/modal/health-modal.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/logs/logs.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/logs/logs.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/logs/logs.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/jvm-memory/jvm-memory.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/jvm-memory/jvm-memory.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-cache/metrics-cache.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-cache/metrics-cache.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-datasource/metrics-datasource.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-datasource/metrics-datasource.component.ts.ejs`);
+    this.removeFile(
+      `${application.clientSrcDir}app/admin/metrics/blocks/metrics-endpoints-requests/metrics-endpoints-requests.component.html.ejs`,
+    );
+    this.removeFile(
+      `${application.clientSrcDir}app/admin/metrics/blocks/metrics-endpoints-requests/metrics-endpoints-requests.component.ts.ejs`,
+    );
+    this.removeFile(
+      `${application.clientSrcDir}app/admin/metrics/blocks/metrics-garbagecollector/metrics-garbagecollector.component.html.ejs`,
+    );
+    this.removeFile(
+      `${application.clientSrcDir}app/admin/metrics/blocks/metrics-garbagecollector/metrics-garbagecollector.component.ts.ejs`,
+    );
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-modal-threads/metrics-modal-threads.component.html.ejs`);
+    this.removeFile(
+      `${application.clientSrcDir}app/admin/metrics/blocks/metrics-modal-threads/metrics-modal-threads.component.spec.ts.ejs`,
+    );
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-modal-threads/metrics-modal-threads.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-request/metrics-request.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-request/metrics-request.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-system/metrics-system.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/blocks/metrics-system/metrics-system.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/metrics.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/metrics.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/metrics/metrics.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/tracker/tracker.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/tracker/tracker.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/delete/user-management-delete-dialog.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/delete/user-management-delete-dialog.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/delete/user-management-delete-dialog.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/detail/user-management-detail.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/detail/user-management-detail.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/detail/user-management-detail.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/list/user-management.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/list/user-management.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/list/user-management.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/update/user-management-update.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/update/user-management-update.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/admin/user-management/update/user-management-update.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/home/home.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/home/home.component.scss.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/home/home.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/home/home.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/error/error.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/error/error.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/footer/footer.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/footer/footer.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/main/main.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/main/main.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/main/main.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/navbar/navbar.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/navbar/navbar.component.scss.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/navbar/navbar.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/navbar/navbar.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/profiles/page-ribbon.component.scss.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/profiles/page-ribbon.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/layouts/profiles/page-ribbon.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/login/login.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/login/login.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/login/login.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert-error.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert-error.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert-error.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/alert/alert.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/filter/filter.component.html.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/filter/filter.component.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/pagination/item-count.component.spec.ts.ejs`);
+    this.removeFile(`${application.clientSrcDir}app/shared/pagination/item-count.component.ts.ejs`);
   }
 });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,7 +16,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import entityOptions from '../../../jhipster/entity-options.js';
+import entityOptions from '../../../jhipster/entity-options.ts';
+
+import type { UnaryOptionType } from './unary-options.ts';
 
 const { MapperTypes, PaginationTypes, SearchTypes, ServiceTypes } = entityOptions;
 const { MAPSTRUCT } = MapperTypes;
@@ -32,7 +34,7 @@ const Options = {
   SEARCH: 'search',
   ANGULAR_SUFFIX: 'angularSuffix',
   CLIENT_ROOT_FOLDER: 'clientRootFolder',
-};
+} as const satisfies Record<string, string>;
 
 const optionNames = Object.values(Options);
 
@@ -50,7 +52,11 @@ const Values = {
   service: serviceValues,
   pagination: paginationValues,
   search: searchValues,
-};
+} as const;
+
+export type BinaryOptionType = (typeof Options)[keyof typeof Options];
+
+export type JDLOptionName = BinaryOptionType | UnaryOptionType | 'paginate';
 
 const DefaultValues = {
   [Options.DTO]: Values[Options.DTO].NO,
@@ -58,8 +64,8 @@ const DefaultValues = {
   [Options.PAGINATION]: Values[Options.PAGINATION].NO,
 };
 
-function getOptionName(optionValue): string | undefined {
-  return optionNames.find(optionName => Values[optionName]?.[optionValue]);
+function getOptionName(optionValue: string): JDLOptionName | undefined {
+  return optionNames.find(optionName => (Values as Record<string, Record<string, string>>)[optionName]?.[optionValue]);
 }
 
 const OptionValues = {
@@ -70,25 +76,25 @@ const OptionValues = {
   'infinite-scroll': 'INFINITE-SCROLL',
   elasticsearch: 'ELASTICSEARCH',
   couchbase: 'COUCHBASE',
-};
+} as const;
 
-function forEach(passedFunction) {
+function forEach(passedFunction: (optionName: BinaryOptionType) => void): void {
   if (!passedFunction) {
     throw new Error('A function has to be passed to loop over the binary options.');
   }
-  optionNames.forEach(passedFunction);
+  optionNames.forEach(optionName => passedFunction(optionName as BinaryOptionType));
 }
 
-function exists(passedOption, passedValue?: any) {
+function exists(passedOption: JDLOptionName, passedValue?: any) {
   return (
-    !Object.values(Options).includes(passedOption) ||
-    Object.values(Options).some(
+    !(optionNames as string[]).includes(passedOption) ||
+    optionNames.some(
       option =>
         passedOption === option &&
         (passedOption === Options.MICROSERVICE ||
           passedOption === Options.ANGULAR_SUFFIX ||
           passedOption === Options.CLIENT_ROOT_FOLDER ||
-          Object.values(Values[option]).includes(passedValue)),
+          Object.values((Values as Record<string, Record<string, string>>)[option]).includes(passedValue)),
     )
   );
 }

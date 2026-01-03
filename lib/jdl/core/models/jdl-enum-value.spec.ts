@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,8 +18,10 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import JDLEnumValue from '../models/jdl-enum-value.js';
+
+import JDLEnumValue from './jdl-enum-value.ts';
 
 describe('jdl - JDLEnumValue', () => {
   describe('new', () => {
@@ -32,7 +34,7 @@ describe('jdl - JDLEnumValue', () => {
   });
   describe('toString', () => {
     describe('without a specified enum value', () => {
-      let enumValue;
+      let enumValue: JDLEnumValue;
 
       before(() => {
         enumValue = new JDLEnumValue('FRENCH');
@@ -43,7 +45,7 @@ describe('jdl - JDLEnumValue', () => {
       });
     });
     describe('with a specified enum value', () => {
-      let enumValue;
+      let enumValue: JDLEnumValue;
 
       before(() => {
         enumValue = new JDLEnumValue('FRENCH', 'frenchy');

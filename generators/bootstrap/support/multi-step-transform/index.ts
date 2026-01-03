@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { type DuplexWithDebug, transform } from 'p-transform';
 import type { MemFsEditorFile } from 'mem-fs-editor';
-import TemplateFileFs from './template-file-fs.js';
-import type TemplateFile from './template-file.js';
+import { type DuplexWithDebug, transform } from 'p-transform';
+
+import TemplateFileFs from './template-file-fs.ts';
+import type TemplateFile from './template-file.ts';
 
 export const createMultiStepTransform = () => {
   const templateFileFs = new TemplateFileFs({});
@@ -38,10 +39,10 @@ export const createMultiStepTransform = () => {
     },
     async function () {
       for (const templateFile of templateFiles) {
-        const file = templateFile.file;
-        file.path = templateFile.basePath;
+        const file = templateFile.file!;
+        file.path = templateFile.basePath!;
         file.contents = Buffer.from(templateFile.render().concat('\n'));
-        this.push(templateFile.file);
+        this.push(templateFile.file!);
       }
     },
   ) as any;

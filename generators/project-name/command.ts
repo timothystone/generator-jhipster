@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,17 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { BASE_NAME_DESCRIPTION } from './constants.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+
+import { BASE_NAME_DESCRIPTION } from './constants.ts';
 
 const command = {
   configs: {
     defaultBaseName: {
-      internal: true,
+      internal: {
+        type: Function,
+      },
       scope: 'generator',
     },
     validateBaseName: {
-      internal: true,
+      internal: {
+        type: Function,
+      },
       scope: 'generator',
     },
     baseName: {
@@ -36,13 +41,19 @@ const command = {
       },
       prompt: gen => ({
         type: 'input',
-        validate: input => gen.validateBaseName(input),
+        validate: (input: string) => gen.validateBaseName(input),
         message: 'What is the base name of your application?',
         default: () => gen.defaultBaseName(),
       }),
       scope: 'storage',
     },
+    defaults: {
+      internal: {
+        type: Boolean,
+      },
+      scope: 'none',
+    },
   },
-} as const satisfies JHipsterCommandDefinition;
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

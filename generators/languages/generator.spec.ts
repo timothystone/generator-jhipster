@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,25 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { before, describe, expect, it } from 'esmocha';
-import { snakeCase } from 'lodash-es';
+import { before, describe, it } from 'esmocha';
+import { basename } from 'node:path';
 
-import { defaultHelpers as helpers, result as runResult } from '../../lib/testing/index.js';
-import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.js';
-import { GENERATOR_LANGUAGES } from '../generator-list.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result as runResult } from '../../lib/testing/index.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = basename(__dirname);
+const GENERATOR_LANGUAGES = 'languages';
+
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
-  it('generator-list constant matches folder name', async () => {
-    await expect((await import('../generator-list.js'))[`GENERATOR_${snakeCase(generator).toUpperCase()}`]).toBe(generator);
-  });
   shouldSupportFeatures(Generator);
   describe('blueprint support', () => testBlueprintSupport(generator));
   describe('languages migration', () => {

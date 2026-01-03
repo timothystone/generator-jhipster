@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,17 +17,16 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { after, before, describe, it } from 'esmocha';
-import { expect } from 'chai';
-import { createFolderIfItDoesNotExist, doesDirectoryExist, doesFileExist } from '../utils/file-utils.js';
-import { getPackageRoot } from '../../../index.js';
-import { getTestFile } from '../__test-support__/index.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { expect } from 'chai';
+
+import { getPackageRoot } from '../../../index.ts';
+import { getTestFile } from '../__test-support__/index.ts';
+
+import { createFolderIfItDoesNotExist, doesDirectoryExist, doesFileExist } from './file-utils.ts';
 
 describe('jdl - FileUtils', () => {
   describe('doesFileExist', () => {
@@ -60,12 +59,12 @@ describe('jdl - FileUtils', () => {
       });
       describe('with an invalid directory path', () => {
         it('should return false', () => {
-          expect(doesDirectoryExist(path.join(__dirname, 'invalid-folder'))).to.be.false;
+          expect(doesDirectoryExist(path.join(import.meta.dirname, 'invalid-folder'))).to.be.false;
         });
       });
       describe('with a valid directory path', () => {
         it('should return true', () => {
-          expect(doesDirectoryExist(__dirname)).to.be.true;
+          expect(doesDirectoryExist(import.meta.dirname)).to.be.true;
         });
       });
     });

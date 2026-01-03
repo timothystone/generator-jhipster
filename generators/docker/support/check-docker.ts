@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,14 +17,15 @@
  * limitations under the License.
  */
 import chalk from 'chalk';
-import type CoreGenerator from '../../base-core/generator.js';
+
+import type CoreGenerator from '../../base-core/generator.ts';
 
 /**
  * Check that Docker exists.
  * @this {import('../../base-core/index.js').default}
  */
 export const checkDocker = async function (this: CoreGenerator) {
-  if (this.abort || this.skipChecks) return;
+  if (this.skipChecks) return;
   const ret = await this.spawnCommand('docker -v', { reject: false, stdio: 'pipe' });
   if (ret.exitCode !== 0) {
     this.log.error(
@@ -39,8 +39,8 @@ export const checkDocker = async function (this: CoreGenerator) {
   }
 
   const dockerVersion = ret.stdout.split(' ')[2].replace(/,/g, '');
-  const dockerVersionMajor = dockerVersion.split('.')[0];
-  const dockerVersionMinor = dockerVersion.split('.')[1];
+  const dockerVersionMajor = parseInt(dockerVersion.split('.')[0]);
+  const dockerVersionMinor = parseInt(dockerVersion.split('.')[1]);
   if (dockerVersionMajor < 1 || (dockerVersionMajor === 1 && dockerVersionMinor < 10)) {
     this.log.error(
       chalk.red(

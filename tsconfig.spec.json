@@ -1,9 +1,13 @@
 {
-  "include": ["cli/**/*", "generators/**/*", "lib/**/*", "test/**/*", ".blueprint/**/*"],
+  "include": ["cli/**/*", "generators/**/*", "lib/**/*", "test/**/*", ".blueprint/**/*", "eslint.config.ts", "types/**/*"],
   "exclude": [],
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": []
+    "noImplicitAny": true,
+    "types": [],
+    // Disable for test files that have type-checking variables
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   }
 }

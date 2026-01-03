@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { databaseTypes, fieldTypes } from '../../../../lib/jhipster/index.js';
-import type { PrimaryKey } from '../../../../lib/types/application/entity.js';
+import { databaseTypes, fieldTypes } from '../../../../lib/jhipster/index.ts';
+import type { PrimaryKey } from '../../../base-application/types.ts';
 
 const dbTypes = fieldTypes;
 const { STRING, UUID, LONG, INTEGER } = dbTypes.CommonDBTypes;
@@ -26,7 +26,7 @@ const { SQL } = databaseTypes;
 /**
  * Returns the java value generator for the given primaryKey type
  */
-export const getJavaValueGeneratorForType = (type) => {
+export const getJavaValueGeneratorForType = (type: string) => {
   if (type === STRING) {
     return 'UUID.randomUUID().toString()';
   }

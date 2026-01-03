@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,17 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import semver from 'semver';
 import chalk from 'chalk';
+import semver from 'semver';
 
-import { packageJson } from '../../../lib/index.js';
+import { packageJson } from '../../../lib/index.ts';
+import type { Logger } from '../../../lib/utils/logger.ts';
 
-const isNodeVersionCompliantWithRequirement = (gatheredFromEnvironment, requiredVersion) =>
+const isNodeVersionCompliantWithRequirement = (gatheredFromEnvironment: string, requiredVersion: string) =>
   !semver.satisfies(gatheredFromEnvironment, requiredVersion);
 
 const getNodeReleaseFromCurrentProcess = () => process.release || {};
 
-const isNodeLTS = release => release.lts;
+const isNodeLTS = (release?: { lts?: string }) => Boolean(release?.lts);
 const getNodeVersionFromCurrentProcess = () => process.version;
 const requiredEngineFromPackageJson = () => packageJson.engines.node;
 
@@ -35,11 +36,11 @@ const requiredEngineFromPackageJson = () => packageJson.engines.node;
  * Check if Node is installed, up to date, and in LTS version.
  * Will emit a warning if the current node version is too old compared to the required one or if it is not in LTS.
  * @param {any} logger - the logging adapter
- * @param {string} requiredNodeVersion - the version needed to run the generator (defaulted to the one mentionned in package.json)
+ * @param {string} requiredNodeVersion - the version needed to run the generator (defaulted to the one mentioned in package.json)
  * @param {string} currentNodeVersion - the version of Node installed on the machine (defaulted to the one running the generator)
  */
 const checkNode = (
-  logger,
+  logger: Logger,
   requiredNodeVersion = requiredEngineFromPackageJson(),
   currentNodeVersion = getNodeVersionFromCurrentProcess(),
 ) => {

@@ -1,8 +1,12 @@
 import { describe, expect } from 'esmocha';
+
 import type { GeneratorMeta } from '@yeoman/types';
-import { defaultHelpers as helpers, runResult } from '../testing/index.js';
-import BaseApplicationGenerator from '../../generators/base-application/generator.js';
-import type { JHipsterCommandDefinition, JHipsterConfig } from './types.js';
+import type FullEnvironment from 'yeoman-environment';
+
+import BaseApplicationGenerator from '../../generators/base-application/generator.ts';
+import { defaultHelpers as helpers, runResult } from '../testing/index.ts';
+
+import type { JHipsterCommandDefinition, JHipsterConfig } from './types.ts';
 
 const notImplementedCallback = (methodName: string) => {
   return () => {
@@ -13,25 +17,28 @@ const notImplementedCallback = (methodName: string) => {
 const dummyMeta = {
   packageNamespace: 'jhipster',
   resolved: 'dummy',
-  importModule: () => Promise.resolve({ command: { loadGeneratorOptions: false } }),
+  importModule: () => Promise.resolve({ command: {} }),
   importGenerator: notImplementedCallback('importGenerator'),
   instantiateHelp: notImplementedCallback('instantiateHelp'),
   instantiate: notImplementedCallback('instantiate'),
 };
 
 class CommandGenerator extends BaseApplicationGenerator {
-  context = {};
-
-  constructor(args, opts, features) {
-    super(args, opts, { ...features, queueCommandTasks: true, jhipsterBootstrap: false });
+  constructor(args: any, opts: any, features: any) {
+    super(args, opts, { ...features, jhipsterBootstrap: false });
     this.customLifecycle = true;
+  }
+
+  rootGeneratorName() {
+    // Simulates a blueprint generator.
+    return 'blueprint';
   }
 }
 
-const runDummyCli = (cliArgs: string, config: JHipsterConfig<any>) => {
+const runDummyCli = (cliArgs: string, config: JHipsterConfig) => {
   return helpers
     .runCli(cliArgs.startsWith('jdl ') ? cliArgs : `dummy ${cliArgs}`.trim(), {
-      useEnvironmentBuilder: false,
+      prepareEnvironment: false,
       entrypointGenerator: 'dummy',
       commands: {
         dummy: { desc: 'dummy Generator' },
@@ -43,16 +50,18 @@ const runDummyCli = (cliArgs: string, config: JHipsterConfig<any>) => {
         throw new Error('command not set');
       }
 
-      const metaStore: Record<string, GeneratorMeta> = (env as any).store._meta;
-      metaStore['jhipster:dummy'] = {
+      const metaStore: Record<string, GeneratorMeta> = (env as FullEnvironment).getGeneratorsMeta();
+      const generatorMeta = {
         ...dummyMeta,
         namespace: 'jhipster:dummy',
         importModule: () =>
           Promise.resolve({
-            command: { configs: { testOption: config }, loadGeneratorOptions: false } satisfies JHipsterCommandDefinition,
+            command: { configs: { testOption: config } } satisfies JHipsterCommandDefinition,
           }),
         importGenerator: () => Promise.resolve(CommandGenerator as any),
       };
+      (CommandGenerator as any)._meta = generatorMeta;
+      metaStore['jhipster:dummy'] = generatorMeta;
       metaStore['jhipster:bootstrap'] = {
         ...dummyMeta,
         namespace: 'jhipster:bootstrap',
@@ -63,9 +72,9 @@ const runDummyCli = (cliArgs: string, config: JHipsterConfig<any>) => {
 const expectGeneratorOptionsTestOption = () => expect((runResult.generator.options as any).testOption);
 const expectGeneratorTestOption = () => expect((runResult.generator as any).testOption);
 const expectContextTestOption = () => expect(runResult.generator.context!.testOption);
-const expectJHipsterConfigTestOption = () => expect(runResult.generator.jhipsterConfig.testOption);
+const expectJHipsterConfigTestOption = () => expect((runResult.generator.jhipsterConfig as any).testOption);
 const expectBlueprintConfigTestOption = () => expect((runResult.generator as any).blueprintConfig.testOption);
-const expectApplicationTestOption = () => expect(runResult.generator.sharedData.getApplication().testOption);
+const expectApplicationTestOption = () => expect(runResult.application?.testOption);
 
 describe('generator commands', () => {
   for (const scope of ['generator', 'context', 'storage', 'blueprint', 'none'] as const) {
@@ -96,7 +105,7 @@ describe('generator commands', () => {
           expectGeneratorTestOption().toBe(value);
         }
 
-        if (scope !== 'context') {
+        if (!['application', 'context', 'storage', 'blueprint'].includes(scope)) {
           expectContextTestOption().toBeUndefined();
         } else if (Array.isArray(value)) {
           expectContextTestOption().toEqual(value);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,57 +16,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { passthrough } from 'p-transform';
+import type { VinylMemFsEditorFile } from 'mem-fs-editor';
 import { isFileStateModified } from 'mem-fs-editor/state';
 import { Minimatch } from 'minimatch';
+import { passthrough } from 'p-transform';
 import { Piscina } from 'piscina';
-import type { Options as PrettierOptions } from 'prettier';
-import type { MemFsEditorFile, VinylMemFsEditorFile } from 'mem-fs-editor';
-import type CoreGenerator from '../../base-core/index.js';
+
+import { isDistFolder } from '../../../lib/index.ts';
+import type CoreGenerator from '../../base-core/index.ts';
+
+import type prettierWorker from './prettier-worker.ts';
 
 const minimatch = new Minimatch('**/{.prettierrc**,.prettierignore}');
 export const isPrettierConfigFilePath = (filePath: string) => minimatch.match(filePath);
-export const isPrettierConfigFile = (file: MemFsEditorFile) => isPrettierConfigFilePath(file.path);
 
-type PrettierWorkerOptions = {
-  prettierPackageJson?: boolean;
-  prettierJava?: boolean;
-  prettierProperties?: boolean;
-  prettierOptions?: PrettierOptions;
-};
-
-export class PrettierPool extends Piscina {
-  constructor(options = {}) {
-    super({
-      maxThreads: 1,
-      filename: new URL('./prettier-worker.js', import.meta.url).href,
-      ...options,
-    });
-  }
-
-  apply(
-    data: PrettierWorkerOptions & { relativeFilePath: string; filePath: string; fileContents: string },
-  ): Promise<{ result?: string; errorMessage?: string }> {
-    return this.run(data);
-  }
-}
+const useTsFile = !isDistFolder();
 
 export const createPrettierTransform = async function (
   this: CoreGenerator,
-  options: PrettierWorkerOptions & { ignoreErrors?: boolean; extensions?: string; skipForks?: boolean } = {},
+  options: Omit<Parameters<typeof prettierWorker>[0], 'relativeFilePath' | 'filePath' | 'fileContents'> & {
+    ignoreErrors?: boolean;
+    extensions?: string;
+  } = {},
 ) {
-  const { ignoreErrors = false, extensions = '*', skipForks, ...workerOptions } = options;
+  const { ignoreErrors = false, extensions = '*', ...workerOptions } = options;
   const globExpression = extensions.includes(',') ? `**/*.{${extensions}}` : `**/*.${extensions}`;
   const minimatch = new Minimatch(globExpression, { dot: true });
 
-  let applyPrettier;
-  const pool = skipForks ? undefined : new PrettierPool();
-  if (skipForks) {
-    const { default: applyPrettierWorker } = await import('./prettier-worker.js');
-    applyPrettier = applyPrettierWorker;
-  } else {
-    applyPrettier = data => pool!.apply(data);
-  }
+  const pool = new Piscina<Parameters<typeof prettierWorker>[0], Awaited<ReturnType<typeof prettierWorker>>>({
+    maxThreads: 1,
+    filename: new URL(`./prettier-worker.${useTsFile ? 'ts' : 'js'}`, import.meta.url).href,
+    ...options,
+  });
 
   return passthrough(
     async (file: VinylMemFsEditorFile) => {
@@ -76,20 +57,20 @@ export const createPrettierTransform = async function (
       if (!file.contents) {
         throw new Error(`File content doesn't exist for ${file.relative}`);
       }
-      const { result, errorMessage } = await applyPrettier({
+      const result = await pool.run({
         relativeFilePath: file.relative,
         filePath: file.path,
         fileContents: file.contents.toString('utf8'),
         ...workerOptions,
       });
-      if (result) {
-        file.contents = Buffer.from(result);
+      if ('result' in result) {
+        file.contents = Buffer.from(result.result);
       }
-      if (errorMessage) {
+      if ('errorMessage' in result) {
         if (!ignoreErrors) {
-          throw new Error(errorMessage);
+          throw new Error(result.errorMessage);
         }
-        this?.log?.warn?.(errorMessage);
+        this?.log?.warn?.(result.errorMessage);
       }
     },
     async () => {

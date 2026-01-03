@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,8 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
+import type { ApplicationWithEntities } from '../../../lib/jdl/jdl-importer.ts';
 
 /**
  * Check if .yo-rc.json exists inside baseName folder.
@@ -32,7 +34,7 @@ export const baseNameConfigExists = (baseName?: string) =>
  * @param {any} importState
  * @return {boolean}
  */
-export const allNewApplications = applications => {
+export const allNewApplications = (applications: ApplicationWithEntities[]) => {
   if (applications.length < 2) return !baseNameConfigExists();
   return !applications.find(application => baseNameConfigExists(application.config.baseName));
 };

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,17 +17,16 @@
  * limitations under the License.
  */
 
-import type { TokenType } from 'chevrotain';
+import type { ITokenConfig, TokenType } from 'chevrotain';
 import { Lexer } from 'chevrotain';
 
-import { relationshipOptions } from '../../built-in-options/index.js';
-import { BINARY_OPTION, NAME, UNARY_OPTION } from './shared-tokens.js';
+import { relationshipOptions } from '../../built-in-options/index.ts';
 
-import ValidationTokens from './validation-tokens.js';
-import RelationshipTypeTokens from './relationship-type-tokens.js';
-import OptionTokens from './option-tokens.js';
-
-import createTokenFromConfigCreator from './token-creator.js';
+import OptionTokens from './option-tokens.ts';
+import RelationshipTypeTokens from './relationship-type-tokens.ts';
+import { BINARY_OPTION, NAME, UNARY_OPTION } from './shared-tokens.ts';
+import createTokenFromConfigCreator from './token-creator.ts';
+import ValidationTokens from './validation-tokens.ts';
 
 type TokenParam = { categoryToken: TokenType; tokens: TokenType[] };
 
@@ -37,7 +36,7 @@ export const buildTokens = (tokens: { applicationTokens: TokenParam; deploymentT
 
   const { BUILT_IN_ENTITY } = relationshipOptions;
 
-  function createTokenFromConfig(config) {
+  function createTokenFromConfig(config: ITokenConfig) {
     const newToken = createTokenFromConfigCreator(config);
     _tokens[config.name] = newToken;
     return newToken;

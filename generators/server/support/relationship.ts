@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,14 @@
  * limitations under the License.
  */
 
-import { addOtherRelationship } from '../../base-application/support/index.js';
-import type { ValidationResult } from '../../base/api.js';
-import { databaseTypes } from '../../../lib/jhipster/index.js';
-import type { Entity } from '../../../lib/types/application/entity.js';
-import type { Relationship } from '../../base-application/index.js';
+import { databaseTypes } from '../../../lib/jhipster/index.ts';
+import { addOtherRelationship } from '../../base-application/support/relationship.ts';
+import type { Entity as BaseApplicationEntity } from '../../base-application/types.ts';
+import type { ValidationResult } from '../../base-core/api.d.ts';
 
 const { NO: NO_DATABASE, SQL, NEO4J } = databaseTypes;
 
-export const addEntitiesOtherRelationships = (entities: Entity[]): ValidationResult => {
+export const addEntitiesOtherRelationships = (entities: BaseApplicationEntity[]): ValidationResult => {
   const result: { warning: string[] } = { warning: [] };
   for (const entity of entities.filter(entity => !entity.builtIn)) {
     for (const relationship of entity.relationships ?? []) {
@@ -43,7 +42,7 @@ export const addEntitiesOtherRelationships = (entities: Entity[]): ValidationRes
             `Ignoring '${entity.name}' definitions as it is using a built-in Entity '${relationship.otherEntityName}': 'otherEntityRelationshipName' is set with value '${relationship.otherEntityRelationshipName}' at relationship '${relationship.relationshipName}' but no back-reference was found`,
           );
         } else {
-          relationship.otherRelationship = addOtherRelationship(entity, relationship.otherEntity as Entity, relationship) as Relationship;
+          relationship.otherRelationship = addOtherRelationship(entity, relationship.otherEntity, relationship);
         }
       }
     }

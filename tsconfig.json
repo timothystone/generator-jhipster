@@ -8,7 +8,7 @@
     "types": ["node"],
 
     /* Modules */
-    "module": "node16" /* Specify what module code is generated. */,
+    "module": "nodenext" /* Specify what module code is generated. */,
     "rootDir": "./" /* Specify the root folder within your source files. */,
     "resolveJsonModule": true,
 
@@ -27,7 +27,11 @@
 
     /* Type Checking */
     "strict": true /* Enable all strict type-checking options. */,
-    "noImplicitAny": false,
+    "noUnusedLocals": true /* Report errors on unused local variables. */,
+    "noUnusedParameters": true /* Report errors on unused parameters. */,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
 
     /* Completeness */
     "skipLibCheck": false /* Skip type checking all .d.ts files. */

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -19,42 +19,43 @@
 export type HealthStatus = 'UP' | 'DOWN' | 'UNKNOWN' | 'OUT_OF_SERVICE';
 
 export type HealthKey =
-  <%_ if (messageBrokerAny) { _%>
+  <%_ if (locals.messageBrokerAny) { _%>
   | 'binders'
   <%_ } _%>
-  <%_ if (applicationTypeGateway || serviceDiscoveryAny) { _%>
+  <%_ if (locals.applicationTypeGateway || locals.serviceDiscoveryAny) { _%>
   | 'discoveryComposite'
   | 'refreshScope'
   | 'clientConfigServer'
   | 'hystrix'
   <%_ } _%>
-  <%_ if (serviceDiscoveryConsul) { _%>
+  <%_ if (locals.serviceDiscoveryConsul) { _%>
   | 'consul'
   <%_ } _%>
   | 'diskSpace'
+  | 'ssl'
   | 'mail'
   | 'ping'
   | 'livenessState'
   | 'readinessState'
-  <%_ if (searchEngineElasticsearch) { _%>
+  <%_ if (locals.searchEngineElasticsearch) { _%>
   | 'elasticsearch'
   <%_ } _%>
-<%_ if (databaseTypeSql) { _%>
-  <%_ if (reactive) { _%>
+<%_ if (locals.databaseTypeSql) { _%>
+  <%_ if (locals.reactive) { _%>
   | 'r2dbc'
   <%_ } else { _%>
   | 'db'
   <%_ } _%>
-<%_ } else if (databaseTypeMongodb) { _%>
+<%_ } else if (locals.databaseTypeMongodb) { _%>
   | 'mongo'
-<%_ } else if (databaseTypeCassandra) { _%>
+<%_ } else if (locals.databaseTypeCassandra) { _%>
   | 'cassandra'
-<%_ } else if (databaseTypeCouchbase) { _%>
+<%_ } else if (locals.databaseTypeCouchbase) { _%>
   | 'couchbase'
 <%_ } _%>
   ;
 
-export interface Health {
+export interface HealthModel {
   status: HealthStatus;
   components?: Partial<Record<HealthKey, HealthDetails>>;
 }

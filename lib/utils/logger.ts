@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,14 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import chalk from 'chalk';
-import type { Logger as LoggerApi } from '@yeoman/types';
 import type { Logger as DefaultLogger, LoggerOptions } from '@yeoman/adapter';
 import { createLogger } from '@yeoman/adapter';
+import type { Logger as LoggerApi } from '@yeoman/types';
+import chalk from 'chalk';
 import createDebug from 'debug';
 
 /**
- * formats the message to be displayed in the console.
+ * Formats the message to be displayed in the console.
  * @param message the info message to format.
  */
 const addPrefixToParameters = (prefix: string, ...args: Parameters<LoggerApi['write']>): Parameters<LoggerApi['write']> => {
@@ -52,7 +52,7 @@ export const createJHipsterLogger = (options: LoggerOptions & { namespace?: stri
   const customJHipsterLogger = {
     debugger: debug,
 
-    debug(msg, ...args) {
+    debug(msg: any, ...args: any[]) {
       this.debugger(msg, ...args);
     },
 
@@ -71,7 +71,7 @@ export const createJHipsterLogger = (options: LoggerOptions & { namespace?: stri
       return this;
     },
 
-    error(this: DefaultLogger, msg, error) {
+    error(this: DefaultLogger, msg: string, error: string) {
       const errorMessage = formatErrorMessageHeader(msg);
       this.console.error(...errorMessage);
       if (error) {
@@ -81,7 +81,7 @@ export const createJHipsterLogger = (options: LoggerOptions & { namespace?: stri
       process.exitCode = 1;
     },
 
-    fatal(this: any, msg, trace?) {
+    fatal(this: DefaultLogger, msg: string, trace?: boolean) {
       const fatalMessage = formatFatalMessageHeader(msg);
       this.console.error(...fatalMessage);
       if (trace) {

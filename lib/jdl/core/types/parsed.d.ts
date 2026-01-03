@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { RelationshipType } from '../basic-types/relationships.js';
+import type { ApplicationType } from '../../../core/application-types.ts';
+import type { RelationshipType } from '../basic-types/relationships.ts';
 
 export type ParsedJDLAnnotation = {
   optionName: string;
-  type: 'UNARY' | string;
+  type: 'UNARY' | 'BINARY';
   optionValue?: boolean | string | number;
 };
 
@@ -60,20 +61,29 @@ export type ParsedJDLEnum = {
   values: ParsedJDLEnumValue[];
   documentation?: string;
 };
-export type ParsedJDLOption = {
+
+export type ParsedJDLOptionConfig = {
   list: string[]; // entity names
   excluded: string[]; // excluded entity names
 };
 
+export type ParsedJDLOption = {
+  optionName: string;
+} & ParsedJDLOptionConfig;
+
+export type ParsedJDLBinaryOption = {
+  optionValue: string;
+} & ParsedJDLOption;
+
 export type ParsedJDLUseOption = {
   optionValues: string[];
-} & ParsedJDLOption;
+} & ParsedJDLOptionConfig;
 
 export type ParsedJDLApplication = {
   config: ParsedJDLApplicationConfig;
   namespaceConfigs?: Record<string, Record<string, boolean | number | string[] | string>>;
   entities?: string[];
-  options?: Record<string, ParsedJDLOption | Record<string, ParsedJDLOption>>;
+  options?: Record<string, ParsedJDLOptionConfig | Record<string, ParsedJDLOptionConfig>>;
   useOptions?: ParsedJDLUseOption[];
 };
 
@@ -104,7 +114,7 @@ export type ParsedJDLRelationship = {
 };
 
 export type ParsedJDLApplications = {
-  applications: ParsedJDLApplication[];
+  applications: (ParsedJDLApplication & { entitiesOptions?: { entityList: string[]; excluded: string[] } })[];
   entities: ParsedJDLEntity[];
   relationships: ParsedJDLRelationship[];
   deployments: ParsedJDLDeployment[];
@@ -118,7 +128,6 @@ export type ParsedJDLRoot = {
   parsedContent: ParsedJDLApplications;
   document?: ParsedJDLApplications; // deprecated
   entities?: ParsedJDLEntity[];
-  applicationType?: string;
+  applicationType?: ApplicationType;
   applicationName?: string;
-  databaseType?: string;
 };

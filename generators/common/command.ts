@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_BOOTSTRAP_APPLICATION_BASE } from '../generator-list.js';
+import chalk from 'chalk';
 
-const command: JHipsterCommandDefinition = {
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+import { applicationTypesChoices } from '../../lib/core/application-types.ts';
+
+const command = {
   configs: {
     defaultEnvironment: {
       description: 'Default environment for the application',
@@ -32,8 +34,45 @@ const command: JHipsterCommandDefinition = {
       default: 'prod',
       scope: 'storage',
     },
+    skipClient: {
+      cli: {
+        description: 'Skip the client-side application generation',
+        type: Boolean,
+      },
+      scope: 'storage',
+    },
+    skipServer: {
+      cli: {
+        description: 'Skip the server-side application generation',
+        type: Boolean,
+      },
+      scope: 'storage',
+    },
+    skipUserManagement: {
+      description: 'Skip the user management module during app generation',
+      cli: {
+        type: Boolean,
+      },
+      scope: 'storage',
+    },
+    applicationType: {
+      description: 'Application type to generate',
+      cli: {
+        type: String,
+      },
+      prompt: {
+        type: 'select',
+        message: `Which ${chalk.yellow('*type*')} of application would you like to create?`,
+      },
+      choices: applicationTypesChoices,
+      scope: 'storage',
+    },
   },
-  import: [GENERATOR_BOOTSTRAP_APPLICATION_BASE, 'jhipster:javascript:prettier', 'jhipster:javascript:husky'],
-};
+  import: [
+    'jhipster:base-application:bootstrap',
+    'jhipster:javascript-simple-application:prettier',
+    'jhipster:javascript-simple-application:husky',
+  ],
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

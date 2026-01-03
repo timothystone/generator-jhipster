@@ -2,7 +2,7 @@
 // stderr unlike yeoman's log() so that user can easily redirect output to a file.
 /* eslint-disable no-console */
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -21,31 +21,32 @@
  */
 import chalk from 'chalk';
 
-import BaseApplicationGenerator from '../base-application/index.js';
-import JSONToJDLEntityConverter from '../../lib/jdl/converters/json-to-jdl-entity-converter.js';
-import JSONToJDLOptionConverter from '../../lib/jdl/converters/json-to-jdl-option-converter.js';
-import type { JHipsterGeneratorFeatures, JHipsterGeneratorOptions } from '../base/api.js';
-import { YO_RC_FILE } from '../generator-constants.js';
-import { applicationsLookup } from '../workspaces/support/applications-lookup.js';
-import type { Entity } from '../../lib/types/base/entity.js';
-import { convertFieldBlobType } from '../../lib/application/field-types.js';
-import { replaceSensitiveConfig } from './support/utils.js';
+import JSONToJDLEntityConverter from '../../lib/jdl/converters/json-to-jdl-entity-converter.ts';
+import JSONToJDLOptionConverter from '../../lib/jdl/converters/json-to-jdl-option-converter.ts';
+import type { Entity } from '../../lib/jhipster/types/entity.ts';
+import { getEntitiesFromDir } from '../base-application/support/index.ts';
+import type { Config as CoreConfig, Features as CoreFeatures, Options as CoreOptions } from '../base-core/index.ts';
+import BaseCoreGenerator from '../base-core/index.ts';
+import { JHIPSTER_CONFIG_DIR, YO_RC_FILE } from '../generator-constants.ts';
+import { applicationsLookup } from '../workspaces/support/applications-lookup.ts';
 
-const isInfoCommand = commandName => commandName === 'info' || undefined;
+import { replaceSensitiveConfig } from './support/utils.ts';
 
-export default class InfoGenerator extends BaseApplicationGenerator {
-  constructor(args: string | string[], options: JHipsterGeneratorOptions, features: JHipsterGeneratorFeatures) {
+const isInfoCommand = (commandName: string): true | undefined => commandName === 'info' || undefined;
+
+export default class InfoGenerator extends BaseCoreGenerator<
+  CoreConfig & { appsFolders?: string[]; baseName?: string; packages?: string[] }
+> {
+  constructor(args?: string[], options?: CoreOptions, features?: CoreFeatures) {
     super(args, options, {
-      jhipsterBootstrap: false,
-      storeJHipsterVersion: false,
-      customInstallTask: isInfoCommand(options.commandName),
-      customCommitTask: isInfoCommand(options.commandName),
+      customInstallTask: isInfoCommand(options!.commandName),
+      customCommitTask: isInfoCommand(options!.commandName),
       ...features,
     });
   }
 
-  get [BaseApplicationGenerator.INITIALIZING]() {
-    return this.asInitializingTaskGroup({
+  get [BaseCoreGenerator.INITIALIZING]() {
+    return this.asAnyTaskGroup({
       sayHello() {
         this.log.log(chalk.white('Welcome to the JHipster Information Sub-Generator\n'));
       },
@@ -143,16 +144,13 @@ export default class InfoGenerator extends BaseApplicationGenerator {
     let jdlObject;
     const entities = new Map<string, Entity>();
     try {
-      this.getExistingEntities().forEach(({ name, definition: entity }) => {
-        if (entity.fields) {
-          for (const field of entity.fields) {
-            if (field.fieldType === 'byte[]') {
-              convertFieldBlobType(field);
-            }
-          }
+      const foundEntities = getEntitiesFromDir(this.destinationPath(JHIPSTER_CONFIG_DIR));
+      for (const entity of foundEntities) {
+        const entityJson = this.readDestinationJSON(this.destinationPath(JHIPSTER_CONFIG_DIR, `${entity}.json`));
+        if (entityJson) {
+          entities.set(entity, entityJson);
         }
-        entities.set(name, entity);
-      });
+      }
       jdlObject = JSONToJDLEntityConverter.convertEntitiesToJDL(entities);
       JSONToJDLOptionConverter.convertServerOptionsToJDL({ 'generator-jhipster': this.config.getAll() }, jdlObject);
     } catch (error) {

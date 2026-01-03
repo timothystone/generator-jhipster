@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,27 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import type JDLEnum from '../../core/models/jdl-enum.ts';
 
-import { reservedKeywords } from '../../../jhipster/index.js';
-import type { ValidatorOptions } from './validator.js';
-import Validator from './validator.js';
+import Validator from './validator.ts';
 
-const { isReservedClassName } = reservedKeywords;
 export default class EnumValidator extends Validator {
   constructor() {
     super('enum', ['name']);
   }
 
-  validate(jdlEnum, options: ValidatorOptions = {}) {
+  validate(jdlEnum: JDLEnum) {
     super.validate(jdlEnum);
-    if (options.checkReservedKeywords) {
-      checkForReservedClassName(jdlEnum);
-    }
-  }
-}
-
-function checkForReservedClassName(jdlEnum) {
-  if (isReservedClassName(jdlEnum.name)) {
-    throw new Error(`The enum name '${jdlEnum.name}' is reserved keyword and can not be used as enum class name.`);
   }
 }

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -17,8 +17,8 @@
  limitations under the License.
 -%>
 <%#
- This is a fragment file, it will be merged into to root template if available.
- EJS fragments will process % delimiter tags in template and & delimiter tags in the merge process.
+ This is a fragment file, it will be merged into the root template if available.
+ EJS fragments will process % delimiter tags in the template and & delimiter tags during the merge process.
 -%>
 <&_
  // Register sections and max allowed fragments, 0 for unlimited.
@@ -28,16 +28,14 @@
 _&>
 <%_
 let clientPackageMngrName = 'Npm';
-let clientPackageMngrWrapper = useNpmWrapper ? './npmw' : clientPackageManager;
-let clientPackageMngrAddGlobal = 'install -g';
 let clientPackageMngrAdd = 'install --save --save-exact';
 let clientPackageMngrAddDev = 'install --save-dev --save-exact';
 -%>
 <&_ if (fragment.developmentSection) { -&>
-<%_ if (useNpmWrapper) { _%>
-The build system will install automatically the recommended version of Node and <%= clientPackageManager %>.
+<%_ if (locals.useNpmWrapper) { _%>
+The build system will install automatically the recommended version of Node and <%- nodePackageManager %>.
 
-We provide a wrapper to launch <%= clientPackageManager %>.
+We provide a wrapper to launch <%- nodePackageManager %>.
 <%_ } else { _%>
 Before you can build this project, you must install and configure the following dependencies on your machine:
 
@@ -48,23 +46,23 @@ After installing Node, you should be able to run the following command to instal
 <%_ } _%>
 You will only need to run this command when dependencies change in [package.json](package.json).
 
-```
-<%= clientPackageMngrWrapper %> install
+```bash
+<%= nodePackageManagerCommand %> install
 ```
 
-We use <%= clientPackageManager %> scripts and <&- fragments.customCliSection(' ') &>[<%= clientBundlerName %>][] as our build system.
+We use <%- nodePackageManager %> scripts and <&- fragments.customCliSection(' ') &><%= clientBundlerName %> as our build system.
 
-  <%_ if (cacheProviderRedis || cacheProviderHazelcast || cacheProviderMemcached) { _%>
+  <%_ if (locals.cacheProviderRedis || locals.cacheProviderHazelcast || locals.cacheProviderMemcached) { _%>
 If you are using <%= cacheProvider %> as a cache, you will have to launch a cache server.
 To start your cache server, run:
 
-```
-docker compose -f src/main/docker/<%= cacheProviderHazelcast?'hazelcast-management-center':cacheProvider %>.yml up -d
+```bash
+docker compose -f src/main/docker/<%= locals.cacheProviderHazelcast ? 'hazelcast-management-center' : cacheProvider %>.yml up -d
 ```
 
     <%_ if (cacheProviderRedis) { _%>
 
-The cache can also be turned off by adding to the application yaml:
+The cache can also be turned off by adding to the `application.yml`:
 
 ```yaml
 spring:
@@ -72,31 +70,25 @@ spring:
         type: none
 ```
 
-See [here](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-caching.html#boot-features-caching-provider-none) for details.
+See [here](https://docs.spring.io/spring-boot/reference/io/caching.html#io.caching.provider.none) for details.
 
-**WARNING**: If you're using the second level Hibernate cache and disabling the Spring cache, you have to disable the second level Hibernate cache as well since they are using
-the same CacheManager.
+**WARNING**: If you're using the second level Hibernate cache and disabling the Spring cache, you have to disable the second level Hibernate cache as well since they are using the same CacheManager.
     <%_ } _%>
   <%_ } _%>
 
 Run the following commands in two separate terminals to create a blissful development experience where your browser
 auto-refreshes when files change on your hard drive.
 
-```
-  <%_ if (buildToolMaven) { _%>
-./mvnw
-  <%_ } _%>
-  <%_ if (buildToolGradle) { _%>
-./gradlew -x webapp
-  <%_ } _%>
-<%= clientPackageMngrWrapper %> start
+```bash
+<%= nodePackageManagerCommand %> backend:start
+<%= nodePackageManagerCommand %> start
 ```
 
 <%= clientPackageMngrName %> is also used to manage CSS and JavaScript dependencies used in this application. You can upgrade dependencies by
-specifying a newer version in [package.json](package.json). You can also run `<%= clientPackageMngrWrapper %> update` and `<%= clientPackageMngrWrapper %> install` to manage dependencies.
-Add the `help` flag on any command to see how you can use it. For example, `<%= clientPackageMngrWrapper %> help update`.
+specifying a newer version in [package.json](package.json). You can also run `<%= nodePackageManagerCommand %> update` and `<%= nodePackageManagerCommand %> install` to manage dependencies.
+Add the `help` flag on any command to see how you can use it. For example, `<%= nodePackageManagerCommand %> help update`.
 
-The `<%= clientPackageMngrWrapper %> run` command will list all the scripts available to run for this project.
+The `<%= nodePackageManagerCommand %> run` command will list all the scripts available to run for this project.
 
 ### PWA Support
 
@@ -115,7 +107,7 @@ The service worker initialization code is commented out by default. To enable it
 </script>
 ```
 
-Note: [Workbox](https://developers.google.com/web/tools/workbox/) powers JHipster's service worker. It dynamically generates the `service-worker.js` file.
+Note: [Workbox](https://developer.chrome.com/docs/workbox) powers JHipster's service worker. It dynamically generates the `service-worker.js` file.
   <%_ } _%>
   <%_ if (clientFrameworkAngular) { _%>
 The service worker initialization code is disabled by default. To enable it, uncomment the following code in `<%= clientSrcDir %>app/app.config.ts`:
@@ -127,36 +119,36 @@ ServiceWorkerModule.register('ngsw-worker.js', { enabled: false }),
 
 ### Managing dependencies
 
-For example, to add [Leaflet][] library as a runtime dependency of your application, you would run following command:
+For example, to add [Leaflet](https://leafletjs.com/) library as a runtime dependency of your application, you would run the following command:
 
-```
-<%= clientPackageMngrWrapper %> <%= clientPackageMngrAdd %> leaflet
+```bash
+<%= nodePackageManagerCommand %> <%= clientPackageMngrAdd %> leaflet
 ```
 
-To benefit from TypeScript type definitions from [DefinitelyTyped][] repository in development, you would run following command:
+To benefit from TypeScript type definitions from [DefinitelyTyped](https://definitelytyped.org/) repository in development, you would run the following command:
 
-```
-<%= clientPackageMngrWrapper %> <%= clientPackageMngrAddDev %> @types/leaflet
+```bash
+<%= nodePackageManagerCommand %> <%= clientPackageMngrAddDev %> @types/leaflet
 ```
 
 Then you would import the JS and CSS files specified in library's installation instructions so that [<%= clientBundlerName %>][] knows about them:
   <%_ if (clientFrameworkAngular) { _%>
 Edit [<%= clientSrcDir %>app/app.config.ts](<%= clientSrcDir %>app/app.config.ts) file:
 
-```
+```typescript
 import 'leaflet/dist/leaflet.js';
 ```
 
 Edit [<%= clientSrcDir %>content/scss/vendor.scss](<%= clientSrcDir %>content/scss/vendor.scss) file:
 
-```
+```typescript
 @import 'leaflet/dist/leaflet.css';
 ```
 
   <%_ } _%>
 Note: There are still a few other things remaining to do for Leaflet that we won't detail here.
 
-For further instructions on how to develop with JHipster, have a look at [Using JHipster in development][].
+For further instructions on how to develop with JHipster, have a look at [Using JHipster in development](https://www.jhipster.tech/development/).
 
 <%_ if (microfrontend) { -%>
 ### Developing Microfrontend
@@ -166,28 +158,28 @@ You must start a pre-built gateway version or from source.
 
 Start gateway from source:
 
-```
+```bash
 cd gateway
-<%= clientPackageMngrWrapper %> run docker:db:up # start database if necessary
-<%= clientPackageMngrWrapper %> run docker:others:up # start service discovery and authentication service if necessary
-<%= clientPackageMngrWrapper %> run app:start # alias for ./(mvnw|gradlew)
+<%= nodePackageManagerCommand %> run docker:db:up # start database if necessary
+<%= nodePackageManagerCommand %> run docker:others:up # start service discovery and authentication service if necessary
+<%= nodePackageManagerCommand %> run app:start # alias for ./(mvnw|gradlew)
 ```
 
 Microfrontend's `build-watch` script is configured to watch and compile microfrontend's sources and synchronizes with gateway's frontend.
 Start it using:
 
-```
+```bash
 cd microfrontend
-<%= clientPackageMngrWrapper %> run docker:db:up # start database if necessary
-<%= clientPackageMngrWrapper %> run build-watch
+<%= nodePackageManagerCommand %> run docker:db:up # start database if necessary
+<%= nodePackageManagerCommand %> run build-watch
 ```
 
 It's possible to run microfrontend's frontend standalone using:
 
-```
+```bash
 cd microfrontend
-<%= clientPackageMngrWrapper %> run docker:db:up # start database if necessary
-<%= clientPackageMngrWrapper %> watch # alias for `npm start` and `npm run backend:start` in parallel
+<%= nodePackageManagerCommand %> run docker:db:up # start database if necessary
+<%= nodePackageManagerCommand %> watch # alias for `npm start` and `npm run backend:start` in parallel
 ```
 
 <%_ } -%>
@@ -196,37 +188,23 @@ cd microfrontend
 <&_ if (fragment.testingSection) { -&>
 ### Client tests
 
-Unit tests are run by [<%= clientTestFrameworkName %>][]. They're located near components and can be run with:
+Unit tests are run by <%= clientTestFrameworkName %>. They're located near components and can be run with:
 
+```bash
+<%= nodePackageManagerCommand %> test
 ```
-<%= clientPackageMngrWrapper %> test
-```
-
-  <%_ if (cypressTests) { _%>
-UI end-to-end tests are powered by [Cypress][]. They're located in [<%= clientTestDir %>cypress](<%= clientTestDir %>cypress)
-and can be run by starting Spring Boot in one terminal (`<% if (buildToolMaven) { %>./mvnw spring-boot:run<% } else { %>./gradlew bootRun<% } %>`) and running the tests (`<%= clientPackageMngrWrapper %> run e2e`) in a second one.
-
-#### Lighthouse audits
-
-You can execute automated [Lighthouse audits](https://developers.google.com/web/tools/lighthouse/) with [cypress-audit](https://github.com/mfrachet/cypress-audit) by running `<%= clientPackageMngrWrapper %> run e2e:cypress:audits`.
-You should only run the audits when your application is packaged with the production profile.
-The lighthouse report is created in <% if (buildToolMaven) { %>`target/cypress/lhreport.html`<% } else { %>`build/cypress/lhreport.html`<% } %>
-  <%_ } _%>
 <&_ } -&>
 <&_ if (fragment.referenceSection) { -&>
 <%_ if (clientBundlerWebpack) { _%>
-[Webpack]: https://webpack.github.io/
+- [Webpack](https://webpack.js.org/)
 <%_ } -%>
 <%_ if (clientFrameworkReact || clientFrameworkAngular || microfrontend) { _%>
-[BrowserSync]: https://www.browsersync.io/
+- [BrowserSync](https://www.browsersync.io/)
 <%_ } -%>
 <%_ if (clientFrameworkAngular || clientFrameworkReact) { _%>
-[Jest]: https://jestjs.io
+- [Jest](https://jestjs.io)
 <%_ } -%>
-<%_ if (cypressTests) { _%>
-[Cypress]: https://www.cypress.io/
-<%_ } -%>
-[Leaflet]: https://leafletjs.com/
-[DefinitelyTyped]: https://definitelytyped.org/
+- [Leaflet](https://leafletjs.com/)
+- [DefinitelyTyped](https://definitelytyped.org/)
 <&_ } -&>
 <&- fragments.render() -&>

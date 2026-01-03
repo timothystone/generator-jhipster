@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,16 +18,15 @@
  */
 
 import { beforeEach, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { formatDateForChangelog } from '../../base/support/index.js';
-import BaseGenerator from '../../base/index.js';
-import { getConfigWithDefaults } from '../../../lib/jhipster/index.js';
-import { entityDefaultConfig, prepareEntityPrimaryKeyForTemplates } from './prepare-entity.js';
+
+import { formatDateForChangelog } from '../../base/support/index.ts';
+import type { Entity as BaseApplicationEntity } from '../types.d.ts';
+
+import { entityDefaultConfig, prepareEntityPrimaryKeyForTemplates } from './prepare-entity.ts';
 
 describe('generator - base-application - support - prepareEntity', () => {
-  const defaultGenerator = { jhipsterConfig: getConfigWithDefaults() };
-  Object.setPrototypeOf(defaultGenerator, BaseGenerator.prototype);
-
   describe('prepareEntityPrimaryKeyForTemplates', () => {
     describe('with field with id name', () => {
       describe('without @Id', () => {
@@ -35,7 +34,7 @@ describe('generator - base-application - support - prepareEntity', () => {
           ...entityDefaultConfig,
           name: 'Entity',
           changelogDate: formatDateForChangelog(new Date()),
-          fields: [{ fieldName: 'id', fieldType: 'CustomType', path: ['id'], relationshipsPath: [] }],
+          fields: [{ fieldName: 'id', fieldType: 'CustomType', path: ['id'] }],
         };
         beforeEach(() => {
           entity = prepareEntityPrimaryKeyForTemplates({ entity });
@@ -43,16 +42,14 @@ describe('generator - base-application - support - prepareEntity', () => {
         it('should adopt id field as @Id', () => {
           expect(entity.fields[0]).to.eql({
             autoGenerate: true,
-            dynamic: false,
             fieldName: 'id',
             fieldType: 'CustomType',
             id: true,
             path: ['id'],
-            relationshipsPath: [],
           });
         });
 
-        it('should contains correct structure', () => {
+        it('should contain correct structure', () => {
           expect(entity.primaryKey).to.deep.include({
             name: 'id',
             nameCapitalized: 'Id',
@@ -65,33 +62,35 @@ describe('generator - base-application - support - prepareEntity', () => {
       });
 
       describe('with @Id', () => {
-        let entity = {
-          ...entityDefaultConfig,
-          name: 'Entity',
-          changelogDate: formatDateForChangelog(new Date()),
-          fields: [
-            { fieldName: 'id', fieldType: 'CustomType', path: ['id'], relationshipsPath: [] },
-            { fieldName: 'uuid', fieldType: 'UUID', id: true, path: ['uuid'], relationshipsPath: [] },
-          ],
-        };
+        let entity: BaseApplicationEntity;
         beforeEach(() => {
-          entity = prepareEntityPrimaryKeyForTemplates({ entity });
+          entity = prepareEntityPrimaryKeyForTemplates({
+            entity: {
+              ...entityDefaultConfig,
+              name: 'Entity',
+              changelogDate: formatDateForChangelog(new Date()),
+              fields: [
+                { fieldName: 'id', fieldType: 'CustomType', path: ['id'] },
+                { fieldName: 'uuid', fieldType: 'UUID', id: true, path: ['uuid'] },
+              ],
+            } as unknown as BaseApplicationEntity,
+          });
         });
         it('should not adopt id field as @Id', () => {
           expect(entity.fields[0]).to.eql({
             fieldName: 'id',
             fieldType: 'CustomType',
             path: ['id'],
-            relationshipsPath: [],
           });
         });
       });
 
       describe('with multiple @Id relationships and field', () => {
-        let entity1;
-        let entity2;
-        let entity3;
-        let entity4;
+        // FIXME: mock data
+        let entity1: any;
+        let entity2: any;
+        let entity3: any;
+        let entity4: any;
 
         beforeEach(() => {
           entity1 = {
@@ -107,7 +106,6 @@ describe('generator - base-application - support - prepareEntity', () => {
                 fieldType: 'String',
                 id: true,
                 path: ['id'],
-                relationshipsPath: [],
               },
             ],
           };
@@ -125,7 +123,6 @@ describe('generator - base-application - support - prepareEntity', () => {
                 id: true,
                 autoGenerate: true,
                 path: ['uuid'],
-                relationshipsPath: [],
               },
             ],
           };
@@ -157,7 +154,6 @@ describe('generator - base-application - support - prepareEntity', () => {
                 id: true,
                 autoGenerate: false,
                 path: ['uuid'],
-                relationshipsPath: [],
               },
             ],
             relationships: [
@@ -251,10 +247,8 @@ describe('generator - base-application - support - prepareEntity', () => {
             columnName: 'other_entity1_id',
             derivedPath: ['otherEntity1', 'id'],
             path: ['otherEntity1', 'id'],
-            relationshipsPath: [entity4.relationships[0]],
             autoGenerate: true,
             derivedEntity: entity1,
-            reference: field.reference,
           });
         });
 
@@ -280,9 +274,7 @@ describe('generator - base-application - support - prepareEntity', () => {
             columnName: 'other_entity3_uuid',
             derivedPath: ['otherEntity3', 'uuid'],
             path: ['otherEntity3', 'entity2', 'uuid'],
-            relationshipsPath: [entity4.relationships[1], entity3.relationships[0]],
             derivedEntity: entity3,
-            reference: field.reference,
           });
         });
 

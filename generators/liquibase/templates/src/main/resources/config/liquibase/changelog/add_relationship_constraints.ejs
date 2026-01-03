@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -20,7 +20,6 @@
 const relationshipType = relationship.relationshipType,
 relationshipName = relationship.relationshipName,
 ownerSide = relationship.ownerSide,
-otherEntityTableName = relationship.otherEntityTableName,
 onDelete = relationship.onDelete, 
 onUpdate = relationship.onUpdate;
 if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && ownerSide)) {
@@ -39,8 +38,8 @@ if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && 
                                  baseTableName="<%= entity.entityTableName %>"
                                  constraintName="<%= constraintName %>"
                                  referencedColumnNames="<%= referencedColumnNames %>"
-                                 referencedTableName="<%= otherEntityTableName %>"
-        <%_ if (onDelete) { _%>                                 
+                                 referencedTableName="<%= relationship.otherEntity.entityTableName %>"
+        <%_ if (onDelete) { _%>
                                  onDelete="<%= onDelete %>"
         <%_ } _%>
         <%_ if (onUpdate) { _%>
@@ -54,7 +53,7 @@ if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && 
                                  constraintName="<%= relationship.joinTable.constraintName %>"
                                  referencedColumnNames="<%= entity.primaryKey.fields.map(field => field.columnName).join(', ') %>"
                                  referencedTableName="<%= entity.entityTableName %>"
-        <%_ if (onDelete) { _%>                                 
+        <%_ if (onDelete) { _%>
                                  onDelete="<%= onDelete %>"
         <%_ } _%>
         <%_ if (onUpdate) { _%>
@@ -70,7 +69,7 @@ if (relationshipType === 'many-to-one' || (relationshipType === 'one-to-one' && 
         <%_ if (relationship.otherRelationship) { 
             // User object is not supporting this right now
             _%>
-            <%_ if (relationship.otherRelationship.onDelete) { _%>                                 
+            <%_ if (relationship.otherRelationship.onDelete) { _%>
                                  onDelete="<%= relationship.otherRelationship.onDelete %>"
             <%_ } _%>
             <%_ if (relationship.otherRelationship.onUpdate) { _%>

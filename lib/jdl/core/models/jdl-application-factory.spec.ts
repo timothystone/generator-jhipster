@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,48 +18,49 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import { createJDLApplication } from '../models/jdl-application-factory.js';
-import { applicationTypes } from '../built-in-options/index.js';
-import { getDefaultRuntime } from '../runtime.js';
 
-const { MONOLITH, MICROSERVICE, GATEWAY } = applicationTypes;
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../../core/application-types.ts';
+import { createRuntime } from '../runtime.ts';
 
-const runtime = getDefaultRuntime();
+import { createJDLApplication } from './jdl-application-factory.ts';
+
+const runtime = createRuntime();
 
 describe('jdl - JDLApplicationFactory', () => {
   describe('createJDLApplication', () => {
-    describe(`when passing a ${MICROSERVICE} config`, () => {
-      let application;
+    describe(`when passing a ${APPLICATION_TYPE_MICROSERVICE} config`, () => {
+      let application: ReturnType<typeof createJDLApplication>;
 
       before(() => {
-        application = createJDLApplication({ applicationType: MICROSERVICE }, undefined, runtime);
+        application = createJDLApplication({ applicationType: APPLICATION_TYPE_MICROSERVICE }, runtime);
       });
 
       it('should create the app', () => {
-        expect(application.getConfigurationOptionValue('applicationType')).to.equal(MICROSERVICE);
+        expect(application.getConfigurationOptionValue('applicationType')).to.equal(APPLICATION_TYPE_MICROSERVICE);
       });
     });
-    describe(`when passing a ${GATEWAY} config`, () => {
-      let application;
+    describe(`when passing a ${APPLICATION_TYPE_GATEWAY} config`, () => {
+      let application: ReturnType<typeof createJDLApplication>;
 
       before(() => {
-        application = createJDLApplication({ applicationType: GATEWAY }, undefined, runtime);
+        application = createJDLApplication({ applicationType: APPLICATION_TYPE_GATEWAY }, runtime);
       });
 
       it('should create the app', () => {
-        expect(application.getConfigurationOptionValue('applicationType')).to.equal(GATEWAY);
+        expect(application.getConfigurationOptionValue('applicationType')).to.equal(APPLICATION_TYPE_GATEWAY);
       });
     });
-    describe(`when passing a ${MONOLITH} config`, () => {
-      let application;
+    describe(`when passing a ${APPLICATION_TYPE_MONOLITH} config`, () => {
+      let application: ReturnType<typeof createJDLApplication>;
 
       before(() => {
-        application = createJDLApplication({ applicationType: MONOLITH }, undefined, runtime);
+        application = createJDLApplication({ applicationType: APPLICATION_TYPE_MONOLITH }, runtime);
       });
 
       it('should create the app', () => {
-        expect(application.getConfigurationOptionValue('applicationType')).to.equal(MONOLITH);
+        expect(application.getConfigurationOptionValue('applicationType')).to.equal(APPLICATION_TYPE_MONOLITH);
       });
     });
   });

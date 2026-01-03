@@ -1,0 +1,10 @@
+{
+    "configuration": {
+        "title": "پیکربندی",
+        "filter": "فیلتر (با پیشوند)",
+        "table": {
+            "prefix": "پیشوند",
+            "properties": "خواص"
+        }
+    }
+}

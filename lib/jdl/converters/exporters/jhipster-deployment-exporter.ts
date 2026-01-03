@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,25 +17,27 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import { createFolderIfItDoesNotExist, doesFileExist } from '../../core/utils/file-utils.js';
-import DeploymentValidator from '../validators/deployment-validator.js';
-import type JDLDeployment from '../../core/models/jdl-deployment.js';
-import type { JHipsterYoRcContent } from '../../core/types/json-config.js';
-import { GENERATOR_NAME, writeConfigFile } from './export-utils.js';
+import path from 'node:path';
+
+import type { YoRcJHipsterDeploymentContent } from '../../../jhipster/types/yo-rc.ts';
+import type JDLDeployment from '../../core/models/jdl-deployment.ts';
+import { createFolderIfItDoesNotExist, doesFileExist } from '../../core/utils/file-utils.ts';
+import DeploymentValidator from '../validators/deployment-validator.ts';
+
+import { GENERATOR_NAME, writeConfigFile } from './export-utils.ts';
 
 /**
  * Exports JDL deployments to .yo-rc.json files in separate folders (based on deployment type).
  * @param deployments the deployments to exporters (key: deployment type, value: JDLDeployment- deployment config).
  * @return object[] exported deployments in their final form.
  */
-export default function exportDeployments(deployments: Record<string, JDLDeployment>): Partial<JHipsterYoRcContent>[] {
+export default function exportDeployments(deployments: Record<string, JDLDeployment>): Partial<YoRcJHipsterDeploymentContent>[] {
   if (!deployments) {
     throw new Error('Deployments have to be passed to be exported.');
   }
   return Object.values(deployments).map(deployment => {
     checkForErrors(deployment);
-    const yoRcDeployment: Partial<JHipsterYoRcContent> = setUpDeploymentStructure(deployment);
+    const yoRcDeployment: Partial<YoRcJHipsterDeploymentContent> = setUpDeploymentStructure(deployment);
     writeDeploymentConfigs(yoRcDeployment);
     return yoRcDeployment;
   });
@@ -47,7 +49,7 @@ function checkForErrors(deployment: JDLDeployment) {
 }
 
 function setUpDeploymentStructure(deployment: JDLDeployment) {
-  let deploymentToExport: Partial<JHipsterYoRcContent> = {};
+  let deploymentToExport: Partial<YoRcJHipsterDeploymentContent> = {};
   deploymentToExport[GENERATOR_NAME] = JSON.parse(JSON.stringify(deployment, null, 2).concat('\n'));
   deploymentToExport[GENERATOR_NAME]!.appsFolders = deployment.appsFolders;
   deploymentToExport[GENERATOR_NAME]!.clusteredDbApps = deployment.clusteredDbApps;
@@ -55,7 +57,7 @@ function setUpDeploymentStructure(deployment: JDLDeployment) {
   return deploymentToExport;
 }
 
-function setUpArrayOptions(deployment: Partial<JHipsterYoRcContent>) {
+function setUpArrayOptions(deployment: Partial<YoRcJHipsterDeploymentContent>) {
   deployment[GENERATOR_NAME]!.appsFolders = Array.from(deployment[GENERATOR_NAME]?.appsFolders || []);
   deployment[GENERATOR_NAME]!.clusteredDbApps = Array.from(deployment[GENERATOR_NAME]?.clusteredDbApps || []);
   return deployment;
@@ -65,11 +67,11 @@ function setUpArrayOptions(deployment: Partial<JHipsterYoRcContent>) {
  * This function writes a Yeoman config file in a folder.
  * @param deployment the deployment.
  */
-function writeDeploymentConfigs(deployment: Partial<JHipsterYoRcContent>) {
-  const folderName = deployment[GENERATOR_NAME]!.deploymentType;
+function writeDeploymentConfigs(deployment: Partial<YoRcJHipsterDeploymentContent>) {
+  const folderName = deployment[GENERATOR_NAME]!.deploymentType!;
   if (doesFileExist(folderName)) {
     throw new Error(`A file named '${folderName}' already exists, so a folder of the same name can't be created for the application.`);
   }
   createFolderIfItDoesNotExist(folderName);
-  writeConfigFile(deployment as JHipsterYoRcContent, path.join(folderName, '.yo-rc.json'));
+  writeConfigFile(deployment as YoRcJHipsterDeploymentContent, path.join(folderName, '.yo-rc.json'));
 }

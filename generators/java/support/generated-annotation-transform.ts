@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,12 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { extname } from 'path';
+import { extname } from 'node:path';
+
 import { passthrough } from '@yeoman/transform';
 import { isFileStateDeleted } from 'mem-fs-editor/state';
-import { addJavaAnnotation } from './add-java-annotation.js';
 
-const generatedAnnotationTransform = packageName => {
+import { addJavaAnnotation } from './add-java-annotation.ts';
+
+const generatedAnnotationTransform = (packageName: string) => {
   return passthrough(file => {
     if (
       !file.path.endsWith('package-info.java') &&

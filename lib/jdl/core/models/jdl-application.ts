@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,15 +17,16 @@
  * limitations under the License.
  */
 
-import type { JDLRuntime } from '../types/runtime.js';
+import type { JDLRuntime } from '../types/runtime.ts';
+
+import type AbstractJDLOption from './abstract-jdl-option.ts';
 import createApplicationConfigurationFromObject, {
   createApplicationNamespaceConfigurationFromObject,
-} from './jdl-application-configuration-factory.js';
-import type JDLApplicationConfigurationOption from './jdl-application-configuration-option.js';
-import type JDLApplicationConfiguration from './jdl-application-configuration.js';
-import JDLApplicationEntities from './jdl-application-entities.js';
-import JDLOptions from './jdl-options.js';
-import type AbstractJDLOption from './abstract-jdl-option.js';
+} from './jdl-application-configuration-factory.ts';
+import type JDLApplicationConfigurationOption from './jdl-application-configuration-option.ts';
+import type JDLApplicationConfiguration from './jdl-application-configuration.ts';
+import JDLApplicationEntities from './jdl-application-entities.ts';
+import JDLOptions from './jdl-options.ts';
 
 export default class JDLApplication {
   config: JDLApplicationConfiguration;
@@ -94,7 +95,7 @@ export default class JDLApplication {
     return this.entityNames.has(entityName);
   }
 
-  forEachEntityName(passedFunction) {
+  forEachEntityName(passedFunction: (entityName: string) => void): void {
     this.entityNames.forEach(passedFunction);
   }
 

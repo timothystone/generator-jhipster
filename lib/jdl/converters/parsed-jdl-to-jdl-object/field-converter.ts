@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-import JDLField from '../../core/models/jdl-field.js';
-import { formatComment } from '../../core/utils/format-utils.js';
-import { lowerFirst } from '../../core/utils/string-utils.js';
-import type { ParsedJDLEntityField } from '../../core/types/parsed.js';
+import { lowerFirst } from 'lodash-es';
+
+import JDLField from '../../core/models/jdl-field.ts';
+import type { ParsedJDLEntityField } from '../../core/types/parsed.ts';
+import { formatComment } from '../../core/utils/format-utils.ts';
 
 export default { convertField };
 

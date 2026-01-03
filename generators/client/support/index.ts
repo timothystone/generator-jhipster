@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,13 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './config.js';
-export { default as getTypescriptKeyType, getTypescriptType } from './types-utils.js';
-export { default as generateEntityClientFields } from './entity-definition.js';
-export { default as prepareEntity } from './prepare-entity.js';
-export * from './prepare-entity.js';
-export { default as prepareField } from './prepare-field.js';
-export * from './template-utils.js';
-export * from './update-languages.js';
-export * from './files.js';
-export * from './filter-entities.js';
+export { default as getTypescriptKeyType, getTypescriptType } from './types-utils.ts';
+export { default as generateEntityClientFields } from './entity-definition.ts';
+export * from './prepare-entity.ts';
+export * from './template-utils.ts';
+export * from './update-languages.ts';
+export * from './files.ts';
+export * from './filter-entities.ts';

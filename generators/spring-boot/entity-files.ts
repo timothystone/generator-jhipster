@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,14 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from 'fs';
-import * as _ from 'lodash-es';
+import fs from 'node:fs';
+
 import chalk from 'chalk';
-import { javaMainPackageTemplatesBlock, javaTestPackageTemplatesBlock, moveToJavaPackageSrcDir } from '../java/support/index.js';
-import { SERVER_TEST_SRC_DIR } from '../generator-constants.js';
-import { databaseTypes, entityOptions } from '../../lib/jhipster/index.js';
-import { asWritingEntitiesTask } from '../base-application/support/task-type-inference.js';
-import { cleanupOldFiles } from './entity-cleanup.js';
+import * as _ from 'lodash-es';
+
+import { databaseTypes, entityOptions } from '../../lib/jhipster/index.ts';
+import { asWritingEntitiesTask } from '../base-application/support/task-type-inference.ts';
+import { SERVER_TEST_SRC_DIR } from '../generator-constants.ts';
+import {
+  javaMainPackageTemplatesBlock,
+  javaTestPackageTemplatesBlock,
+  javaWriteFileSection,
+  moveToJavaPackageSrcDir,
+} from '../java/support/index.ts';
+
+import { cleanupOldFiles } from './entity-cleanup.ts';
+import type { Application as SpringBootApplication, Entity as SpringBootEntity } from './types.ts';
 
 const { COUCHBASE, MONGODB, NEO4J, SQL } = databaseTypes;
 const { MapperTypes } = entityOptions;
@@ -32,7 +41,7 @@ const { MAPSTRUCT } = MapperTypes;
 const { ServiceTypes } = entityOptions;
 const { SERVICE_CLASS, SERVICE_IMPL } = ServiceTypes;
 
-export const restFiles = {
+export const restFiles = javaWriteFileSection({
   restFiles: [
     {
       condition: generator => !generator.embedded && generator.entityRestLayer,
@@ -60,9 +69,9 @@ export const restFiles = {
       ],
     },
   ],
-};
+});
 
-export const filteringFiles = {
+export const filteringFiles = javaWriteFileSection({
   filteringFiles: [
     javaMainPackageTemplatesBlock({
       condition: generator => generator.jpaMetamodelFiltering && !generator.reactive,
@@ -75,9 +84,9 @@ export const filteringFiles = {
       templates: ['criteria/_entityClass_CriteriaTest.java'],
     }),
   ],
-};
+});
 
-const filteringReactiveFiles = {
+const filteringReactiveFiles = javaWriteFileSection({
   filteringReactiveFiles: [
     {
       condition: generator => generator.jpaMetamodelFiltering && generator.reactive,
@@ -86,9 +95,9 @@ const filteringReactiveFiles = {
       templates: ['service/criteria/_entityClass_Criteria.java'],
     },
   ],
-};
+});
 
-export const serviceFiles = {
+export const serviceFiles = javaWriteFileSection({
   serviceFiles: [
     {
       condition: generator => generator.service === SERVICE_IMPL && !generator.embedded,
@@ -102,9 +111,9 @@ export const serviceFiles = {
       templates: ['service/impl/_entityClass_ServiceImpl.java'],
     }),
   ],
-};
+});
 
-export const dtoFiles = {
+export const dtoFiles = javaWriteFileSection({
   baseDtoFiles: [
     {
       condition: generator => generator.dto === MAPSTRUCT,
@@ -126,30 +135,31 @@ export const dtoFiles = {
       templates: ['service/dto/_dtoClass_Test.java'],
     },
     {
-      condition: generator => generator.dto === MAPSTRUCT && [SQL, MONGODB, COUCHBASE, NEO4J].includes(generator.databaseType),
+      condition: generator =>
+        generator.dto === MAPSTRUCT && ([SQL, MONGODB, COUCHBASE, NEO4J] as string[]).includes(generator.databaseType),
       ...javaTestPackageTemplatesBlock('_entityPackage_/'),
       templates: ['service/mapper/_entityClass_MapperTest.java'],
     },
   ],
-};
+});
 
-const userDtoFiles = {
+const userDtoFiles = javaWriteFileSection({
   domain: [
     {
       ...javaMainPackageTemplatesBlock(),
-      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/User.java', `/${data.user.persistClass}.java`),
+      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/User.java', `/${data.user!.persistClass}.java`),
       templates: ['domain/User.java'],
     },
   ],
   dto: [
     {
       ...javaMainPackageTemplatesBlock(),
-      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/UserDTO.java', `/${data.user.dtoClass}.java`),
+      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/UserDTO.java', `/${data.user!.dtoClass}.java`),
       templates: ['service/dto/UserDTO.java'],
     },
     {
       ...javaMainPackageTemplatesBlock(),
-      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/AdminUserDTO.java', `/${data.user.adminUserDto}.java`),
+      renameTo: (data, file) => moveToJavaPackageSrcDir(data, file).replace('/AdminUserDTO.java', `/${data.user!.adminUserDto}.java`),
       templates: ['service/dto/AdminUserDTO.java'],
     },
     {
@@ -163,9 +173,9 @@ const userDtoFiles = {
       templates: ['service/mapper/UserMapperTest.java'],
     },
   ],
-};
+});
 
-const userFiles = {
+const userFiles = javaWriteFileSection({
   ...userDtoFiles,
   userFiles: [
     {
@@ -184,25 +194,23 @@ const userFiles = {
       templates: ['service/UserServiceIT.java', 'web/rest/UserResourceIT.java', 'web/rest/PublicUserResourceIT.java'],
     },
   ],
-};
+});
 
-export const serverFiles = {
+export const serverFiles = javaWriteFileSection({
   ...restFiles,
   ...filteringFiles,
   ...filteringReactiveFiles,
   ...serviceFiles,
   ...dtoFiles,
-};
+});
 
 export function writeFiles() {
   return {
-    cleanupOldServerFiles: asWritingEntitiesTask(function ({ application, entities }) {
-      for (const entity of entities.filter(entity => !entity.skipServer)) {
-        cleanupOldFiles.call(this, { application, entity });
-      }
+    cleanupOldServerFiles: asWritingEntitiesTask<SpringBootEntity, SpringBootApplication>(function ({ application, control, entities }) {
+      cleanupOldFiles.call(this, { application, entities, control });
     }),
 
-    writeServerFiles: asWritingEntitiesTask(async function ({ application, entities }) {
+    writeServerFiles: asWritingEntitiesTask<SpringBootEntity, SpringBootApplication>(async function ({ application, entities }) {
       const rootTemplatesPath = application.reactive
         ? ['reactive', '', '../../server/templates/', '../../java/generators/domain/templates/']
         : ['', '../../server/templates/', '../../java/generators/domain/templates/'];

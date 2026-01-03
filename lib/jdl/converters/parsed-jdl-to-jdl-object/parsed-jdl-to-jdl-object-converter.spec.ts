@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,33 +17,30 @@
  * limitations under the License.
  */
 
-import { before, describe, it, expect as jestExpect } from 'esmocha';
-import { expect } from 'chai';
-import matchEntity from '../../core/matchers/entity-matcher.js';
-import { JDLEntity, JDLEnum } from '../../core/models/index.js';
-import JDLField from '../../core/models/jdl-field.js';
-import JDLValidation from '../../core/models/jdl-validation.js';
-import JDLUnaryOption from '../../core/models/jdl-unary-option.js';
-import JDLBinaryOption from '../../core/models/jdl-binary-option.js';
-import {
-  applicationOptions,
-  applicationTypes,
-  binaryOptions,
-  fieldTypes,
-  unaryOptions,
-  validations,
-} from '../../core/built-in-options/index.js';
-import { getTestFile, parseFromConfigurationObject, parseFromContent, parseFromFiles } from '../../core/__test-support__/index.js';
-import { entityOptions } from '../../../jhipster/index.js';
+import { before, describe, expect as jestExpect, it } from 'esmocha';
 
-const { GATEWAY, MICROSERVICE, MONOLITH } = applicationTypes;
-const { OptionNames } = applicationOptions;
+import { expect } from 'chai';
+
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../../core/application-types.ts';
+import fieldTypes from '../../../jhipster/field-types.ts';
+import { entityOptions } from '../../../jhipster/index.ts';
+import { getTestFile, parseFromConfigurationObject, parseFromContent, parseFromFiles } from '../../core/__test-support__/index.ts';
+import { binaryOptions, unaryOptions, validations } from '../../core/built-in-options/index.ts';
+import type AbstractJDLOption from '../../core/models/abstract-jdl-option.ts';
+import { JDLEntity, JDLEnum } from '../../core/models/index.ts';
+import JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import JDLField from '../../core/models/jdl-field.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+import type JDLOptions from '../../core/models/jdl-options.ts';
+import type JDLRelationship from '../../core/models/jdl-relationship.ts';
+import JDLUnaryOption from '../../core/models/jdl-unary-option.ts';
+import JDLValidation from '../../core/models/jdl-validation.ts';
+import type { ParsedJDLApplications } from '../../core/types/parsed.ts';
 
 const { MapperTypes, ServiceTypes, PaginationTypes } = entityOptions;
 
 const BinaryOptionValues = binaryOptions.Values;
 const { DTO } = binaryOptions.Options;
-const { SKIP_CLIENT, SKIP_SERVER } = OptionNames;
 const { MAPSTRUCT } = MapperTypes;
 const { SERVICE_CLASS, SERVICE_IMPL } = ServiceTypes;
 const { INFINITE_SCROLL, PAGINATION } = PaginationTypes;
@@ -65,7 +62,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
     });
     describe('when passing valid args', () => {
       describe('with no error', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('complex_jdl.jdl')]);
@@ -205,7 +202,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('with an application type', () => {
-        let input;
+        let input: ReturnType<typeof parseFromFiles>;
 
         before(() => {
           input = parseFromFiles([getTestFile('invalid_field_type.jdl')]);
@@ -214,13 +211,13 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         it('should not check for field types', () => {
           parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: GATEWAY,
+            applicationType: APPLICATION_TYPE_GATEWAY,
           });
         });
       });
       describe('with a required relationship', () => {
         let jdlObject;
-        let relationship;
+        let relationship: ReturnType<ReturnType<typeof parseFromConfigurationObject>['relationships']['getOneToOne']>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('required_relationships.jdl')]);
@@ -231,12 +228,12 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
 
         it('should add it', () => {
-          expect(relationship.isInjectedFieldInFromRequired).to.be.true;
-          expect(relationship.isInjectedFieldInToRequired).to.be.false;
+          expect(relationship?.isInjectedFieldInFromRequired).to.be.true;
+          expect(relationship?.isInjectedFieldInToRequired).to.be.false;
         });
       });
       describe("with a field name 'id'", () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('id_field.jdl')]);
@@ -262,7 +259,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('with User entity as destination for a relationship', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('user_entity_to_relationship.jdl')]);
@@ -272,12 +269,12 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
 
         it('should be processed', () => {
-          expect(jdlObject.relationships.getManyToOne('ManyToOne_A{user}_User').to).to.equal('User');
-          expect(jdlObject.relationships.getOneToOne('OneToOne_B{user}_User').to).to.equal('User');
+          expect(jdlObject.relationships.getManyToOne('ManyToOne_A{user}_User')?.to).to.equal('User');
+          expect(jdlObject.relationships.getOneToOne('OneToOne_B{user}_User')?.to).to.equal('User');
         });
       });
       describe('with Authority entity as destination for a relationship', () => {
-        let jdlObject;
+        let jdlObject: JDLObject;
 
         before(() => {
           const input = parseFromFiles([getTestFile('authority_entity_to_relationship.jdl')]);
@@ -287,12 +284,12 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
 
         it('is processed', () => {
-          expect(jdlObject.relationships.getManyToOne('ManyToOne_A{authority}_Authority').to).to.equal('Authority');
-          expect(jdlObject.relationships.getOneToOne('OneToOne_B{authority}_Authority').to).to.equal('Authority');
+          expect(jdlObject.relationships.getManyToOne('ManyToOne_A{authority}_Authority')?.to).to.equal('Authority');
+          expect(jdlObject.relationships.getOneToOne('OneToOne_B{authority}_Authority')?.to).to.equal('Authority');
         });
       });
       describe('with an invalid option', () => {
-        let input;
+        let input: ParsedJDLApplications;
 
         before(() => {
           input = parseFromFiles([getTestFile('invalid_option.jdl')]);
@@ -305,8 +302,8 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('with a required enum', () => {
-        let jdlObject;
-        let enumField;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
+        let enumField: JDLField;
 
         before(() => {
           const input = parseFromFiles([getTestFile('enum.jdl')]);
@@ -336,7 +333,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
       });
       describe('when using the noFluentMethods option', () => {
         let input;
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           input = parseFromFiles([getTestFile('fluent_methods.jdl')]);
@@ -355,7 +352,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('when having following comments', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('following_comments.jdl')]);
@@ -383,7 +380,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
       });
       describe('when parsing another complex JDL file', () => {
         let jdlObject;
-        let options;
+        let options: any[];
 
         before(() => {
           const input = parseFromFiles([getTestFile('complex_jdl_2.jdl')]);
@@ -393,18 +390,11 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
           options = jdlObject.getOptions();
         });
 
-        describe('checking the entities', () => {
-          it('should parse them', () => {
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(entityName => {
-              expect(jdlObject.entities[entityName]).to.satisfy(matchEntity);
-            });
-          });
-        });
         describe('checking the options', () => {
           it('should parse them', () => {
             expect(options.length).to.equal(7);
-            expect(options[0].name).to.equal(SKIP_CLIENT);
-            expect(options[1].name).to.equal(SKIP_SERVER);
+            expect(options[0].name).to.equal('skipClient');
+            expect(options[1].name).to.equal('skipServer');
             expect(options[2].name).to.equal(DTO);
             expect(options[2].value).to.equal(MAPSTRUCT);
             expect(options[3].name).to.equal('service');
@@ -419,7 +409,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('when having two consecutive comments for fields', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('field_comments.jdl')]);
@@ -436,7 +426,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('when having constants', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('constants.jdl')]);
@@ -479,7 +469,7 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
         });
       });
       describe('when having a cassandra app with paginated entities', () => {
-        let input;
+        let input: ReturnType<typeof parseFromFiles>;
 
         before(() => {
           input = parseFromFiles([getTestFile('cassandra_jdl.jdl')]);
@@ -491,12 +481,12 @@ describe('jdl - ParsedJDLToJDLObjectConverter', () => {
               parsedContent: input,
             });
           } catch (error) {
-            expect((error as any).name).to.equal('IllegalOptionException');
+            expect((error as Error).name).to.equal('IllegalOptionException');
           }
         });
       });
       describe('when parsing applications', () => {
-        let parsedConfig;
+        let parsedConfig: ReturnType<typeof parseFromConfigurationObject>['applications']['toto'];
 
         before(() => {
           const input = parseFromFiles([getTestFile('application.jdl')]);
@@ -546,7 +536,7 @@ JDLApplication {
         });
       });
       describe('when parsing deployments', () => {
-        let deployment;
+        let deployment: ReturnType<typeof parseFromConfigurationObject>['deployments']['docker-compose'];
 
         before(() => {
           const input = parseFromFiles([getTestFile('deployments.jdl')]);
@@ -580,7 +570,7 @@ JDLDeployment {
       });
       describe('when parsing filtered entities', () => {
         let jdlObject;
-        let filterOption;
+        let filterOption: ReturnType<ReturnType<typeof parseFromConfigurationObject>['getOptionsForName']>[0];
 
         before(() => {
           const input = parseFromFiles([getTestFile('filtering_without_service.jdl')]);
@@ -598,13 +588,13 @@ JDLDeployment {
       describe('when parsing entities with a custom client root folder', () => {
         describe('inside a microservice app', () => {
           let jdlObject;
-          let clientRootFolderOption;
+          let clientRootFolderOption: any;
 
           before(() => {
             const input = parseFromFiles([getTestFile('simple_microservice_setup.jdl')]);
             jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MICROSERVICE,
+              applicationType: APPLICATION_TYPE_MICROSERVICE,
               applicationName: 'ms',
             });
             clientRootFolderOption = jdlObject.getOptionsForName(binaryOptions.Options.CLIENT_ROOT_FOLDER)[0];
@@ -616,13 +606,13 @@ JDLDeployment {
         });
         describe('inside any other app', () => {
           let jdlObject;
-          let clientRootFolderOption;
+          let clientRootFolderOption: any;
 
           before(() => {
             const input = parseFromFiles([getTestFile('client_root_folder.jdl')]);
             jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MONOLITH,
+              applicationType: APPLICATION_TYPE_MONOLITH,
             });
             clientRootFolderOption = jdlObject.getOptionsForName(binaryOptions.Options.CLIENT_ROOT_FOLDER)[0];
           });
@@ -636,14 +626,14 @@ JDLDeployment {
       });
       describe('when parsing a JDL inside a microservice app', () => {
         describe('without the microservice option in the JDL', () => {
-          let jdlObject;
-          let microserviceOption;
+          let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
+          let microserviceOption: AbstractJDLOption;
 
           before(() => {
             const input = parseFromFiles([getTestFile('no_microservice.jdl')]);
             jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MICROSERVICE,
+              applicationType: APPLICATION_TYPE_MICROSERVICE,
               applicationName: 'toto',
             });
             microserviceOption = jdlObject.getOptionsForName(binaryOptions.Options.MICROSERVICE)[0];
@@ -655,14 +645,14 @@ JDLDeployment {
           });
         });
         describe('with the microservice option in the JDL', () => {
-          let jdlObject;
-          let microserviceOption;
+          let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
+          let microserviceOption: AbstractJDLOption;
 
           before(() => {
             const input = parseFromFiles([getTestFile('simple_microservice_setup.jdl')]);
             jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MICROSERVICE,
+              applicationType: APPLICATION_TYPE_MICROSERVICE,
               applicationName: 'toto',
             });
             microserviceOption = jdlObject.getOptionsForName(binaryOptions.Options.MICROSERVICE)[0];
@@ -675,7 +665,7 @@ JDLDeployment {
         });
       });
       describe('when parsing a JDL microservice application with entities', () => {
-        let entityNames;
+        let entityNames: string[];
 
         before(() => {
           const input = parseFromFiles([getTestFile('application_with_entities.jdl')]);
@@ -695,15 +685,15 @@ JDLDeployment {
       });
       describe('when parsing a relationship with no injected field', () => {
         let jdlObject;
-        let relationshipOneToOne;
-        let relationshipOneToMany;
-        let relationshipManyToMany;
+        let relationshipOneToOne: JDLRelationship | undefined;
+        let relationshipOneToMany: JDLRelationship | undefined;
+        let relationshipManyToMany: JDLRelationship | undefined;
 
         before(() => {
           const input = parseFromFiles([getTestFile('no_injected_field.jdl')]);
           jdlObject = parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           });
           relationshipOneToOne = jdlObject.relationships.getOneToOne('OneToOne_A{b}_B{a}');
           relationshipOneToMany = jdlObject.relationships.getOneToMany('OneToMany_A{b}_B{a}');
@@ -711,28 +701,28 @@ JDLDeployment {
         });
 
         it('should add a default one', () => {
-          expect(relationshipOneToOne.injectedFieldInTo).to.equal('a');
-          expect(relationshipOneToOne.injectedFieldInFrom).to.equal('b');
-          expect(relationshipOneToMany.injectedFieldInTo).to.equal('a');
-          expect(relationshipOneToMany.injectedFieldInFrom).to.equal('b');
-          expect(relationshipManyToMany.injectedFieldInTo).to.equal('a');
-          expect(relationshipManyToMany.injectedFieldInFrom).to.equal('b');
+          expect(relationshipOneToOne?.injectedFieldInTo).to.equal('a');
+          expect(relationshipOneToOne?.injectedFieldInFrom).to.equal('b');
+          expect(relationshipOneToMany?.injectedFieldInTo).to.equal('a');
+          expect(relationshipOneToMany?.injectedFieldInFrom).to.equal('b');
+          expect(relationshipManyToMany?.injectedFieldInTo).to.equal('a');
+          expect(relationshipManyToMany?.injectedFieldInFrom).to.equal('b');
         });
       });
       describe('when parsing entities with annotations', () => {
         describe('that are not capitalized', () => {
-          let entityA;
-          let entityB;
-          let entityC;
-          let fieldAnnotation;
-          let relationshipAnnotationOnSource;
-          let relationshipAnnotationOnDestination;
+          let entityA: JDLEntity;
+          let entityB: JDLEntity;
+          let entityC: JDLEntity;
+          let fieldAnnotation: JDLField['options']['id'];
+          let relationshipAnnotationOnSource: Record<string, any>;
+          let relationshipAnnotationOnDestination: Record<string, any>;
 
           before(() => {
             const input = parseFromFiles([getTestFile('annotations.jdl')]);
             const jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MONOLITH,
+              applicationType: APPLICATION_TYPE_MONOLITH,
             });
             entityA = jdlObject.entities.A;
             entityB = jdlObject.entities.B;
@@ -782,18 +772,18 @@ JDLDeployment {
           });
         });
         describe('that are capitalized', () => {
-          let entityA;
-          let entityB;
-          let entityC;
-          let fieldAnnotation;
-          let relationshipAnnotationOnSource;
-          let relationshipAnnotationOnDestination;
+          let entityA: JDLEntity;
+          let entityB: JDLEntity;
+          let entityC: JDLEntity;
+          let fieldAnnotation: JDLField['options']['id'];
+          let relationshipAnnotationOnSource: Record<string, any>;
+          let relationshipAnnotationOnDestination: Record<string, any>;
 
           before(() => {
             const input = parseFromFiles([getTestFile('capitalized_annotations.jdl')]);
             const jdlObject = parseFromConfigurationObject({
               parsedContent: input,
-              applicationType: MONOLITH,
+              applicationType: APPLICATION_TYPE_MONOLITH,
             });
             entityA = jdlObject.entities.A;
             entityB = jdlObject.entities.B;
@@ -844,15 +834,15 @@ JDLDeployment {
         });
       });
       describe('when parsing a mix between annotations and regular options', () => {
-        let entityA;
-        let entityB;
-        let entityC;
+        let entityA: JDLEntity;
+        let entityB: JDLEntity;
+        let entityC: JDLEntity;
 
         before(() => {
           const input = parseFromFiles([getTestFile('annotations_and_options.jdl')]);
           const jdlObject = parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           });
           entityA = jdlObject.entities.A;
           entityB = jdlObject.entities.B;
@@ -888,28 +878,29 @@ JDLDeployment {
         });
       });
       describe('when having a pattern validation with a quote in it', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('pattern_validation_with_quote.jdl')]);
           jdlObject = parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           });
         });
 
         it('formats it', () => {
+          // @ts-expect-error FIXME
           expect(jdlObject.getEntity('Alumni').fields.firstName.validations.pattern.value.includes("\\'")).be.true;
         });
       });
       describe('when parsing a JDL with the unique constraint', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('unique.jdl')]);
           jdlObject = parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           });
         });
 
@@ -919,25 +910,25 @@ JDLDeployment {
         });
       });
       describe('when parsing a JDL relationship with built in entity enabled', () => {
-        let jdlObject;
+        let jdlObject: ReturnType<typeof parseFromConfigurationObject>;
 
         before(() => {
           const input = parseFromFiles([getTestFile('relationship_built_in_entity.jdl')]);
           jdlObject = parseFromConfigurationObject({
             parsedContent: input,
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
           });
         });
 
         it('should set it', () => {
-          expect(jdlObject.relationships.getOneToOne('OneToOne_A{b}_B').options.global).to.deep.equal({
+          expect(jdlObject.relationships.getOneToOne('OneToOne_A{b}_B')?.options.global).to.deep.equal({
             builtInEntity: true,
           });
         });
       });
       describe('when parsing entity options in applications', () => {
         describe('if the entity list does not contain some entities mentioned in options', () => {
-          let parsedContent;
+          let parsedContent: ReturnType<typeof parseFromContent>;
 
           before(() => {
             parsedContent = parseFromContent(`application {
@@ -962,8 +953,8 @@ entity B
           });
         });
         describe('if the entity list contains all the entities mentioned in options', () => {
-          let optionsForFirstApplication;
-          let optionsForSecondApplication;
+          let optionsForFirstApplication: JDLOptions;
+          let optionsForSecondApplication: JDLOptions;
 
           before(() => {
             const input = parseFromContent(`application {

@@ -1,27 +1,28 @@
-import assert from 'assert';
-import path from 'path';
+import assert from 'node:assert';
+import path from 'node:path';
+
 import debugBuilder from 'debug';
 import ejs from 'ejs';
+import type { MemFsEditorFile } from 'mem-fs-editor';
 
-import TemplateData from './template-data.js';
+import TemplateData from './template-data.ts';
 
 export default class TemplateFile {
-  file;
+  file?: MemFsEditorFile;
   rootTemplate: boolean;
   basePath?: string;
   parentPath?: string;
   filePath?: string;
 
-  private depth: number;
-  private _filename: any;
-  private _extension: any;
+  private _filename: string;
+  private _extension: string;
   private _compiled: ejs.TemplateFunction;
-  // eslint-disable-next-line no-use-before-define
+
   private _fragments: TemplateFile[];
   private _fragmentName: string;
   private _debug: { enabled: boolean } & ((msg: string) => void);
 
-  constructor(filename, extension) {
+  constructor(filename: string, extension: string) {
     this._filename = filename;
     this._extension = extension;
     this._compiled = () => '';
@@ -30,14 +31,9 @@ export default class TemplateFile {
     this._debug = debugBuilder(`jhipster.templates.${this._filename}`);
 
     this.rootTemplate = !this._fragmentName;
-    if (!this.rootTemplate) {
-      this.depth = (this._fragmentName.match(/\./g) || []).length + 1;
-    } else {
-      this.depth = 0;
-    }
   }
 
-  compile(filePath, contents, options) {
+  compile(filePath: string, contents: string, options: ejs.Options) {
     assert(filePath, 'filePath is required');
     assert(contents, 'contents is required');
     assert(options, 'options is required');
@@ -62,13 +58,13 @@ export default class TemplateFile {
     }
   }
 
-  addFragment(templateFile) {
+  addFragment(templateFile: TemplateFile) {
     assert(templateFile, 'templateFile is required');
 
     this._fragments.push(templateFile);
   }
 
-  renderFragments(data) {
+  renderFragments(data: any) {
     return this._fragments.map(templateFile => templateFile.render(data));
   }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,10 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { FieldType } from '../../../lib/application/field-types.js';
-import { fieldTypes } from '../../../lib/jhipster/index.js';
-import type { PrimaryKey } from '../../../lib/types/application/entity.js';
-import { fieldIsEnum } from '../../base-application/support/index.js';
+import type { ValueOf } from 'type-fest';
+
+import type { FieldType } from '../../../lib/jhipster/field-types.ts';
+import { fieldTypes } from '../../../lib/jhipster/index.ts';
+import type { PrimaryKey } from '../../base-application/types.ts';
 
 const {
   BOOLEAN: TYPE_BOOLEAN,
@@ -32,6 +33,36 @@ const {
   FLOAT: TYPE_FLOAT,
   DOUBLE: TYPE_DOUBLE,
 } = fieldTypes.CommonDBTypes;
+
+const tsTypesByFieldType = {
+  [TYPE_INTEGER]: 'number',
+  [TYPE_LONG]: 'number',
+  [TYPE_FLOAT]: 'number',
+  [TYPE_DOUBLE]: 'number',
+  [TYPE_BIG_DECIMAL]: 'number',
+
+  [TYPE_LOCAL_DATE]: 'dayjs.Dayjs',
+  [TYPE_ZONED_DATE_TIME]: 'dayjs.Dayjs',
+  [TYPE_INSTANT]: 'dayjs.Dayjs',
+  LocalTime: 'string',
+
+  [TYPE_BOOLEAN]: 'boolean',
+
+  // Enum: 'Enum',
+  String: 'string',
+  UUID: 'string',
+  Blob: 'string',
+  AnyBlob: 'string',
+  TextBlob: 'string',
+  ImageBlob: 'string',
+  'byte[]': 'string',
+  ByteBuffer: 'string',
+  Duration: 'string',
+} as const satisfies Record<FieldType, string>;
+
+export const fieldTsTypes = [...new Set(Object.values(tsTypesByFieldType))];
+
+export type FieldTsType = (typeof fieldTsTypes)[number];
 
 /**
  * return the input if it's a type, otherwise returns the type attribute of the input
@@ -52,7 +83,9 @@ export const getEntryIfTypeOrTypeAttribute = (key: FieldType | PrimaryKey): Fiel
  * @returns {string} primary key type in Typescript
  */
 const getTypescriptKeyType = (primaryKey: FieldType | PrimaryKey) => {
-  if ([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL].includes(getEntryIfTypeOrTypeAttribute(primaryKey))) {
+  if (
+    ([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL] as string[]).includes(getEntryIfTypeOrTypeAttribute(primaryKey))
+  ) {
     return 'number';
   }
   return 'string';
@@ -61,24 +94,9 @@ const getTypescriptKeyType = (primaryKey: FieldType | PrimaryKey) => {
 /**
  * @private
  * Find type for Typescript
- *
- * @param {string} fieldType - field type
- * @returns {string} field type in Typescript
  */
-export const getTypescriptType = fieldType => {
-  if ([TYPE_INTEGER, TYPE_LONG, TYPE_FLOAT, TYPE_DOUBLE, TYPE_BIG_DECIMAL].includes(fieldType)) {
-    return 'number';
-  }
-  if ([TYPE_LOCAL_DATE, TYPE_ZONED_DATE_TIME, TYPE_INSTANT].includes(fieldType)) {
-    return 'dayjs.Dayjs';
-  }
-  if ([TYPE_BOOLEAN].includes(fieldType)) {
-    return 'boolean';
-  }
-  if (fieldIsEnum(fieldType)) {
-    return fieldType;
-  }
-  return 'string';
+export const getTypescriptType = (fieldType: keyof typeof tsTypesByFieldType): ValueOf<typeof tsTypesByFieldType> => {
+  return tsTypesByFieldType[fieldType];
 };
 
 export default getTypescriptKeyType;

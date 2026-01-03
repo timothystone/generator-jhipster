@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,66 +16,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import os from 'node:os';
+import { passthrough } from '@yeoman/transform';
 import chalk from 'chalk';
-import { sortedUniqBy } from 'lodash-es';
-import BaseApplicationGenerator from '../base-application/index.js';
+import { lowerFirst, sortedUniqBy } from 'lodash-es';
+import { isFileStateModified } from 'mem-fs-editor/state';
+
+import { APPLICATION_TYPE_MICROSERVICE } from '../../lib/core/application-types.ts';
+import type { FieldType } from '../../lib/jhipster/field-types.ts';
+import { cacheTypes, databaseTypes, fieldTypes, searchEngineTypes, testFrameworkTypes, websocketTypes } from '../../lib/jhipster/index.ts';
+import { mutateData } from '../../lib/utils/index.ts';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { createNeedleCallback, isWin32 } from '../base-core/support/index.ts';
+import { editPropertiesFileCallback } from '../base-core/support/properties-file.ts';
+import type { Config as ClientConfig, Entity as ClientEntity } from '../client/types.ts';
+import type { Source as CommonSource } from '../common/types.ts';
+import type { Entity as CypressEntity } from '../cypress/types.ts';
+import { ADD_SPRING_MILESTONE_REPOSITORY } from '../generator-constants.ts';
+import { addJavaImport, generateKeyStore, javaBeanCase } from '../java/support/index.ts';
+import type { JavaArtifactType } from '../java-simple-application/types.ts';
 import {
-  GENERATOR_CUCUMBER,
-  GENERATOR_DOCKER,
-  GENERATOR_FEIGN_CLIENT,
-  GENERATOR_GATLING,
-  GENERATOR_LANGUAGES,
-  GENERATOR_SERVER,
-  GENERATOR_SPRING_CACHE,
-  GENERATOR_SPRING_CLOUD_STREAM,
-  GENERATOR_SPRING_DATA_CASSANDRA,
-  GENERATOR_SPRING_DATA_COUCHBASE,
-  GENERATOR_SPRING_DATA_ELASTICSEARCH,
-  GENERATOR_SPRING_DATA_MONGODB,
-  GENERATOR_SPRING_DATA_NEO4J,
-  GENERATOR_SPRING_DATA_RELATIONAL,
-  GENERATOR_SPRING_WEBSOCKET,
-} from '../generator-list.js';
-import { ADD_SPRING_MILESTONE_REPOSITORY } from '../generator-constants.js';
-import {
-  addSpringFactory,
   getJavaValueGeneratorForType,
   getSpecificationBuildForType,
   insertContentIntoApplicationProperties,
-  javaBeanCase,
-} from '../server/support/index.js';
-import { generateKeyStore } from '../java/support/index.js';
-import { createNeedleCallback, mutateData } from '../base/support/index.js';
-import {
-  APPLICATION_TYPE_MICROSERVICE,
-  applicationTypes,
-  cacheTypes,
-  databaseTypes,
-  fieldTypes,
-  messageBrokerTypes,
-  searchEngineTypes,
-  testFrameworkTypes,
-  websocketTypes,
-} from '../../lib/jhipster/index.js';
-import { getPomVersionProperties, parseMavenPom } from '../maven/support/index.js';
-import type { FieldType } from '../../lib/application/field-types.js';
-import { writeFiles as writeEntityFiles } from './entity-files.js';
-import cleanupTask from './cleanup.js';
-import { serverFiles } from './files.js';
-import { askForOptionalItems, askForServerSideOpts, askForServerTestOpts } from './prompts.js';
+} from '../server/support/index.ts';
+
+import cleanupTask from './cleanup.ts';
+import { writeFiles as writeEntityFiles } from './entity-files.ts';
+import { serverFiles } from './files.ts';
+import { askForOptionalItems, askForServerSideOpts, askForServerTestOpts } from './prompts.ts';
+import springBootDependencies4 from './resources/spring-boot-dependencies-4.ts';
+import springBootDependencies3 from './resources/spring-boot-dependencies.ts';
+import type {
+  Application as SpringBootApplication,
+  Config as SpringBootConfig,
+  Entity as SpringBootEntity,
+  Options as SpringBootOptions,
+  Source as SpringBootSource,
+  SpringBootModule,
+} from './types.ts';
 
 const { CAFFEINE, EHCACHE, HAZELCAST, INFINISPAN, MEMCACHED, REDIS } = cacheTypes;
 const { NO: NO_WEBSOCKET, SPRING_WEBSOCKET } = websocketTypes;
 const { CASSANDRA, COUCHBASE, MONGODB, NEO4J, SQL } = databaseTypes;
-const { MICROSERVICE, GATEWAY } = applicationTypes;
-const { KAFKA, PULSAR } = messageBrokerTypes;
 const { ELASTICSEARCH } = searchEngineTypes;
 
 const { BYTES: TYPE_BYTES, BYTE_BUFFER: TYPE_BYTE_BUFFER } = fieldTypes.RelationalOnlyDBTypes;
 const { CUCUMBER, GATLING } = testFrameworkTypes;
-export default class SpringBootGenerator extends BaseApplicationGenerator {
-  fakeKeytool;
+
+export class SpringBootApplicationGenerator extends BaseApplicationGenerator<
+  SpringBootEntity,
+  SpringBootApplication,
+  SpringBootConfig,
+  SpringBootOptions,
+  SpringBootSource
+> {}
+
+export default class SpringBootGenerator extends SpringBootApplicationGenerator {
+  fakeKeytool!: boolean;
 
   async beforeQueue() {
     if (!this.fromBlueprint) {
@@ -83,9 +80,10 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnJHipster(GENERATOR_SERVER);
+      await this.dependsOnBootstrap('spring-boot');
+      await this.dependsOnJHipster('jhipster:java');
       await this.dependsOnJHipster('jhipster:java:domain');
-      await this.dependsOnJHipster('jhipster:java:build-tool');
+      await this.dependsOnJHipster('jhipster:java-simple-application:build-tool');
       await this.dependsOnJHipster('jhipster:java:server');
     }
   }
@@ -104,7 +102,14 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
 
   get configuring() {
     return this.asConfiguringTaskGroup({
-      feignMigration() {
+      syncUserWithIdpMigration({ control }) {
+        if (this.jhipsterConfig.syncUserWithIdp === undefined && this.jhipsterConfigWithDefaults.authenticationType === 'oauth2') {
+          if (control.isJhipsterVersionLessThan('8.1.1')) {
+            this.jhipsterConfig.syncUserWithIdp = true;
+          }
+        }
+      },
+      feignMigration({ control }) {
         const { reactive, applicationType, feignClient } = this.jhipsterConfigWithDefaults;
         if (feignClient) {
           if (reactive) {
@@ -116,7 +121,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
         }
         if (
           feignClient === undefined &&
-          this.isJhipsterVersionLessThan('8.0.1') &&
+          control.isJhipsterVersionLessThan('8.0.1') &&
           !reactive &&
           applicationType === APPLICATION_TYPE_MICROSERVICE
         ) {
@@ -135,65 +140,70 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
       async composing() {
         const {
           applicationType,
+          authenticationType,
           databaseType,
+          enableTranslation,
           graalvmSupport,
-          messageBroker,
           searchEngine,
           websocket,
-          cacheProvider,
           testFrameworks,
           feignClient,
           enableSwaggerCodegen,
+          serviceDiscoveryType,
         } = this.jhipsterConfigWithDefaults;
+        const { cacheProvider, messageBroker } = this.jhipsterConfigWithDefaults;
 
-        await this.composeWithJHipster(GENERATOR_DOCKER);
-        await this.composeWithJHipster('jhipster:java:jib');
-        await this.composeWithJHipster('jhipster:java:code-quality');
+        await this.composeWithJHipster('jhipster:java:i18n');
+        await this.composeWithJHipster('docker');
+        await this.composeWithJHipster('jhipster:java-simple-application:jib');
+        await this.composeWithJHipster('jhipster:java-simple-application:code-quality');
+
+        if (enableTranslation) {
+          await this.dependsOnBootstrap('languages');
+        }
+
+        if (authenticationType === 'jwt' || authenticationType === 'oauth2') {
+          await this.composeWithJHipster(`jhipster:spring-boot:${authenticationType}`);
+        }
 
         if (graalvmSupport) {
-          await this.composeWithJHipster('jhipster:java:graalvm');
+          await this.composeWithJHipster('jhipster:java-simple-application:graalvm');
         }
 
         if (enableSwaggerCodegen) {
-          await this.composeWithJHipster('jhipster:java:openapi-generator');
+          await this.composeWithJHipster('jhipster:java-simple-application:openapi-generator');
         }
 
-        if (applicationType === GATEWAY) {
-          await this.composeWithJHipster('jhipster:spring-cloud:gateway');
+        if (applicationType !== 'monolith' || messageBroker !== 'no' || serviceDiscoveryType !== 'no' || feignClient) {
+          await this.composeWithJHipster('jhipster:spring-cloud');
         }
 
         if (testFrameworks?.includes(CUCUMBER)) {
-          await this.composeWithJHipster(GENERATOR_CUCUMBER);
+          await this.composeWithJHipster('jhipster:spring-boot:cucumber');
         }
         if (testFrameworks?.includes(GATLING)) {
-          await this.composeWithJHipster(GENERATOR_GATLING);
-        }
-        if (feignClient) {
-          await this.composeWithJHipster(GENERATOR_FEIGN_CLIENT);
+          await this.composeWithJHipster('jhipster:java:gatling');
         }
 
         if (databaseType === SQL) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_RELATIONAL);
+          await this.composeWithJHipster('jhipster:spring-data:relational');
         } else if (databaseType === CASSANDRA) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_CASSANDRA);
+          await this.composeWithJHipster('jhipster:spring-data:cassandra');
         } else if (databaseType === COUCHBASE) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_COUCHBASE);
+          await this.composeWithJHipster('jhipster:spring-data:couchbase');
         } else if (databaseType === MONGODB) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_MONGODB);
+          await this.composeWithJHipster('jhipster:spring-data:mongodb');
         } else if (databaseType === NEO4J) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_NEO4J);
-        }
-        if (messageBroker === KAFKA || messageBroker === PULSAR) {
-          await this.composeWithJHipster(GENERATOR_SPRING_CLOUD_STREAM);
+          await this.composeWithJHipster('jhipster:spring-data:neo4j');
         }
         if (searchEngine === ELASTICSEARCH) {
-          await this.composeWithJHipster(GENERATOR_SPRING_DATA_ELASTICSEARCH);
+          await this.composeWithJHipster('jhipster:spring-data:elasticsearch');
         }
         if (websocket === SPRING_WEBSOCKET) {
-          await this.composeWithJHipster(GENERATOR_SPRING_WEBSOCKET);
+          await this.composeWithJHipster('jhipster:spring-boot:websocket');
         }
-        if ([EHCACHE, CAFFEINE, HAZELCAST, INFINISPAN, MEMCACHED, REDIS].includes(cacheProvider!)) {
-          await this.composeWithJHipster(GENERATOR_SPRING_CACHE);
+        if (([EHCACHE, CAFFEINE, HAZELCAST, INFINISPAN, MEMCACHED, REDIS] as string[]).includes(cacheProvider!)) {
+          await this.composeWithJHipster('jhipster:spring-boot:cache');
         }
       },
     });
@@ -206,7 +216,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
   get composingComponent() {
     return this.asComposingComponentTaskGroup({
       async composing() {
-        const { clientFramework, skipClient } = this.jhipsterConfigWithDefaults;
+        const { clientFramework, skipClient } = this.jhipsterConfigWithDefaults as ClientConfig;
         if (!skipClient && clientFramework !== 'no') {
           // When using prompts, clientFramework will only be known after composing priority.
           await this.composeWithJHipster('jhipster:java:node');
@@ -214,7 +224,7 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
       },
       async composeLanguages() {
         if (this.jhipsterConfigWithDefaults.enableTranslation) {
-          await this.composeWithJHipster(GENERATOR_LANGUAGES);
+          await this.composeWithJHipster('languages');
         }
       },
     });
@@ -224,15 +234,127 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
     return this.delegateTasksToBlueprint(() => this.composingComponent);
   }
 
+  get loading() {
+    return this.asLoadingTaskGroup({
+      loading({ applicationDefaults }) {
+        applicationDefaults({
+          communicationSpringWebsocket: ({ websocket }) => websocket === SPRING_WEBSOCKET,
+        });
+      },
+    });
+  }
+
+  get [BaseApplicationGenerator.LOADING]() {
+    return this.delegateTasksToBlueprint(() => this.loading);
+  }
+
   get preparing() {
     return this.asPreparingTaskGroup({
+      springBoot4({ application }) {
+        if (!application.springBoot4) {
+          // Latest version that supports Spring Boot 3
+          application.jhipsterDependenciesVersion = '9.0.0-beta.0';
+        }
+      },
+      springBoot3({ application }) {
+        if (!application.springBoot4) {
+          // Downgrade some dependencies for Spring Boot 3
+          Object.assign(application.javaDependencies, {
+            'spring-cloud-dependencies': '2025.0.0',
+            springdoc: '2.8.15',
+            'neo4j-migrations-spring-boot-starter': '2.20.1',
+          });
+
+          const prefixReplacements = {
+            'webmvc.test': 'test.',
+            'webflux.test': 'test.',
+            webtestclient: 'test.',
+          } as Record<string, string>;
+
+          const suffixReplacements = {
+            jackson2: 'jackson.',
+            h2console: 'h2.',
+            hibernate: 'orm.jpa.',
+            mongodb: 'mongo.',
+            restclient: 'web.client.',
+            webflux: 'web.reactive.',
+            'webflux.test': 'web.reactive.',
+            'webmvc.test': 'web.servlet.',
+            webtestclient: 'web.reactive.',
+            'health.contributor.': 'actuate.health.',
+            'web.server': 'web.',
+            'restclient.': 'web.client.',
+            'web.server.servlet.': 'web.servlet.server.',
+          } as Record<string, string>;
+
+          this.queueTransformStream(
+            {
+              name: 'reverting files to Spring Boot 3 package names',
+              filter: file =>
+                isFileStateModified(file) &&
+                file.path.endsWith('.java') &&
+                (file.path.startsWith(this.destinationPath(application.srcMainJava)) ||
+                  file.path.startsWith(this.destinationPath(application.srcTestJava))),
+              refresh: false,
+            },
+            passthrough(file => {
+              file.contents = Buffer.from(
+                (file.contents as Buffer)
+                  .toString('utf8')
+                  .replace(
+                    /import org\.springframework\.boot\.(.+)\.autoconfigure\./g,
+                    (_match, p1) =>
+                      `import org.springframework.boot.${prefixReplacements[p1] ?? ''}autoconfigure.${suffixReplacements[p1] ?? `${p1}.`}`,
+                  )
+                  .replace(
+                    /import org\.springframework\.boot\.(restclient\.|health\.contributor\.|web\.server\.servlet\.)/g,
+                    (_match, p1) => `import org.springframework.boot.${suffixReplacements[p1] ?? p1}`,
+                  )
+                  .replaceAll('import org.jspecify.annotations.Nullable;', 'import org.springframework.lang.Nullable;')
+                  .replaceAll(
+                    'import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;',
+                    'import org.hibernate.validator.internal.constraintvalidators.hv.EmailValidator;',
+                  ),
+              );
+            }),
+          );
+
+          this.queueTransformStream(
+            {
+              name: 'reverting testcontainers dependencies to v1',
+              filter: file => isFileStateModified(file) && (file.path.endsWith('pom.xml') || file.path.endsWith('.gradle')),
+              refresh: false,
+            },
+            passthrough(file => {
+              file.contents = Buffer.from((file.contents as Buffer).toString('utf8').replaceAll('testcontainers-', ''));
+            }),
+          );
+        }
+      },
+      updateLanguages({ application }) {
+        if (!application.enableTranslation || !application.generateUserManagement) return;
+
+        application.addLanguageCallbacks.push((_newLanguages, allLanguages) => {
+          const { javaPackageTestDir } = application;
+          const { ignoreNeedlesError: ignoreNonExisting } = this;
+
+          this.editFile(
+            `${javaPackageTestDir}/service/MailServiceIT.java`,
+            { ignoreNonExisting },
+            createNeedleCallback({
+              contentToAdd: allLanguages.map(language => `"${language.languageTag}"`).join(',\n'),
+              needle: 'jhipster-needle-i18n-language-constant',
+            }),
+          );
+        });
+      },
       checksWebsocket({ application }) {
         const { websocket } = application;
         if (websocket && websocket !== NO_WEBSOCKET) {
           if (application.reactive) {
             throw new Error('Spring Websocket is not supported with reactive applications.');
           }
-          if (application.applicationType === MICROSERVICE) {
+          if (application.applicationType === APPLICATION_TYPE_MICROSERVICE) {
             throw new Error('Spring Websocket is not supported with microservice applications.');
           }
         }
@@ -243,11 +365,10 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
             'spring-boot-dependencies': "'SPRING-BOOT-VERSION'",
           };
         } else {
-          const pomFile = this.readTemplate(this.jhipsterTemplatePath('../resources/spring-boot-dependencies.pom'))!.toString();
-          const pom = parseMavenPom(pomFile);
-          application.springBootDependencies = this.prepareDependencies(getPomVersionProperties(pom), 'java');
+          const springBootDependencies = application.springBoot4 ? springBootDependencies4 : springBootDependencies3;
+          application.springBootDependencies = this.prepareDependencies(springBootDependencies.versions, 'java');
           application.javaDependencies!['spring-boot'] = application.springBootDependencies['spring-boot-dependencies'];
-          Object.assign(application.javaManagedProperties!, pom.project.properties);
+          Object.assign(application.javaManagedProperties!, springBootDependencies.properties);
           application.javaDependencies!.liquibase = application.javaManagedProperties!['liquibase.version']!;
         }
       },
@@ -268,14 +389,19 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
             (reactive && data.databaseTypeSql) ||
             (!reactive && data.databaseTypeMongodb) ||
             (!reactive && data.databaseTypeCassandra),
-          reactorBlock: reactive ? '.block()' : '',
-          reactorBlockOptional: reactive ? '.blockOptional()' : '',
+
+          generateSpringAuditor: ctx =>
+            ctx.databaseTypeSql || ctx.databaseTypeMongodb || ctx.databaseTypeNeo4j || ctx.databaseTypeCouchbase,
         });
       },
       registerSpringFactory({ source, application }) {
         source.addTestSpringFactory = ({ key, value }) => {
           const springFactoriesFile = `${application.srcTestResources}META-INF/spring.factories`;
-          this.editFile(springFactoriesFile, { create: true }, addSpringFactory({ key, value }));
+          this.editFile(
+            springFactoriesFile,
+            { create: true },
+            editPropertiesFileCallback([{ key, value, valueSep: ',' }], { sortFile: true }),
+          );
         };
       },
       addSpringIntegrationTest({ application, source }) {
@@ -283,6 +409,13 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
           source.editJavaFile!(this.destinationPath(`${application.javaPackageTestDir}IntegrationTest.java`), {
             annotations: [annotation],
           });
+      },
+      addApplicationYamlDocument({ application, source }) {
+        source.addApplicationYamlDocument = content =>
+          this.editFile(
+            this.destinationPath(`${application.srcMainResources}config/application.yml`),
+            createNeedleCallback({ needle: 'add-application-yaml-document', autoIndent: false, contentToAdd: `---\n${content}` }),
+          );
       },
       addLogNeedles({ source }) {
         source.addLogbackLogEntry = ({ file, name, level }) =>
@@ -293,8 +426,8 @@ export default class SpringBootGenerator extends BaseApplicationGenerator {
               contentToAdd: `<logger name="${name}" level="${level}"/>`,
             }),
           );
-        source.addLogbackMainLog = opts => source.addLogbackLogEntry!({ file: 'src/main/resources/logback-spring.xml', ...opts });
-        source.addLogbackTestLog = opts => source.addLogbackLogEntry!({ file: 'src/test/resources/logback.xml', ...opts });
+        source.addMainLog = opts => source.addLogbackLogEntry!({ file: 'src/main/resources/logback-spring.xml', ...opts });
+        source.addTestLog = opts => source.addLogbackLogEntry!({ file: 'src/test/resources/logback.xml', ...opts });
       },
       addApplicationPropertiesNeedles({ application, source }) {
         source.addApplicationPropertiesContent = needles =>
@@ -315,6 +448,30 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
 }
 `,
           });
+        source.addApplicationPropertiesClass = ({ propertyType, propertyName = lowerFirst(propertyType), classStructure }) => {
+          const classProperties = Object.entries(classStructure).map(([name, type]) => ({
+            name,
+            type: Array.isArray(type) ? type[0] : type,
+            defaultVaue: Array.isArray(type) ? ` = ${type[1]}` : '',
+            beanName: javaBeanCase(name),
+          }));
+          return source.addApplicationPropertiesContent!({
+            property: `private final ${propertyType} ${propertyName} = new ${propertyType}();`,
+            propertyGetter: `
+public ${propertyType} get${javaBeanCase(propertyName)}() {
+    return ${propertyName};
+}
+`,
+            propertyClass: `public static class ${propertyType} {
+${classProperties.map(({ name, type, defaultVaue }) => `\n    private ${type} ${name}${defaultVaue};`).join('\n')}
+${classProperties.map(({ name, type, beanName }) => `\n    public ${type} get${beanName}() {\n        return ${name};\n    }\n`).join('\n')}
+${classProperties
+  .map(({ name, type, beanName }) => `\n    public void set${beanName}(${type} ${name}) {\n        this.${name} = ${name};\n    }`)
+  .join('\n')}
+}
+`,
+          });
+        };
       },
       blockhound({ application, source }) {
         source.addAllowBlockingCallsInside = ({ classPath, method }) => {
@@ -329,6 +486,60 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
           );
         };
       },
+      addNativeHint({ source, application }) {
+        source.addNativeHint = ({
+          advanced = [],
+          declaredConstructors = [],
+          publicConstructors = [],
+          publicMethods = [],
+          resources = [],
+        }) => {
+          this.editFile(
+            `${application.javaPackageSrcDir}config/NativeConfiguration.java`,
+            addJavaImport('org.springframework.aot.hint.MemberCategory'),
+            createNeedleCallback({
+              contentToAdd: [
+                ...advanced,
+                ...resources.map(resource => `hints.resources().registerPattern("${resource}");`),
+                ...publicConstructors.map(
+                  classPath =>
+                    `hints.reflection().registerType(${classPath}, (hint) -> hint.withMembers(MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS));`,
+                ),
+                ...publicMethods.map(
+                  classPath =>
+                    `hints.reflection().registerType(${classPath}, (hint) -> hint.withMembers(MemberCategory.INVOKE_PUBLIC_METHODS));`,
+                ),
+                ...declaredConstructors.map(
+                  classPath =>
+                    `hints.reflection().registerType(${classPath}, (hint) -> hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS));`,
+                ),
+              ],
+              needle: 'add-native-hints',
+              ignoreWhitespaces: true,
+            }),
+          );
+        };
+      },
+      needles({ source }) {
+        const getScopeForModule = (moduleName: SpringBootModule): JavaArtifactType['scope'] => {
+          if (moduleName === 'spring-boot-properties-migrator') return 'runtime';
+          if (moduleName === 'spring-boot-configuration-processor') return 'annotationProcessor';
+          return moduleName.endsWith('-test') || moduleName.includes('-test-') ? 'test' : undefined;
+        };
+        source.addSpringBootModule = (...moduleNames) =>
+          source.addJavaDependencies?.(
+            moduleNames
+              .filter(module => typeof module === 'string' || module.condition)
+              .map(module => (typeof module === 'string' ? module : module.module))
+              .map(name => ({
+                groupId: 'org.springframework.boot',
+                artifactId: name,
+                scope: getScopeForModule(name),
+              })),
+          );
+
+        source.overrideProperty = props => source.addJavaProperty!(props);
+      },
     });
   }
 
@@ -338,15 +549,29 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
 
   get preparingEachEntity() {
     return this.asPreparingEachEntityTaskGroup({
-      prepareEntity({ entity }) {
-        const hasAnyAuthority = authorities =>
+      prepareEntity({ entity, application }) {
+        if (entity.entityRestLayer === false) {
+          (entity as unknown as ClientEntity).entityClientModelOnly = true;
+        }
+
+        const hasAnyAuthority = (authorities: string[]): string | undefined =>
           authorities.length > 0 ? `hasAnyAuthority(${authorities.map(auth => `'${auth}'`).join(',')})` : undefined;
         mutateData(entity, {
+          entityPersistenceLayer: true,
+          entityRestLayer: true,
           entitySpringPreAuthorize: hasAnyAuthority(entity.entityAuthority?.split(',') ?? []),
           entitySpringReadPreAuthorize: hasAnyAuthority([
             ...(entity.entityAuthority?.split(',') ?? []),
             ...(entity.entityReadAuthority?.split(',') ?? []),
           ]),
+          serviceClass: ({ service }) => service === 'serviceClass',
+          serviceImpl: ({ service }) => service === 'serviceImpl',
+          serviceNo: ({ service }) => service === 'no',
+          saveUserSnapshot: ({ hasRelationshipWithBuiltInUser, dto }) =>
+            application.applicationTypeMicroservice &&
+            application.authenticationTypeOauth2 &&
+            hasRelationshipWithBuiltInUser &&
+            dto === 'no',
         });
       },
     });
@@ -361,7 +586,7 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
       prepareEntity({ field }) {
         field.fieldJavaBuildSpecification = getSpecificationBuildForType(field.fieldType as FieldType);
 
-        field.filterableField = ![TYPE_BYTES, TYPE_BYTE_BUFFER].includes(field.fieldType) && !field.transient;
+        field.filterableField = !([TYPE_BYTES, TYPE_BYTE_BUFFER] as string[]).includes(field.fieldType) && !field.transient;
         if (field.filterableField) {
           const { fieldType, fieldName, fieldInJavaBeanMethod } = field;
           mutateData(field, {
@@ -454,6 +679,15 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
           ],
           entityJavaCustomFilters: sortedUniqBy(entity.fields.map(field => field.propertyJavaCustomFilter).filter(Boolean), 'type'),
         });
+
+        mutateData(entity as unknown as CypressEntity, {
+          __override__: true,
+          // Reactive with some r2dbc databases doesn't allow insertion without data.
+          workaroundEntityCannotBeEmpty: ({ reactive, prodDatabaseType }: any) =>
+            reactive && ['postgresql', 'mysql', 'mariadb'].includes(prodDatabaseType),
+          // Reactive with MariaDB doesn't allow null value at Instant fields.
+          workaroundInstantReactiveMariaDB: ({ reactive, prodDatabaseType }: any) => reactive && prodDatabaseType === 'mariadb',
+        });
       },
     });
   }
@@ -502,42 +736,61 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
 
   get postWriting() {
     return this.asPostWritingTaskGroup({
-      addJHipsterBomDependencies({ application, source }) {
-        const {
-          applicationTypeGateway,
-          applicationTypeMicroservice,
-          javaDependencies,
-          jhipsterDependenciesVersion,
-          messageBrokerAny,
-          serviceDiscoveryAny,
-        } = application;
+      baseDependencies({ application, source }) {
+        if (application.springBoot4) {
+          source.addSpringBootModule!(
+            'spring-boot-jackson2',
+            'spring-boot-starter-aspectj',
+            'spring-boot-starter-jackson',
+            'spring-boot-starter-jackson-test',
+            'spring-boot-starter-security',
+            'spring-boot-starter-security-test',
+            `spring-boot-starter-web${application.reactive ? 'flux' : 'mvc'}-test`,
+          );
+        } else {
+          source.addSpringBootModule!('spring-boot-loader-tools', 'spring-boot-starter-aop');
+          if (!application.authenticationTypeOauth2) {
+            source.addSpringBootModule!('spring-boot-starter-security');
+          }
+        }
 
-        source.addJavaDefinitions?.(
-          {
-            dependencies: [{ groupId: 'tech.jhipster', artifactId: 'jhipster-framework', version: jhipsterDependenciesVersion! }],
-            mavenDefinition: {
-              properties: [
-                {
-                  property: 'spring-boot.version',
-                  // eslint-disable-next-line no-template-curly-in-string
-                  value: '${project.parent.version}',
-                },
-              ],
-            },
-          },
-          {
-            condition: applicationTypeGateway || applicationTypeMicroservice || serviceDiscoveryAny || messageBrokerAny,
-            dependencies: [
+        source.addSpringBootModule!(
+          'spring-boot-configuration-processor',
+          'spring-boot-starter',
+          'spring-boot-starter-actuator',
+          'spring-boot-starter-mail',
+          'spring-boot-starter-test',
+          'spring-boot-starter-thymeleaf',
+          'spring-boot-starter-tomcat',
+          'spring-boot-starter-validation',
+          `spring-boot-starter-web${application.reactive ? 'flux' : ''}`,
+          'spring-boot-test',
+        );
+      },
+      addJHipsterBomDependencies({ application, source }) {
+        const { jhipsterDependenciesVersion } = application;
+
+        if (application.reactive && application.graalvmSupport) {
+          source.addNativeHint!({
+            advanced: [
+              // Tomcat
+              'hints.reflection().registerType(org.apache.catalina.connector.RequestFacade.class, (hint) -> hint.withMembers(MemberCategory.DECLARED_FIELDS));',
+              'hints.reflection().registerType(org.apache.catalina.connector.ResponseFacade.class, (hint) -> hint.withMembers(MemberCategory.DECLARED_FIELDS));',
+            ],
+          });
+        }
+        source.addJavaDefinitions?.({
+          dependencies: [{ groupId: 'tech.jhipster', artifactId: 'jhipster-framework', version: jhipsterDependenciesVersion! }],
+          mavenDefinition: {
+            properties: [
               {
-                groupId: 'org.springframework.cloud',
-                artifactId: 'spring-cloud-dependencies',
-                type: 'pom',
-                scope: 'import',
-                version: javaDependencies!['spring-cloud-dependencies'],
+                property: 'spring-boot.version',
+                // eslint-disable-next-line no-template-curly-in-string
+                value: '${project.parent.version}',
               },
             ],
           },
-        );
+        });
       },
       addSpringdoc({ application, source }) {
         const springdocDependency = `springdoc-openapi-starter-${application.reactive ? 'webflux' : 'webmvc'}-api`;
@@ -546,20 +799,8 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
         ]);
         if (application.reactive) {
           source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.OpenAPIService', method: 'build' });
-          source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.OpenAPIService', method: 'getWebhooks' });
+          source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.OpenAPIService', method: 'getWebhooksClasses' });
           source.addAllowBlockingCallsInside?.({ classPath: 'org.springdoc.core.service.AbstractRequestService', method: 'build' });
-        }
-      },
-      addFeignReactor({ application, source }) {
-        const { applicationTypeGateway, applicationTypeMicroservice, javaDependencies, reactive } = application;
-        if ((applicationTypeMicroservice || applicationTypeGateway) && reactive) {
-          const groupId = 'com.playtika.reactivefeign';
-          source.addJavaDependencies?.([
-            { groupId, artifactId: 'feign-reactor-bom', type: 'pom', scope: 'import', version: javaDependencies!['feign-reactor-bom'] },
-            { groupId, artifactId: 'feign-reactor-cloud' },
-            { groupId, artifactId: 'feign-reactor-spring-configuration' },
-            { groupId, artifactId: 'feign-reactor-webclient' },
-          ]);
         }
       },
       addSpringSnapshotRepository({ application, source }) {
@@ -572,11 +813,7 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
             };
             source.addMavenPluginRepository?.(springRepository);
             source.addMavenRepository?.(springRepository);
-            source.addMavenDependency?.({
-              groupId: 'org.springframework.boot',
-              artifactId: 'spring-boot-properties-migrator',
-              scope: 'runtime',
-            });
+            source.addSpringBootModule?.('spring-boot-properties-migrator');
           }
           if (application.jhipsterDependenciesVersion?.endsWith('-SNAPSHOT')) {
             source.addMavenRepository?.({
@@ -585,11 +822,36 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
               releasesEnabled: false,
             });
           }
+        } else if (application.buildToolGradle) {
+          source.addGradleRepository?.({
+            repository: `// Local maven repository is required for libraries built locally with maven like development jhipster-bom.
+${application.jhipsterDependenciesVersion?.includes('-CICD') ? '' : '// '}mavenLocal()`,
+          });
+          if (application.addSpringMilestoneRepository) {
+            source.addGradleMavenRepository?.({ url: 'https://repo.spring.io/milestone' });
+          }
+          if (application.jhipsterDependenciesVersion?.endsWith('-SNAPSHOT')) {
+            source.addGradleRepository?.({
+              repository: `maven {
+    url "https://oss.sonatype.org/content/repositories/snapshots/"
+    mavenContent {
+        snapshotsOnly()
+    }
+}`,
+            });
+          }
         }
       },
       addSpringBootPlugin({ application, source }) {
         if (application.buildToolGradle) {
+          source.applyFromGradle!({ script: 'gradle/spring-boot.gradle' });
           source.addGradleDependencyCatalogPlugins?.([
+            {
+              pluginName: 'gradle-git-properties',
+              id: 'com.gorylenko.gradle-git-properties',
+              version: application.javaDependencies!['gradle-git-properties'],
+              addToBuild: true,
+            },
             {
               pluginName: 'spring-boot',
               id: 'org.springframework.boot',
@@ -602,7 +864,7 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
       addSpringBootCompose({ application, source }) {
         if (!application.dockerServices?.length) return;
 
-        source.addLogbackMainLog!({ name: 'org.springframework.boot.docker', level: 'WARN' });
+        source.addMainLog!({ name: 'org.springframework.boot.docker', level: 'WARN' });
 
         const dockerComposeArtifact = { groupId: 'org.springframework.boot', artifactId: 'spring-boot-docker-compose' };
         if (application.buildToolGradle) {
@@ -623,6 +885,119 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
           source.addMavenDependency!({ inProfile: 'docker-compose', ...dockerComposeArtifact, optional: true });
         }
       },
+      sonar({ application, source }) {
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S125',
+          ruleKey: 'xml:S125',
+          resourceKey: `${application.srcMainResources}logback-spring.xml`,
+          comment: `Rule https://rules.sonarsource.com/xml/RSPEC-125 is ignored, we provide commented examples`,
+        });
+
+        if (!application.authenticationUsesCsrf && application.generateAuthenticationApi) {
+          (source as CommonSource).ignoreSonarRule?.({
+            ruleId: 'S4502',
+            ruleKey: 'java:S4502',
+            resourceKey: `${application.javaPackageSrcDir}config/SecurityConfiguration.java`,
+            comment: `Rule https://rules.sonarsource.com/java/RSPEC-4502 is ignored, as for JWT tokens we are not subject to CSRF attack`,
+          });
+        }
+
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S4684',
+          ruleKey: 'java:S4684',
+          resourceKey: `${application.javaPackageSrcDir}web/rest/**/*`,
+          comment: `Rule https://rules.sonarsource.com/java/RSPEC-4684`,
+        });
+
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S5145',
+          ruleKey: 'javasecurity:S5145',
+          resourceKey: `${application.javaPackageSrcDir}**/*`,
+          comment: `Rule https://rules.sonarsource.com/java/RSPEC-5145 is ignored, as we use log filter to format log messages`,
+        });
+
+        (source as CommonSource).ignoreSonarRule?.({
+          ruleId: 'S6437',
+          ruleKey: 'java:S6437',
+          resourceKey: `${application.srcMainResources}config/*`,
+          comment: `Rule https://rules.sonarsource.com/java/RSPEC-6437 is ignored, hardcoded passwords are provided for development purposes`,
+        });
+      },
+      dependencies({ application, source }) {
+        source.addJavaDefinitions!(
+          {
+            versions: [
+              { name: 'mapstruct', version: application.javaDependencies.mapstruct },
+              { name: 'archunit-junit5', version: application.javaDependencies['archunit-junit5'] },
+            ],
+            dependencies: [
+              { groupId: 'com.fasterxml.jackson.datatype', artifactId: 'jackson-datatype-hppc' },
+              { groupId: 'com.fasterxml.jackson.datatype', artifactId: 'jackson-datatype-jsr310' },
+              { groupId: 'io.micrometer', artifactId: 'micrometer-registry-prometheus-simpleclient' },
+              { groupId: 'org.apache.commons', artifactId: 'commons-lang3' },
+              { groupId: 'org.mapstruct', artifactId: 'mapstruct', versionRef: 'mapstruct' },
+              { groupId: 'org.mapstruct', artifactId: 'mapstruct-processor', versionRef: 'mapstruct', scope: 'annotationProcessor' },
+              { groupId: 'org.springframework.security', artifactId: 'spring-security-test', scope: 'test' },
+              {
+                scope: 'test',
+                groupId: 'com.tngtech.archunit',
+                artifactId: 'archunit-junit5-api',
+                versionRef: 'archunit-junit5',
+                exclusions: [{ groupId: 'org.slf4j', artifactId: 'slf4j-api' }],
+              },
+              {
+                scope: 'testRuntimeOnly',
+                groupId: 'com.tngtech.archunit',
+                artifactId: 'archunit-junit5-engine',
+                versionRef: 'archunit-junit5',
+                exclusions: [{ groupId: 'org.slf4j', artifactId: 'slf4j-api' }],
+              },
+            ],
+          },
+          {
+            condition: application.reactive,
+            versions: [
+              { name: 'blockhound-junit-platform', version: application.javaDependencies['blockhound-junit-platform'] },
+              { name: 'micrometer-context-propagation', version: application.javaDependencies['micrometer-context-propagation'] },
+            ],
+            dependencies: [
+              { groupId: 'io.netty', artifactId: 'netty-tcnative-boringssl-static', scope: 'runtime' },
+              { groupId: 'io.micrometer', artifactId: 'context-propagation', versionRef: 'micrometer-context-propagation' },
+              {
+                groupId: 'io.projectreactor.tools',
+                artifactId: 'blockhound-junit-platform',
+                versionRef: 'blockhound-junit-platform',
+                scope: 'test',
+              },
+              { groupId: 'org.springframework.data', artifactId: 'spring-data-commons' },
+            ],
+          },
+          {
+            condition: application.addSpringMilestoneRepository,
+            dependencies: [{ groupId: 'org.springframework.boot', artifactId: 'spring-boot-properties-migrator', scope: 'runtime' }],
+          },
+        );
+
+        if (application.buildToolGradle && application.reactive) {
+          this.editFile('build.gradle', {
+            needle: 'gradle-dependency',
+            contentToAdd: `OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentOperatingSystem();
+Architecture arch = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentArchitecture();
+if (os.isMacOsX() && !arch.isAmd64()) {
+    implementation("io.netty:netty-resolver-dns-native-macos") {
+        artifact {
+            classifier = "osx-aarch_64"
+        }
+    }
+}`,
+          });
+        } else if (application.buildToolMaven) {
+          source.addJavaDefinitions!({
+            condition: application.reactive,
+            dependencies: [{ groupId: 'io.netty', artifactId: 'netty-resolver-dns-native-macos', classifier: 'osx-aarch_64' }],
+          });
+        }
+      },
     });
   }
 
@@ -634,9 +1009,9 @@ public void set${javaBeanCase(propertyName)}(${propertyType} ${propertyName}) {
     return this.asEndTaskGroup({
       end({ application, control }) {
         const { buildToolExecutable } = application;
-        this.log.ok('Spring Boot application generated successfully.');
+        this.log.ok(`Spring Boot ${application.springBootDependencies['spring-boot-dependencies']} application generated successfully.`);
 
-        if (application.dockerServices?.length && !control.enviromentHasDockerCompose) {
+        if (application.dockerServices?.length && !control.environmentHasDockerCompose) {
           const dockerComposeCommand = chalk.yellow.bold('docker compose');
           this.log('');
           this.log
@@ -652,7 +1027,7 @@ in your ${chalk.yellow.bold(`${application.srcMainResources}config/application.y
         }
 
         let logMsgComment = '';
-        if (os.platform() === 'win32') {
+        if (isWin32) {
           logMsgComment = ` (${chalk.yellow.bold(buildToolExecutable)} if using Windows Command Prompt)`;
         }
         this.log.log(

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -26,7 +26,7 @@ const ORACLE = 'oracle';
 const H2_DISK = 'h2Disk';
 const H2_MEMORY = 'h2Memory';
 
-const databaseTypes: any = {
+const databaseTypes = {
   SQL,
   MYSQL,
   MARIADB,
@@ -40,7 +40,7 @@ const databaseTypes: any = {
   H2_DISK,
   H2_MEMORY,
   NO: 'no',
-};
-databaseTypes.isSql = type => [SQL, MYSQL, POSTGRESQL, ORACLE, MARIADB, MSSQL, H2_DISK, H2_MEMORY].includes(type);
+  isSql: (type: string) => [SQL, MYSQL, POSTGRESQL, ORACLE, MARIADB, MSSQL, H2_DISK, H2_MEMORY].includes(type),
+} as const;
 
 export default databaseTypes;

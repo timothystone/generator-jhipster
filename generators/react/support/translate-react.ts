@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 import { passthrough } from '@yeoman/transform';
+import type { MemFsEditorFile } from 'mem-fs-editor';
 import { Minimatch } from 'minimatch';
-import type { GetWebappTranslationCallback } from '../../../lib/types/base/translation.js';
+
+import type { GetWebappTranslationCallback } from '../../client/translation.ts';
 
 const TRANSLATE_IMPORT_1 = /import { ?[T|t]ranslate(?:, ?[T|t]ranslate)? ?} from 'react-jhipster';?/.source; // Translate imports
 const TRANSLATE_IMPORT_2 = / *[T|t]ranslate,|, ?[T|t]ranslate/.source; // Translate import
@@ -61,16 +63,14 @@ const replaceTranslationKeysWithText = (
       interpolate = interpolateMatch?.groups?.interpolate;
     }
 
-    let data;
+    let data: Record<string, unknown> | undefined;
     if (interpolate) {
       const interpolateMatches = interpolate.matchAll(/(?<field>[^{\s:,}]+)(?::\s*(?<value>[^,}]+))?/g);
       data = {};
       for (const interpolateMatch of interpolateMatches) {
         const field = interpolateMatch?.groups?.field;
         let value: string | number | undefined = interpolateMatch?.groups?.value;
-        if (value === undefined) {
-          value = key;
-        }
+        value ??= key;
         value = value.trim();
         if (/^\d+$/.test(value)) {
           // convert integer
@@ -104,8 +104,6 @@ const replaceTranslationKeysWithText = (
 
 /**
  * Replace and cleanup translations.
- *
- * @return {import('../../base/api.js').EditFileCallback}
  */
 export const createTranslationReplacer = (getWebappTranslation: GetWebappTranslationCallback) =>
   function replaceReactTranslations(body: string, filePath: string) {
@@ -123,7 +121,7 @@ export const createTranslationReplacer = (getWebappTranslation: GetWebappTransla
   };
 
 const minimatch = new Minimatch('**/*.tsx');
-export const isTranslatedReactFile = file => minimatch.match(file.path);
+export const isTranslatedReactFile = (file: MemFsEditorFile) => minimatch.match(file.path);
 
 const translateReactFilesTransform = (getWebappTranslation: GetWebappTranslationCallback) => {
   const translate = createTranslationReplacer(getWebappTranslation);

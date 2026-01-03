@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,24 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { describe, expect, it } from 'esmocha';
-import { snakeCase } from 'lodash-es';
+import { basename } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.js';
-import { defaultHelpers as helpers, runResult } from '../../lib/testing/helpers.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, runResult } from '../../lib/testing/helpers.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = basename(__dirname);
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
-  it('generator-list constant matches folder name', async () => {
-    await expect((await import('../generator-list.js'))[`GENERATOR_${snakeCase(generator).toUpperCase()}`]).toBe(generator);
-  });
   shouldSupportFeatures(Generator);
   describe('blueprint support', () => testBlueprintSupport(generator));
 
@@ -69,48 +62,19 @@ describe(`generator - ${generator}`, () => {
       });
 
       it('should match context snapshot', () => {
-        expect(runResult.generator.context).toMatchInlineSnapshot(`
-{
-  "artifactoryReleasesId": "releases",
-  "artifactoryReleasesUrl": "http://artifactory:8081/artifactory/libs-release",
-  "artifactorySnapshotsId": "snapshots",
-  "artifactorySnapshotsUrl": "http://artifactory:8081/artifactory/libs-snapshot",
-  "ciCd": [
-    "github",
-    "jenkins",
-    "gitlab",
-    "azure",
-  ],
-  "ciCdAny": true,
-  "ciCdAzure": true,
-  "ciCdCircle": false,
-  "ciCdGithub": true,
-  "ciCdGitlab": true,
-  "ciCdIntegrations": [],
-  "ciCdIntegrationsAny": false,
-  "ciCdIntegrationsCypressDashboard": false,
-  "ciCdIntegrationsDeploy": false,
-  "ciCdIntegrationsHeroku": false,
-  "ciCdIntegrationsPublishDocker": false,
-  "ciCdIntegrationsSnyk": false,
-  "ciCdIntegrationsSonar": false,
-  "ciCdJenkins": true,
-  "ciCdTravis": false,
-  "dockerImage": undefined,
-  "frontTestCommand": "test",
-  "gitLabIndent": "",
-  "herokuAppName": "jhipster",
-  "indent": "",
-  "insideDocker": false,
-  "sendBuildToGitlab": false,
-  "sonarName": "sonar",
-  "sonarOrga": undefined,
-  "sonarUrl": "https://sonarcloud.io",
-}
-`);
+        expect(runResult.application).toMatchSnapshot({
+          jhipsterPackageJson: expect.any(Object),
+          javaDependencies: expect.any(Object),
+          dockerContainers: expect.any(Object),
+          addLanguageCallbacks: expect.any(Array),
+          supportedLanguages: expect.any(Array),
+          user: expect.any(Object),
+          authority: expect.any(Object),
+          userManagement: expect.any(Object),
+        });
       });
       it('should populate context', () => {
-        expect(runResult.generator.context!.ciCd).toEqual(['github', 'jenkins', 'gitlab', 'azure']);
+        expect(runResult.application!.ciCd).toEqual(['github', 'jenkins', 'gitlab', 'azure']);
       });
     });
 

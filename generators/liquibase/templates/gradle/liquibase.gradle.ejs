@@ -33,7 +33,7 @@ dependencies {
 <%_ } else if (databaseTypeNeo4j) { _%>
   // Exclude current neo4j driver and use the one provided by spring-data
   // See: https://github.com/jhipster/generator-jhipster/pull/24241
-  implementation ("org.liquibase.ext:liquibase-neo4j:${dependencyManagement.importedProperties['liquibase.version']}") {
+  implementation (<%- javaDependencies['liquibase-neo4j'] ? 'libs.liquibase.neo4j' : '"org.liquibase.ext:liquibase-neo4j:${dependencyManagement.importedProperties[\'liquibase.version\']}"' %>) {
     exclude group: "org.neo4j.driver", module: "neo4j-java-driver"
     exclude group: "org.slf4j", module: "*"
   }
@@ -42,7 +42,7 @@ dependencies {
   // jhipster-needle-gradle-dependency - JHipster will add additional dependencies here
 }
 
-project.ext.diffChangelogFile = "<%= SERVER_MAIN_RES_DIR %>config/liquibase/changelog/" + new Date().format("yyyyMMddHHmmss") + "_changelog.xml"
+project.ext.diffChangelogFile = "<%= srcMainResources %>config/liquibase/changelog/" + new Date().format("yyyyMMddHHmmss") + "_changelog.xml"
 if (!project.hasProperty("runList")) {
  project.ext.runList = "main"
 }
@@ -56,12 +56,12 @@ liquibase {
 <%_ if (devDatabasePassword) { _%>
       password "<%- devDatabasePassword %>"
 <%_ } _%>
-      changelogFile "<%= SERVER_MAIN_RES_DIR %>config/liquibase/master.xml"
+      changelogFile "<%= srcMainResources %>config/liquibase/master.xml"
 <%_ if (liquibaseDefaultSchemaName) { _%>
       defaultSchemaName "<%- liquibaseDefaultSchemaName %>"
 <%_ } _%>
       logLevel "debug"
-      classpath "<%= SERVER_MAIN_RES_DIR %>"
+      classpath "<%= srcMainResources %>"
     }
     diffLog {
       driver "<%= devJdbcDriver %>"
@@ -72,7 +72,7 @@ liquibase {
 <%_ } _%>
       changelogFile project.ext.diffChangelogFile
 <%_ if (!reactive && backendTypeSpringBoot) { _%>
-      referenceUrl "hibernate:spring:<%= packageName %>.domain?dialect=<%= devHibernateDialect %>&hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy"
+      referenceUrl "hibernate:spring:<%= packageName %>.domain?dialect=<%= devHibernateDialect %>&hibernate.physical_naming_strategy=<%= locals.hibernateNamingPhysicalStrategy %>&hibernate.implicit_naming_strategy=<%= locals.hibernateNamingImplicitStrategy %>"
 <%_ } _%>
 <%_ if (liquibaseDefaultSchemaName) { _%>
       defaultSchemaName "<%- liquibaseDefaultSchemaName %>"
@@ -88,8 +88,8 @@ liquibase {
   runList = project.ext.runList
 }
 
-liquibaseDiff.dependsOn compileJava
-liquibaseDiffChangelog.dependsOn compileJava
+liquibaseDiff.dependsOn(compileJava)
+liquibaseDiffChangelog.dependsOn(compileJava)
 <%_ if (backendTypeSpringBoot) { _%>
 
 ext {

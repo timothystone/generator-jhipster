@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -18,18 +18,8 @@
 -%>
 package <%= packageName %>.config;
 
-<%_ if (databaseTypeSql && !reactive) { _%>
-import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module;
-import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module.Feature;
-<%_ } _%>
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
-import java.io.IOException;
-import java.time.LocalTime;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,28 +33,11 @@ public class JacksonConfiguration {
      */
     @Bean
     public JavaTimeModule javaTimeModule() {
-        final JavaTimeModule javaTime = new JavaTimeModule();
-        javaTime.addSerializer(LocalTime.class, new JsonSerializer<LocalTime>() {
-            @Override
-            public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-                gen.writeString(value.toString());
-            }
-        });
-        return javaTime;
+        return new JavaTimeModule();
     }
 
     @Bean
     public Jdk8Module jdk8TimeModule() {
         return new Jdk8Module();
     }
-<%_ if (databaseTypeSql && !reactive) { _%>
-
-    /*
-     * Support for Hibernate types in Jackson.
-     */
-    @Bean
-    public Hibernate6Module hibernate6Module() {
-        return new Hibernate6Module().configure(Feature.SERIALIZE_IDENTIFIER_FOR_LAZY_NOT_LOADED_OBJECTS, true);
-    }
-<%_ } _%>
 }

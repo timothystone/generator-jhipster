@@ -58,12 +58,12 @@ jobs:
       # Install all tools and check configuration
       #----------------------------------------------------------------------
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: generator-jhipster
           fetch-depth: 2
       - uses: ./generator-jhipster/.github/actions/setup-default-node-java
-      - uses: jhipster/actions/setup-runner@v0
+      - uses: jhipster/actions/setup-runner@v1
         with:
           maven-cache: true
           gradle-cache: true
@@ -85,7 +85,7 @@ jobs:
       #----------------------------------------------------------------------
       # Launch tests
       #----------------------------------------------------------------------
-      - uses: jhipster/actions/build-jhipster-bom@v0
+      - uses: jhipster/actions/build-jhipster-bom@v1
         if: steps.project.outputs.contains-sample != 'false'
         with:
           jhipster-bom-ref: main
@@ -117,13 +117,13 @@ jobs:
         run: npm run ci:e2e:run --if-present
         timeout-minutes: 15
       - name: 'BACKEND: Store failure logs'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.backend.outcome == 'failure' && steps.project.outputs.contains-sample != 'false'
         with:
           name: log-${{ matrix.number }}
           path: app/**/test-results/**/*.xml
       - name: 'E2E: Store failure screenshots'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.e2e.outcome == 'failure' && steps.project.outputs.contains-sample != 'false'
         with:
           name: screenshots-${{ matrix.number }}

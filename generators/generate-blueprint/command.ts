@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,12 +16,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_INIT } from '../generator-list.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+
 import {
   ADDITIONAL_SUB_GENERATORS,
-  ALL_GENERATORS,
-  ALL_PRIORITIES,
   CLI_OPTION,
   DYNAMIC,
   GENERATE_SNAPSHOTS,
@@ -29,7 +27,7 @@ import {
   LINK_JHIPSTER_DEPENDENCY,
   LOCAL_BLUEPRINT_OPTION,
   SUB_GENERATORS,
-} from './constants.js';
+} from './constants.ts';
 
 const command = {
   configs: {
@@ -39,6 +37,13 @@ const command = {
         type: Boolean,
       },
       scope: 'storage',
+    },
+    defaults: {
+      cli: {
+        description: 'Use default values for the generator',
+        type: Boolean,
+      },
+      scope: 'none',
     },
     gitDependency: {
       cli: {
@@ -89,58 +94,87 @@ const command = {
       },
       scope: 'storage',
     },
-  },
-  options: {
     [GENERATE_SNAPSHOTS]: {
       description: 'Generate test snapshots',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
+      scope: 'none',
     },
     [LINK_JHIPSTER_DEPENDENCY]: {
       description: 'Link JHipster dependency for testing',
-      type: Boolean,
-      hide: true,
+      cli: {
+        type: Boolean,
+        hide: true,
+      },
+      scope: 'none',
     },
     [SUB_GENERATORS]: {
       description: 'Sub generators to generate',
-      type: Array,
+      cli: {
+        type: Array,
+      },
       scope: 'storage',
     },
     [ADDITIONAL_SUB_GENERATORS]: {
       description: 'Comma separated additional sub generators to generate',
-      type: String,
+      cli: {
+        type: String,
+      },
       scope: 'storage',
     },
     [DYNAMIC]: {
       description: 'Generate dynamic generators (advanced)',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
     [JS]: {
       description: 'Use js extension',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
     [LOCAL_BLUEPRINT_OPTION]: {
       description: 'Generate a local blueprint',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
     [CLI_OPTION]: {
       description: 'Generate a cli for the blueprint',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'storage',
     },
-    [ALL_GENERATORS]: {
+    allGenerators: {
       description: 'Generate every sub generator',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
       scope: 'generator',
     },
-    [ALL_PRIORITIES]: {
+    allPriorities: {
       description: 'Generate every priority',
-      type: Boolean,
+      cli: {
+        type: Boolean,
+      },
+      scope: 'none',
+    },
+    sampleWritten: {
+      description: 'Sample has been written',
+      cli: {
+        type: Boolean,
+        hide: true,
+      },
+      scope: 'storage',
     },
   },
-  import: [GENERATOR_INIT],
+  import: ['init'],
 } as const satisfies JHipsterCommandDefinition;
 
 export default command;

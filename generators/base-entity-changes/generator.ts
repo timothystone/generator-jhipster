@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { existsSync, readFileSync } from 'fs';
-import type { Field } from '../base-application/index.js';
-import GeneratorBaseApplication from '../base-application/index.js';
-import { PRIORITY_NAMES } from '../base-application/priorities.js';
-import { loadEntitiesAnnotations, loadEntitiesOtherSide } from '../base-application/support/index.js';
-import { relationshipEquals, relationshipNeedsForeignKeyRecreationOnly } from '../liquibase/support/index.js';
-import { addEntitiesOtherRelationships } from '../server/support/index.js';
-import type { TaskTypes as ApplicationTaskTypes, TaskParamWithApplication } from '../../lib/types/application/tasks.js';
-import type { BaseChangelog } from './types.js';
-import type { TaskParamWithChangelogsAndApplication } from './tasks.js';
+import { existsSync, readFileSync } from 'node:fs';
+
+import BaseApplicationGenerator from '../base-application/index.ts';
+import { PRIORITY_NAMES } from '../base-application/priorities.ts';
+import { loadEntitiesAnnotations, loadEntitiesOtherSide } from '../base-application/support/index.ts';
+import type { TaskTypes as ApplicationTaskTypes } from '../base-application/tasks.ts';
+import type { TaskParamWithApplication } from '../base-simple-application/tasks.ts';
+import { relationshipEquals, relationshipNeedsForeignKeyRecreationOnly } from '../liquibase/support/index.ts';
+import { addEntitiesOtherRelationships } from '../server/support/index.ts';
+
+import type {
+  Application as BaseEntityChangesApplication,
+  BaseChangelog as BaseEntityChangesChangelog,
+  Config as BaseEntityChangesConfig,
+  Entity as BaseEntityChangesEntity,
+  Features as BaseEntityChangesFeatures,
+  Field as BaseEntityChangesField,
+  Options as BaseEntityChangesOptions,
+  Source as BaseEntityChangesSource,
+} from './types.ts';
 
 const { DEFAULT, WRITING_ENTITIES, POST_WRITING_ENTITIES } = PRIORITY_NAMES;
 
-const baseChangelog: () => Omit<BaseChangelog, 'changelogDate' | 'entityName' | 'entity'> = () => ({
+const baseChangelog = (): Omit<BaseEntityChangesChangelog<any>, 'changelogDate' | 'entityName' | 'entity'> => ({
   newEntity: false,
   changedEntity: false,
   incremental: false,
@@ -41,33 +51,53 @@ const baseChangelog: () => Omit<BaseChangelog, 'changelogDate' | 'entityName' | 
   relationshipsToRecreateForeignKeysOnly: [],
   removedDefaultValueFields: [],
   addedDefaultValueFields: [],
-  changelogData: {},
 });
 
-type TaskTypes = ApplicationTaskTypes & {
-  DefaultTaskParam: { entityChanges?: BaseChangelog[] };
-  WritingEntitiesTaskParam: { entityChanges?: BaseChangelog[] };
-  PostWritingEntitiesTaskParam: { entityChanges?: BaseChangelog[] };
+type BaseEntityChangesTaskTypes<
+  E extends BaseEntityChangesEntity,
+  B extends BaseEntityChangesChangelog<E>,
+  A extends BaseEntityChangesApplication<E>,
+  S extends BaseEntityChangesSource,
+> = ApplicationTaskTypes<E, A, S> & {
+  DefaultTaskParam: { entityChanges?: B[] };
+  WritingEntitiesTaskParam: { entityChanges?: B[] };
+  PostWritingEntitiesTaskParam: { entityChanges?: B[] };
 };
 
 /**
  * This is the base class for a generator for every generator.
  */
-export default abstract class GeneratorBaseEntityChanges extends GeneratorBaseApplication<TaskTypes> {
+export default abstract class BaseEntityChangesGenerator<
+  Entity extends BaseEntityChangesEntity = BaseEntityChangesEntity,
+  Application extends BaseEntityChangesApplication<Entity> = BaseEntityChangesApplication<Entity>,
+  Config extends BaseEntityChangesConfig = BaseEntityChangesConfig,
+  Options extends BaseEntityChangesOptions = BaseEntityChangesOptions,
+  Source extends BaseEntityChangesSource = BaseEntityChangesSource,
+  Features extends BaseEntityChangesFeatures = BaseEntityChangesFeatures,
+  Tasks extends BaseEntityChangesTaskTypes<Entity, BaseEntityChangesChangelog<Entity>, Application, Source> = BaseEntityChangesTaskTypes<
+    Entity,
+    BaseEntityChangesChangelog<Entity>,
+    Application,
+    Source
+  >,
+> extends BaseApplicationGenerator<Entity, Application, Config, Options, Source, Features, Tasks> {
   recreateInitialChangelog!: boolean;
   private entityChanges!: any[];
 
-  abstract isChangelogNew({ entityName, changelogDate }): boolean;
+  abstract isChangelogNew({ entityName, changelogDate }: { entityName: string; changelogDate: string }): boolean;
 
-  protected getTaskFirstArgForPriority(priorityName: string): TaskParamWithChangelogsAndApplication | TaskParamWithApplication {
+  protected getTaskFirstArgForPriority(
+    priorityName: (typeof PRIORITY_NAMES)[keyof typeof PRIORITY_NAMES],
+  ): TaskParamWithApplication<Application> {
     const firstArg = super.getTaskFirstArgForPriority(priorityName);
-    if ([DEFAULT, WRITING_ENTITIES, POST_WRITING_ENTITIES].includes(priorityName)) {
-      this.entityChanges = this.generateIncrementalChanges();
+    if (([DEFAULT, WRITING_ENTITIES, POST_WRITING_ENTITIES] as string[]).includes(priorityName)) {
+      const { application, entities } = firstArg as Tasks['DefaultTaskParam'];
+      this.entityChanges = this.generateIncrementalChanges({ application, entities });
     }
-    if ([DEFAULT].includes(priorityName)) {
+    if (([DEFAULT] as string[]).includes(priorityName)) {
       return { ...firstArg, entityChanges: this.entityChanges };
     }
-    if ([WRITING_ENTITIES, POST_WRITING_ENTITIES].includes(priorityName)) {
+    if (([WRITING_ENTITIES, POST_WRITING_ENTITIES] as string[]).includes(priorityName)) {
       // const { entities = [] } = this.options;
       // const filteredEntities = data.entities.filter(entity => entities.includes(entity.name));
       return { ...firstArg, entityChanges: this.entityChanges };
@@ -78,70 +108,76 @@ export default abstract class GeneratorBaseEntityChanges extends GeneratorBaseAp
   /**
    * Generate changelog from differences between the liquibase entity and current entity.
    */
-  protected generateIncrementalChanges(): BaseChangelog[] {
+  protected generateIncrementalChanges({
+    application,
+    entities: paramEntities,
+  }: Pick<Tasks['DefaultTaskParam'], 'application' | 'entities'>): BaseEntityChangesChangelog<Entity>[] {
     const recreateInitialChangelog = this.recreateInitialChangelog;
-    const { generateBuiltInUserEntity, generateBuiltInAuthorityEntity, incrementalChangelog } = this.sharedData.getApplication();
-    const entityNames = this.getExistingEntityNames();
+    const { incrementalChangelog } = application;
+    const entityNames = paramEntities.filter(e => !e.builtIn).map(e => e.name);
 
-    const entitiesByName = Object.fromEntries(entityNames.map(entityName => [entityName, this.sharedData.getEntity(entityName)]));
+    const entitiesByName = Object.fromEntries(paramEntities.map(entity => [entity.name, entity]));
     const entitiesWithExistingChangelog = entityNames.filter(
-      entityName => !this.isChangelogNew({ entityName, changelogDate: entitiesByName[entityName].annotations?.changelogDate }),
+      entityName => !this.isChangelogNew({ entityName, changelogDate: entitiesByName[entityName].annotations?.changelogDate as string }),
     );
     const previousEntitiesByName = Object.fromEntries(
       entityNames
-        .filter(entityName => existsSync(this.getEntityConfigPath(entityName)))
-        .map(entityName => [
+        .map(entityName => ({ entityName, entityConfigPath: this.getEntityConfigPath(entityName) }))
+        .filter(({ entityConfigPath }) => existsSync(entityConfigPath))
+        .map(({ entityName, entityConfigPath }) => [
           entityName,
-          { name: entityName, ...JSON.parse(readFileSync(this.getEntityConfigPath(entityName)).toString()) },
+          { name: entityName, ...JSON.parse(readFileSync(entityConfigPath).toString()) } as Entity,
         ]),
     );
-    if (generateBuiltInUserEntity) {
-      const user = this.sharedData.getEntity('User');
-      previousEntitiesByName.User = user;
-    }
-    if (generateBuiltInAuthorityEntity) {
-      const authority = this.sharedData.getEntity('Authority');
-      previousEntitiesByName.Authority = authority;
+
+    for (const [entityName, entity] of Object.entries(entitiesByName)) {
+      if (entity.builtIn) {
+        previousEntitiesByName[entityName] = entity;
+      }
     }
 
-    const entities: any[] = Object.values(previousEntitiesByName);
+    if (application.generateBuiltInUserEntity && !previousEntitiesByName.User) {
+      previousEntitiesByName.User = { name: 'User', builtIn: true } as any;
+    }
+
+    const entities = Object.values(previousEntitiesByName);
     loadEntitiesAnnotations(entities);
     loadEntitiesOtherSide(entities);
     addEntitiesOtherRelationships(entities);
 
     // Compare entity changes and create changelogs
     return entityNames.map(entityName => {
-      const newConfig: any = entitiesByName[entityName];
-      const newFields: any[] = (newConfig.fields || []).filter((field: any) => !field.transient);
-      const newRelationships: any[] = newConfig.relationships || [];
+      const newConfig = entitiesByName[entityName];
+      const newFields = (newConfig.fields || []).filter((field: any) => !field.transient);
+      const newRelationships = newConfig.relationships || [];
 
-      const oldConfig: any = previousEntitiesByName[entityName];
+      const oldConfig = previousEntitiesByName[entityName];
 
       if (!oldConfig || recreateInitialChangelog || !incrementalChangelog || !entitiesWithExistingChangelog.includes(entityName)) {
         return {
           ...baseChangelog(),
-          incremental: newConfig.incrementalChangelog,
+          incremental: newConfig.incrementalChangelog!,
           changelogDate: newConfig.changelogDate,
           newEntity: true,
           entity: newConfig,
           entityName,
-        };
+        } satisfies BaseEntityChangesChangelog<Entity>;
       }
 
-      (this as any)._debug(`Calculating diffs for ${entityName}`);
+      this._debug(`Calculating diffs for ${entityName}`);
 
-      const oldFields: any[] = (oldConfig.fields || []).filter((field: any) => !field.transient);
+      const oldFields = (oldConfig.fields || []).filter((field: any) => !field.transient);
       const oldFieldNames: string[] = oldFields.filter(field => !field.id).map(field => field.fieldName);
       const newFieldNames: string[] = newFields.filter(field => !field.id).map(field => field.fieldName);
 
       // Calculate new fields
       const addedFieldNames = newFieldNames.filter(fieldName => !oldFieldNames.includes(fieldName));
-      const addedFields = addedFieldNames.map(fieldName => newFields.find(field => fieldName === field.fieldName));
+      const addedFields = addedFieldNames.map(fieldName => newFields.find(field => fieldName === field.fieldName)!);
       // Calculate removed fields
       const removedFieldNames = oldFieldNames.filter(fieldName => !newFieldNames.includes(fieldName));
-      const removedFields = removedFieldNames.map(fieldName => oldFields.find(field => fieldName === field.fieldName));
+      const removedFields = removedFieldNames.map(fieldName => oldFields.find(field => fieldName === field.fieldName)!);
 
-      const oldRelationships: any[] = oldConfig.relationships || [];
+      const oldRelationships = oldConfig.relationships || [];
 
       // Calculate changed/newly added relationships
       const addedRelationships = newRelationships.filter(
@@ -183,11 +219,7 @@ export default abstract class GeneratorBaseEntityChanges extends GeneratorBaseAp
         .filter(oldField => !removedFieldNames.includes(oldField.fieldName))
         .filter(
           // field was not removed, so check its default value
-          oldField =>
-            this.doDefaultValuesDiffer(
-              oldField,
-              newFields.find(newField => newField.fieldName === oldField.fieldName),
-            ),
+          oldField => this.doDefaultValuesDiffer(oldField, newFields.find(newField => newField.fieldName === oldField.fieldName)!),
         );
 
       // find the new fields that have not been added newly anyway or otherwise where the old field had a different default value
@@ -195,11 +227,7 @@ export default abstract class GeneratorBaseEntityChanges extends GeneratorBaseAp
         .filter(newField => !addedFieldNames.includes(newField.fieldName))
         .filter(
           // field was not added newly, so check its default value
-          newField =>
-            this.doDefaultValuesDiffer(
-              oldFields.find(oldField => oldField.fieldName === newField.fieldName),
-              newField,
-            ),
+          newField => this.doDefaultValuesDiffer(oldFields.find(oldField => oldField.fieldName === newField.fieldName)!, newField),
         );
 
       return {
@@ -216,15 +244,15 @@ export default abstract class GeneratorBaseEntityChanges extends GeneratorBaseAp
         relationshipsToRecreateForeignKeysOnly,
         removedDefaultValueFields,
         addedDefaultValueFields,
-      };
+      } satisfies BaseEntityChangesChangelog<Entity>;
     });
   }
 
-  private hasAnyDefaultValue(field: Field): boolean {
+  private hasAnyDefaultValue(field: BaseEntityChangesField): boolean {
     return field.defaultValue !== undefined || field.defaultValueComputed !== undefined;
   }
 
-  private doDefaultValuesDiffer(field1: Field, field2: Field): boolean {
+  private doDefaultValuesDiffer(field1: BaseEntityChangesField, field2: BaseEntityChangesField): boolean {
     return field1.defaultValue !== field2.defaultValue || field1.defaultValueComputed !== field2.defaultValueComputed;
   }
 }

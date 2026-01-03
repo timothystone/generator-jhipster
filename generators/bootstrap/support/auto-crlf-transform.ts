@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,22 +16,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { stat } from 'fs/promises';
-import { createReadStream } from 'fs';
-import { relative } from 'path';
-import { transform } from 'p-transform';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { relative } from 'node:path';
+
 import { isBinaryFile } from 'isbinaryfile';
-import { simpleGit } from 'simple-git';
-import { isFileStateModified } from 'mem-fs-editor/state';
 import type { MemFsEditorFile } from 'mem-fs-editor';
-import { normalizeLineEndings } from '../../base/support/index.js';
+import { isFileStateModified } from 'mem-fs-editor/state';
+import { transform } from 'p-transform';
+import { simpleGit } from 'simple-git';
+
+import { CRLF, normalizeLineEndings } from '../../../lib/utils/index.ts';
 
 /**
  * Detect the file first line endings
  */
-export function detectCrLf(filePath: string): Promise<boolean> {
-  return new Promise<boolean>((resolve, reject) => {
-    let isCrlf;
+export function detectCrLf(filePath: string): Promise<boolean | undefined> {
+  return new Promise<boolean | undefined>((resolve, reject) => {
+    let isCrlf: boolean | undefined;
     const rs = createReadStream(filePath, { encoding: 'utf8' });
     rs.on('data', function (chunk) {
       const n = chunk.indexOf('\n');
@@ -80,7 +82,7 @@ const autoCrlfTransform = async ({ baseDir }: { baseDir: string }) => {
         );
 
         if (attrs.eol === 'crlf' || (attrs.binary !== 'set' && attrs.eol !== 'lf' && (await detectCrLf(file.path)))) {
-          file.contents = Buffer.from(normalizeLineEndings(file.contents!.toString(), '\r\n'));
+          file.contents = Buffer.from(normalizeLineEndings(file.contents!.toString(), CRLF));
         }
       }
     } catch {

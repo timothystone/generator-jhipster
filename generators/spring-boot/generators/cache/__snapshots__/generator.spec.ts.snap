@@ -1,0 +1,897 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`generator - spring-boot:cache caffeine-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache caffeine-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addGradleBuildSrcDependencyCatalogVersion": [
+    {
+      "name": "typesafe",
+      "version": "'TYPESAFE-VERSION'",
+    },
+  ],
+  "addGradleDependencyCatalogVersion": [
+    {
+      "name": "typesafe",
+      "version": "'TYPESAFE-VERSION'",
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "jcache",
+            "groupId": "com.github.ben-manes.caffeine",
+          },
+          {
+            "artifactId": "caffeine",
+            "groupId": "com.github.ben-manes.caffeine",
+          },
+          {
+            "artifactId": "config",
+            "groupId": "com.typesafe",
+            "version": "'TYPESAFE-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache caffeine-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache caffeine-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "jcache",
+            "groupId": "com.github.ben-manes.caffeine",
+          },
+          {
+            "artifactId": "caffeine",
+            "groupId": "com.github.ben-manes.caffeine",
+          },
+          {
+            "artifactId": "config",
+            "groupId": "com.typesafe",
+            "version": "'TYPESAFE-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache ehcache-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache ehcache-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "ehcache",
+            "classifier": "jakarta",
+            "groupId": "org.ehcache",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache ehcache-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache ehcache-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "ehcache",
+            "classifier": "jakarta",
+            "groupId": "org.ehcache",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache hazelcast-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache hazelcast-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addGradleBuildSrcDependencyCatalogVersion": [
+    {
+      "name": "hazelcast-spring",
+      "version": "'HAZELCAST-SPRING-VERSION'",
+    },
+    {
+      "name": "hazelcast-hibernate53",
+      "version": "'HAZELCAST-HIBERNATE-53-VERSION'",
+    },
+  ],
+  "addGradleDependencyCatalogVersion": [
+    {
+      "name": "hazelcast-spring",
+      "version": "'HAZELCAST-SPRING-VERSION'",
+    },
+    {
+      "name": "hazelcast-hibernate53",
+      "version": "'HAZELCAST-HIBERNATE-53-VERSION'",
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "hazelcast-spring",
+            "groupId": "com.hazelcast",
+            "version": "'HAZELCAST-SPRING-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hazelcast-hibernate53",
+            "groupId": "com.hazelcast",
+            "version": "'HAZELCAST-HIBERNATE-53-VERSION'",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache hazelcast-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache hazelcast-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "hazelcast-spring",
+            "groupId": "com.hazelcast",
+            "version": "'HAZELCAST-SPRING-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hazelcast-hibernate53",
+            "groupId": "com.hazelcast",
+            "version": "'HAZELCAST-HIBERNATE-53-VERSION'",
+          },
+        ],
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache infinispan-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache infinispan-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "infinispan-hibernate-cache-v62",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-spring-boot3-starter-embedded",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-commons",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-core",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-component-annotations",
+            "groupId": "org.infinispan",
+            "scope": "compile",
+          },
+          {
+            "artifactId": "micrometer-registry-prometheus",
+            "groupId": "io.micrometer",
+          },
+        ],
+      },
+      {
+        "condition": false,
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache infinispan-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache infinispan-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "infinispan-hibernate-cache-v62",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-spring-boot3-starter-embedded",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-commons",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-core",
+            "groupId": "org.infinispan",
+          },
+          {
+            "artifactId": "infinispan-component-annotations",
+            "groupId": "org.infinispan",
+            "scope": "compile",
+          },
+          {
+            "artifactId": "micrometer-registry-prometheus",
+            "groupId": "io.micrometer",
+          },
+        ],
+      },
+      {
+        "condition": false,
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache memcached-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache memcached-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "spring-cache",
+            "groupId": "com.google.code.simple-spring-memcached",
+            "versionRef": "xmemcached-provider",
+          },
+          {
+            "artifactId": "xmemcached-provider",
+            "groupId": "com.google.code.simple-spring-memcached",
+            "versionRef": "xmemcached-provider",
+          },
+          {
+            "artifactId": "xmemcached",
+            "groupId": "com.googlecode.xmemcached",
+            "version": "'XMEMCACHED-VERSION'",
+          },
+        ],
+        "versions": [
+          {
+            "name": "xmemcached-provider",
+            "version": "'XMEMCACHED-PROVIDER-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": false,
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache memcached-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache memcached-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "cache-api",
+            "groupId": "javax.cache",
+          },
+          {
+            "artifactId": "spring-cache",
+            "groupId": "com.google.code.simple-spring-memcached",
+            "versionRef": "xmemcached-provider",
+          },
+          {
+            "artifactId": "xmemcached-provider",
+            "groupId": "com.google.code.simple-spring-memcached",
+            "versionRef": "xmemcached-provider",
+          },
+          {
+            "artifactId": "xmemcached",
+            "groupId": "com.googlecode.xmemcached",
+            "version": "'XMEMCACHED-VERSION'",
+          },
+        ],
+        "versions": [
+          {
+            "name": "xmemcached-provider",
+            "version": "'XMEMCACHED-PROVIDER-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": false,
+      },
+    ],
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache redis-gradle should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/EmbeddedRedis.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/RedisTestContainer.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/RedisTestContainersSpringContextCustomizerFactory.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache redis-gradle should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "testcontainers-junit-jupiter",
+            "groupId": "org.testcontainers",
+            "scope": "test",
+          },
+          {
+            "artifactId": "testcontainers",
+            "groupId": "org.testcontainers",
+            "scope": "test",
+          },
+          {
+            "artifactId": "redisson",
+            "groupId": "org.redisson",
+            "version": "'REDISSON-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "addTestSpringFactory": [
+    {
+      "key": "org.springframework.test.context.ContextCustomizerFactory",
+      "value": "com.mycompany.myapp.config.RedisTestContainersSpringContextCustomizerFactory",
+    },
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;
+
+exports[`generator - spring-boot:cache redis-maven should match files snapshot 1`] = `
+{
+  ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/main/java/com/mycompany/myapp/config/CacheKeyGeneratorConfiguration.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/EmbeddedRedis.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/RedisTestContainer.java": {
+    "stateCleared": "modified",
+  },
+  "src/test/java/com/mycompany/myapp/config/RedisTestContainersSpringContextCustomizerFactory.java": {
+    "stateCleared": "modified",
+  },
+}
+`;
+
+exports[`generator - spring-boot:cache redis-maven should match source calls 1`] = `
+{
+  "addEntityToCache": [
+    {
+      "entityAbsoluteClass": "com.mycompany.myapp.domain.Authority",
+      "relationships": [],
+    },
+  ],
+  "addJavaDefinitions": [
+    [
+      {
+        "dependencies": [
+          {
+            "artifactId": "spring-boot-starter-cache",
+            "groupId": "org.springframework.boot",
+          },
+          {
+            "artifactId": "testcontainers-junit-jupiter",
+            "groupId": "org.testcontainers",
+            "scope": "test",
+          },
+          {
+            "artifactId": "testcontainers",
+            "groupId": "org.testcontainers",
+            "scope": "test",
+          },
+          {
+            "artifactId": "redisson",
+            "groupId": "org.redisson",
+            "version": "'REDISSON-VERSION'",
+          },
+        ],
+      },
+      {
+        "condition": true,
+        "dependencies": [
+          {
+            "artifactId": "hibernate-jcache",
+            "groupId": "org.hibernate.orm",
+          },
+        ],
+      },
+    ],
+  ],
+  "addTestSpringFactory": [
+    {
+      "key": "org.springframework.test.context.ContextCustomizerFactory",
+      "value": "com.mycompany.myapp.config.RedisTestContainersSpringContextCustomizerFactory",
+    },
+  ],
+  "ignoreSonarRule": [
+    {
+      "comment": "Rule https://rules.sonarsource.com/java/RSPEC-1192, there is no easy way to avoid this issue",
+      "resourceKey": "src/main/java/com/mycompany/myapp/config/CacheConfiguration.java",
+      "ruleId": "S1192",
+      "ruleKey": "java:S1192",
+    },
+  ],
+}
+`;

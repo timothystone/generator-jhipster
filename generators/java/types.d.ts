@@ -1,107 +1,127 @@
-import type { RequireOneOrNone } from 'type-fest';
-import type { GradleApplication, GradleNeedleOptions } from '../gradle/types.js';
-import type { EditFileCallback } from '../base/api.js';
-import type { MavenDefinition } from '../maven/types.js';
-import type { ExportStoragePropertiesFromCommand } from '../../lib/command/index.js';
-import type { JavaAnnotation } from './support/add-java-annotation.ts';
-import type { default as BootstrapCommand } from './generators/bootstrap/command.js';
+import type { ExportGeneratorOptionsFromCommand, ExportStoragePropertiesFromCommand } from '../../lib/command/index.ts';
+import type {
+  Application as BaseApplicationApplication,
+  Config as BaseApplicationConfig,
+  Entity as BaseApplicationEntity,
+  Field as BaseApplicationField,
+  Options as BaseApplicationOptions,
+  Relationship as BaseApplicationRelationship,
+  Source as BaseApplicationSource,
+} from '../base-application/types.d.ts';
+import type GraalvmCommand from '../java-simple-application/generators/graalvm/command.ts';
+import type { Application as GradleApplication } from '../java-simple-application/generators/gradle/types.ts';
+import type {
+  Application as JavaSimpleApplicationApplication,
+  Config as JavaSimpleApplicationConfig,
+  Options as JavaSimpleApplicationOptions,
+  Source as JavaSimpleApplicationSource,
+} from '../java-simple-application/types.ts';
+import type { Application as LanguagesApplication } from '../languages/types.ts';
 
-type JavaBootstrapStorageProperties = ExportStoragePropertiesFromCommand<typeof BootstrapCommand>;
+import type { JavaAddedApplicationProperties } from './application.ts';
 
-export type JavaDependencyVersion = {
-  name: string;
-  version: string;
+export type {
+  ConditionalJavaDefinition,
+  JavaArtifact,
+  JavaArtifactType,
+  JavaArtifactVersion,
+  JavaDefinition,
+  JavaDependency,
+  JavaDependencyVersion,
+  JavaNeedleOptions,
+  SpringBean,
+} from '../java-simple-application/types.ts';
+
+type Property = {
+  propertyJavaFilterName?: string;
+  propertyJavaFilterJavaBeanName?: string;
+  propertyJavaFilterType?: string;
+  propertyJavaFilteredType?: string;
+  propertyJavaBeanName?: string;
+  propertyDtoJavaType?: string;
 };
 
-export type JavaArtifactType = {
-  type?: 'jar' | 'pom';
-  scope?: 'compile' | 'provided' | 'runtime' | 'test' | 'system' | 'import' | 'annotationProcessor';
-};
+export type Field = BaseApplicationField &
+  Property & {
+    javaFieldType?: string;
+    fieldInJavaBeanMethod?: string;
+    fieldJavaBuildSpecification?: string;
+    fieldJavadoc?: string;
+    fieldJavaValueGenerator?: string;
+    javaValueGenerator?: string;
 
-export type JavaArtifact = {
-  groupId: string;
-  artifactId: string;
-  classifier?: string;
-} & JavaArtifactType;
+    propertyJavaCustomFilter?: { type: string; superType: string; fieldType: string };
 
-export type JavaArtifactVersion = RequireOneOrNone<{ version?: string; versionRef?: string }, 'version' | 'versionRef'>;
-
-export type JavaDependency = JavaArtifact &
-  JavaArtifactVersion & {
-    exclusions?: JavaArtifact[];
+    javaValueSample1?: string;
+    javaValueSample2?: string;
+    fieldValidateRulesPatternJava?: string;
   };
 
-export type JavaDefinition = {
-  versions?: JavaDependencyVersion[];
-  dependencies?: JavaDependency[];
-  mavenDefinition?: MavenDefinition;
+export interface Relationship extends BaseApplicationRelationship, Property {
+  relationshipJavadoc?: string;
+  propertyDtoJavaType?: string;
+  relationshipUpdateBackReference?: boolean;
+  relationshipNameCapitalizedPlural?: string;
+  ignoreOtherSideProperty?: boolean;
+}
+
+export interface Entity<F extends Field = Field, R extends Relationship = Relationship> extends BaseApplicationEntity<F, R> {
+  dtoMapstruct: boolean;
+  dtoAny: boolean;
+
+  entityDomainLayer?: boolean;
+
+  propertyJavaFilteredType?: string;
+
+  dtoSuffix?: string;
+
+  dtoClass?: string;
+  dtoInstance?: string;
+
+  entityJavadoc?: string;
+  entityApiDescription?: string;
+
+  entityClass: string;
+  entityClassPlural: string;
+  entityAbsoluteClass: string;
+  /** Entity folder relative to project root */
+  entityAbsoluteFolder: string;
+  /** Full entity package */
+  entityAbsolutePackage?: string;
+  /** Entity folder relative to src/main/java folder */
+  entityJavaPackageFolder?: string;
+
+  persistClass: string;
+  persistInstance: string;
+  restClass: string;
+  restInstance: string;
+
+  skipJunitTests?: string;
+
+  /** Import swagger Schema annotation */
+  importApiModelProperty?: boolean;
+  relationshipsContainOtherSideIgnore?: boolean;
+}
+
+export type Config = BaseApplicationConfig & JavaSimpleApplicationConfig & ExportStoragePropertiesFromCommand<typeof GraalvmCommand>;
+
+export type Options = BaseApplicationOptions & JavaSimpleApplicationOptions & ExportGeneratorOptionsFromCommand<typeof GraalvmCommand>;
+
+type DatabaseApplication = {
+  jhiTablePrefix: string;
 };
 
-export type JavaNeedleOptions = GradleNeedleOptions;
-
-export type JavaApplication = JavaBootstrapStorageProperties &
-  GradleApplication & {
-    buildToolExecutable: string;
-    javaVersion: string;
-
-    packageFolder: string;
-    entityPackages: string[];
-
-    srcMainJava: string;
-    srcMainResources: string;
-    srcMainWebapp: string;
-    srcTestJava: string;
-    srcTestResources: string;
-    srcTestJavascript: string;
-
-    javaPackageSrcDir: string;
-    javaPackageTestDir: string;
-
-    temporaryDir: string;
-
-    /** Java dependency versions */
-    javaDependencies: Record<string, string>;
-    /** Known properties that can be used */
-    javaProperties: Record<string, string | null>;
-    /** Known managed properties that can be used */
-    javaManagedProperties: Record<string, string | null>;
-    /** Pre-defined package JavaDocs */
-    packageInfoJavadocs: { packageName: string; documentation: string }[];
-
-    prettierJava: boolean;
-
-    imperativeOrReactive: string;
-
-    addOpenapiGeneratorPlugin: boolean;
-    useNpmWrapper: boolean;
-    graalvmReachabilityMetadata: string;
-    javaNodeBuildPaths: string[];
-  };
-
-export type ConditionalJavaDefinition = JavaDefinition & { condition?: boolean };
-
-export type JavaSourceType = {
-  /**
-   * Add a JavaDefinition to the application.
-   * A version requires a valid version otherwise it will be ignored.
-   * A dependency with versionRef requires a valid referenced version at `versions` otherwise it will be ignored.
-   */
-  addJavaDefinition?(definition: JavaDefinition, options?: JavaNeedleOptions): void;
-  addJavaDefinitions?(
-    optionsOrDefinition: JavaNeedleOptions | ConditionalJavaDefinition,
-    ...definitions: ConditionalJavaDefinition[]
-  ): void;
-  addJavaDependencies?(dependency: JavaDependency[], options?: JavaNeedleOptions): void;
-  hasJavaProperty?(propertyName: string): boolean;
-  hasJavaManagedProperty?(propertyName: string): boolean;
-
-  /**
-   * Edit a Java file by adding static imports, imports and annotations.
-   * Callbacks are passed to the editFile method.
-   */
-  editJavaFile?: (
-    file: string,
-    { staticImports, imports, annotations }: { staticImports?: string[]; imports?: string[]; annotations?: JavaAnnotation[] },
-    ...editFileCallback: EditFileCallback[]
-  ) => void;
+type SpringApplication = {
+  generateSpringAuditor: boolean;
 };
+
+export type Application<E extends BaseApplicationEntity<BaseApplicationField, BaseApplicationRelationship> = Entity<Field, Relationship>> =
+  BaseApplicationApplication<E> &
+    JavaSimpleApplicationApplication &
+    JavaAddedApplicationProperties &
+    GradleApplication &
+    SpringApplication &
+    LanguagesApplication &
+    DatabaseApplication & {};
+
+export type Source = BaseApplicationSource & JavaSimpleApplicationSource;

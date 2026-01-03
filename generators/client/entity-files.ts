@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,13 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.js';
-import { getEnumInfo } from '../base-application/support/index.js';
-import type CoreGenerator from '../base-core/generator.js';
+import { getEnumInfo } from '../base-application/support/index.ts';
+import type CoreGenerator from '../base-core/generator.ts';
+import { CLIENT_MAIN_SRC_DIR } from '../generator-constants.ts';
 
-export async function addEnumerationFiles(this: CoreGenerator, { application, entity }) {
+import type { Application as ClientApplication, Entity as ClientEntity } from './types.d.ts';
+
+export async function addEnumerationFiles(
+  this: CoreGenerator,
+  { application, entity }: { application: ClientApplication; entity: ClientEntity },
+) {
   for (const field of entity.fields) {
-    if (field.fieldIsEnum === true) {
+    if (field.fieldIsEnum) {
       const { enumFileName } = field;
       const enumInfo = {
         ...getEnumInfo(field, entity.clientRootFolder),

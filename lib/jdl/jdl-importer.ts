@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,48 +17,56 @@
  * limitations under the License.
  */
 import { uniqBy } from 'lodash-es';
-import { applicationOptions } from '../jhipster/index.js';
-import { readCurrentPathYoRcFile } from '../utils/yo-rc.js';
-import ParsedJDLToJDLObjectConverter from './converters/parsed-jdl-to-jdl-object/parsed-jdl-to-jdl-object-converter.js';
-import JDLWithoutApplicationToJSONConverter from './converters/jdl-to-json/jdl-without-application-to-json-converter.js';
-import { convert } from './converters/jdl-to-json/jdl-with-applications-to-json-converter.js';
+
+import { APPLICATION_TYPE_KEY, type ApplicationType } from '../core/application-types.ts';
+import { getDefaultRuntime } from '../jdl-config/jhipster-jdl-config.ts';
+import { readCurrentPathYoRcFile } from '../utils/yo-rc.ts';
+
 import {
   formatApplicationToExport,
   formatApplicationsToExport,
-} from './converters/exporters/applications/jhipster-application-formatter.js';
-import exportDeployments from './converters/exporters/jhipster-deployment-exporter.js';
-import exportEntities from './converters/exporters/jhipster-entity-exporter.js';
-import { GENERATOR_NAME } from './converters/exporters/export-utils.js';
-import { parseFromContent, parseFromFiles } from './core/readers/jdl-reader.js';
-import createWithApplicationValidator from './converters/validators/jdl-with-application-validator.js';
-import createWithoutApplicationValidator from './converters/validators/jdl-without-application-validator.js';
-import type JDLObject from './core/models/jdl-object.js';
-import type { ParsedJDLApplications } from './core/types/parsed.js';
-import type { PostProcessedJDLJSONApplication } from './core/types/exporter.js';
-import type { JDLApplicationConfig } from './core/types/parsing.js';
-import type { JDLRuntime } from './core/types/runtime.js';
-import { createRuntime, getDefaultRuntime } from './core/runtime.js';
-
-const { OptionNames } = applicationOptions;
-const { APPLICATION_TYPE, BASE_NAME } = OptionNames;
+} from './converters/exporters/applications/jhipster-application-formatter.ts';
+import { GENERATOR_NAME } from './converters/exporters/export-utils.ts';
+import exportDeployments from './converters/exporters/jhipster-deployment-exporter.ts';
+import exportEntities from './converters/exporters/jhipster-entity-exporter.ts';
+import { convert } from './converters/jdl-to-json/jdl-with-applications-to-json-converter.ts';
+import JDLWithoutApplicationToJSONConverter from './converters/jdl-to-json/jdl-without-application-to-json-converter.ts';
+import ParsedJDLToJDLObjectConverter from './converters/parsed-jdl-to-jdl-object/parsed-jdl-to-jdl-object-converter.ts';
+import createWithApplicationValidator from './converters/validators/jdl-with-application-validator.ts';
+import createWithoutApplicationValidator from './converters/validators/jdl-without-application-validator.ts';
+import type JDLJSONEntity from './core/basic-types/json-entity.ts';
+import { BASE_NAME_KEY } from './core/built-in-options/index.ts';
+import type JDLDeployment from './core/models/jdl-deployment.ts';
+import type JDLObject from './core/models/jdl-object.ts';
+import { parseFromContent, parseFromFiles } from './core/readers/jdl-reader.ts';
+import { createRuntime } from './core/runtime.ts';
+import type { JDLJSONBlueprint, JDLJSONMicrofrontend, PostProcessedJDLJSONApplication } from './core/types/exporter.ts';
+import type { JSONEntity } from './core/types/json-config.ts';
+import type { ParsedJDLApplications } from './core/types/parsed.ts';
+import type { JDLApplicationConfig } from './core/types/parsing.ts';
+import type { JDLRuntime } from './core/types/runtime.ts';
 
 const GENERATOR_JHIPSTER = 'generator-jhipster'; // can't use the one of the generator as it circles
+
+type JDLApplicationConfiguration = {
+  applicationName?: string;
+  applicationType?: ApplicationType;
+  application?: {
+    [GENERATOR_JHIPSTER]: {
+      baseName?: string;
+      applicationType?: ApplicationType;
+    };
+  };
+  forSeveralApplications?: boolean;
+};
+
 /**
  * Creates a new JDL importer from files.
  * There are two ways to create an importer:
  *   - By providing an existing application content, if there's one
  *   - Deprecated: providing some application options
- *
- * @param {Array} files - the JDL files to parse.
- * @param {Object} configuration - a configuration object.
- * @param {Object} configuration.application - an existing application file content
- * @param {String} configuration.applicationName - deprecated, the application's name, optional if parsing applications
- * @param {String} configuration.applicationType - deprecated, the application type, optional if parsing applications
- * @param {String} configuration.databaseType - deprecated, the database type, optional if parsing applications
- * @returns {Object} a JDL importer.
- * @throws {Error} if files aren't passed.
  */
-export function createImporterFromFiles(files, configuration?: any, definition?: JDLApplicationConfig) {
+export function createImporterFromFiles(files: string[], configuration?: JDLApplicationConfiguration, definition?: JDLApplicationConfig) {
   if (!files) {
     throw new Error('Files must be passed to create a new JDL importer.');
   }
@@ -72,18 +80,12 @@ export function createImporterFromFiles(files, configuration?: any, definition?:
  * There are two ways to create an importer:
  *   - By providing an existing application content, if there's one
  *   - Deprecated: providing some application options
- *
- * @param {String} jdlString - the JDL String content to parse.
- * @param {Object} configuration - a configuration object.
- * @param {Object} configuration.application - an existing application file content
- * @param {String} configuration.applicationName - deprecated, the application's name, optional if parsing applications
- * @param {String} configuration.applicationType - deprecated, the application type, optional if parsing applications
- * @param {String} configuration.databaseType - deprecated, the database type, optional if parsing applications
- * @param {Array} configuration.blueprints - the blueprints used.
- * @returns {Object} a JDL importer.
- * @throws {Error} if the content isn't passed.
  */
-export function createImporterFromContent(jdlString, configuration?: any, definition?: JDLApplicationConfig) {
+export function createImporterFromContent(
+  jdlString: string,
+  configuration?: JDLApplicationConfiguration,
+  definition?: JDLApplicationConfig,
+) {
   if (!jdlString) {
     throw new Error('A JDL content must be passed to create a new JDL importer.');
   }
@@ -92,16 +94,23 @@ export function createImporterFromContent(jdlString, configuration?: any, defini
   return makeJDLImporter(content, configuration || {}, runtime);
 }
 
-export type ApplicationWithEntities = { config: any; namespaceConfigs: Record<string, Record<string, any>>; entities: any[] };
+export type ApplicationWithEntities = {
+  config: {
+    blueprints?: JDLJSONBlueprint[];
+    microfrontends?: JDLJSONMicrofrontend[];
+  } & Record<string, any>;
+  namespaceConfigs?: Record<string, Record<string, any>>;
+  entities: JSONEntity[];
+};
 
 export type ImportState = {
-  exportedApplications: any[];
+  exportedApplications: PostProcessedJDLJSONApplication[];
   exportedApplicationsWithEntities: Record<string, ApplicationWithEntities>;
-  exportedEntities: any[];
+  exportedEntities: JSONEntity[];
   exportedDeployments: any[];
 };
 
-function makeJDLImporter(content, configuration, runtime: JDLRuntime) {
+function makeJDLImporter(content: ParsedJDLApplications, configuration: JDLApplicationConfiguration, runtime: JDLRuntime) {
   let importState: ImportState = {
     exportedApplications: [],
     exportedApplicationsWithEntities: {},
@@ -112,15 +121,14 @@ function makeJDLImporter(content, configuration, runtime: JDLRuntime) {
   return {
     /**
      * Processes JDL files and converts them to JSON.
-     * @param {Object} logger - the logger to use, default to the console.
      * @returns {object} the state of the process:
      *          - exportedDeployments: the exported deployments, or an empty list
      *          - exportedApplications: the exported applications, or an empty list
      *          - exportedEntities: the exported entities, or an empty list
      */
-    import: (logger = console) => {
+    import: () => {
       const jdlObject = getJDLObject(content, configuration, runtime);
-      checkForErrors(jdlObject, configuration, logger);
+      checkForErrors(jdlObject);
       if (jdlObject.getApplicationQuantity() === 0 && jdlObject.getEntityQuantity() > 0) {
         importState.exportedEntities = importOnlyEntities(jdlObject, configuration);
       } else if (jdlObject.getApplicationQuantity() === 1) {
@@ -136,15 +144,13 @@ function makeJDLImporter(content, configuration, runtime: JDLRuntime) {
   };
 }
 
-function getJDLObject(parsedJDLContent: ParsedJDLApplications, configuration, runtime: JDLRuntime) {
+function getJDLObject(parsedJDLContent: ParsedJDLApplications, configuration: JDLApplicationConfiguration, runtime: JDLRuntime) {
   let baseName = configuration.applicationName;
   let applicationType = configuration.applicationType;
-  let databaseType = configuration.databaseType;
 
   if (configuration.application) {
-    baseName = configuration.application[GENERATOR_JHIPSTER].baseName;
-    applicationType = configuration.application[GENERATOR_JHIPSTER].applicationType;
-    databaseType = configuration.application[GENERATOR_JHIPSTER].databaseType;
+    baseName ??= configuration.application[GENERATOR_JHIPSTER].baseName;
+    applicationType ??= configuration.application[GENERATOR_JHIPSTER].applicationType;
   }
 
   return ParsedJDLToJDLObjectConverter.parseFromConfigurationObject(
@@ -152,75 +158,35 @@ function getJDLObject(parsedJDLContent: ParsedJDLApplications, configuration, ru
       parsedContent: parsedJDLContent,
       applicationType,
       applicationName: baseName,
-      databaseType,
     },
     runtime,
   );
 }
 
-function checkForErrors(jdlObject: JDLObject, configuration, logger = console) {
+function checkForErrors(jdlObject: JDLObject) {
   let validator;
   if (jdlObject.getApplicationQuantity() === 0) {
-    let application = configuration.application;
-    if (!application) {
-      application = readCurrentPathYoRcFile();
-    }
-    let applicationType = configuration.applicationType;
-    let databaseType = configuration.databaseType;
-    let blueprints = configuration.blueprints;
-    if (application?.[GENERATOR_JHIPSTER]) {
-      if (applicationType === undefined) {
-        applicationType = application[GENERATOR_JHIPSTER].applicationType;
-      }
-      if (databaseType === undefined) {
-        databaseType = application[GENERATOR_JHIPSTER].databaseType;
-      }
-      if (blueprints === undefined) {
-        blueprints = application[GENERATOR_JHIPSTER].blueprints;
-      }
-    }
-    validator = createWithoutApplicationValidator(
-      jdlObject,
-      {
-        applicationType,
-        databaseType,
-        blueprints,
-      },
-      logger,
-    );
+    validator = createWithoutApplicationValidator(jdlObject);
   } else {
-    validator = createWithApplicationValidator(jdlObject, logger);
+    validator = createWithApplicationValidator(jdlObject);
   }
   validator.checkForErrors();
 }
 
-function importOnlyEntities(jdlObject: JDLObject, configuration) {
-  let { applicationName, applicationType, databaseType } = configuration;
+function importOnlyEntities(jdlObject: JDLObject, configuration: JDLApplicationConfiguration) {
+  let { applicationName } = configuration;
 
   let application = configuration.application;
   if (!application) {
     application = readCurrentPathYoRcFile();
   }
   if (application?.[GENERATOR_JHIPSTER]) {
-    if (applicationType === undefined) {
-      applicationType = application[GENERATOR_JHIPSTER].applicationType;
-    }
-    if (applicationName === undefined) {
-      applicationName = application[GENERATOR_JHIPSTER].baseName;
-    }
-    if (databaseType === undefined) {
-      databaseType = application[GENERATOR_JHIPSTER].databaseType;
-    }
+    applicationName ??= application[GENERATOR_JHIPSTER].baseName;
   }
 
-  const entitiesPerApplicationMap = JDLWithoutApplicationToJSONConverter.convert({
-    jdlObject,
-    applicationName,
-    applicationType,
-    databaseType,
-  });
-  const jsonEntities = entitiesPerApplicationMap.get(applicationName);
-  return exportJSONEntities(jsonEntities, configuration);
+  const entitiesPerApplicationMap = JDLWithoutApplicationToJSONConverter.convert(jdlObject, applicationName!);
+  const jsonEntities = entitiesPerApplicationMap.get(applicationName!);
+  return exportJSONEntities(jsonEntities!, configuration);
 }
 
 function importOneApplicationAndEntities(jdlObject: JDLObject) {
@@ -233,10 +199,8 @@ function importOneApplicationAndEntities(jdlObject: JDLObject) {
   const formattedApplication: PostProcessedJDLJSONApplication = formatApplicationToExport(jdlObject.getApplications()[0]);
   importState.exportedApplications.push(formattedApplication);
   const jdlApplication = jdlObject.getApplications()[0];
-  const applicationName = jdlApplication.getConfigurationOptionValue(BASE_NAME);
-  const entitiesPerApplicationMap = convert({
-    jdlObject,
-  });
+  const applicationName = jdlApplication.getConfigurationOptionValue(BASE_NAME_KEY);
+  const entitiesPerApplicationMap = convert(jdlObject);
   const jsonEntities: any = entitiesPerApplicationMap.get(applicationName);
   const { [GENERATOR_NAME]: config, ...remaining } = formattedApplication;
   importState.exportedApplicationsWithEntities[applicationName] = {
@@ -247,7 +211,7 @@ function importOneApplicationAndEntities(jdlObject: JDLObject) {
   if (jsonEntities.length !== 0) {
     const exportedJSONEntities = exportJSONEntities(jsonEntities, {
       applicationName,
-      applicationType: jdlApplication.getConfigurationOptionValue(APPLICATION_TYPE),
+      applicationType: jdlApplication.getConfigurationOptionValue(APPLICATION_TYPE_KEY),
       forSeveralApplications: false,
     });
     importState.exportedApplicationsWithEntities[applicationName].entities = exportedJSONEntities;
@@ -256,7 +220,7 @@ function importOneApplicationAndEntities(jdlObject: JDLObject) {
   return importState;
 }
 
-function importApplicationsAndEntities(jdlObject) {
+function importApplicationsAndEntities(jdlObject: JDLObject) {
   const importState: ImportState = {
     exportedApplications: [],
     exportedApplicationsWithEntities: {},
@@ -266,18 +230,16 @@ function importApplicationsAndEntities(jdlObject) {
 
   const formattedApplications = formatApplicationsToExport(jdlObject.applications);
   importState.exportedApplications = formattedApplications;
-  const entitiesPerApplicationMap: Map<any, any> = convert({
-    jdlObject,
-  });
+  const entitiesPerApplicationMap: Map<any, any> = convert(jdlObject);
   entitiesPerApplicationMap.forEach((jsonEntities, applicationName) => {
     const jdlApplication = jdlObject.getApplication(applicationName);
     const exportedJSONEntities = exportJSONEntities(jsonEntities, {
       applicationName,
-      applicationType: jdlApplication.getConfigurationOptionValue(APPLICATION_TYPE),
+      applicationType: jdlApplication!.getConfigurationOptionValue(APPLICATION_TYPE_KEY),
       forSeveralApplications: true,
     });
     const exportedConfig = importState.exportedApplications.find(config => applicationName === config['generator-jhipster'].baseName);
-    const { 'generator-jhipster': config, ...remaining } = exportedConfig;
+    const { 'generator-jhipster': config, ...remaining } = exportedConfig!;
     importState.exportedApplicationsWithEntities[applicationName] = {
       config,
       ...remaining,
@@ -288,11 +250,11 @@ function importApplicationsAndEntities(jdlObject) {
   return importState;
 }
 
-function importDeployments(deployments) {
+function importDeployments(deployments: Record<string, JDLDeployment>) {
   return exportDeployments(deployments);
 }
 
-function exportJSONEntities(entities, configuration) {
+function exportJSONEntities(entities: JDLJSONEntity[], configuration: JDLApplicationConfiguration): JSONEntity[] {
   let baseName = configuration.applicationName;
   let applicationType = configuration.applicationType;
 
@@ -304,8 +266,8 @@ function exportJSONEntities(entities, configuration) {
   return exportEntities({
     entities,
     application: {
-      name: baseName,
-      type: applicationType,
+      name: baseName!,
+      type: applicationType!,
       forSeveralApplications: !!configuration.forSeveralApplications,
     },
   });

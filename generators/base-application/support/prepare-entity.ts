@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,39 +16,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { camelCase, intersection, kebabCase, lowerFirst, sortedUniq, startCase, uniq, upperFirst } from 'lodash-es';
-import pluralize from 'pluralize';
+import { intersection, sortedUniq, uniq, upperFirst } from 'lodash-es';
 
-import type BaseGenerator from '../../base-core/index.js';
-import { getDatabaseTypeData, hibernateSnakeCase } from '../../server/support/index.js';
-import {
-  createFaker,
-  getMicroserviceAppName,
-  mutateData,
-  parseChangelog,
-  stringHashCode,
-  upperFirstCamelCase,
-} from '../../base/support/index.js';
-import { getEntityParentPathAddition, getTypescriptKeyType } from '../../client/support/index.js';
-import { applicationTypes, databaseTypes, entityOptions, fieldTypes, searchEngineTypes } from '../../../lib/jhipster/index.js';
-import { binaryOptions } from '../../../lib/jdl/core/built-in-options/index.js';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE } from '../../../lib/core/application-types.ts';
+import { binaryOptions } from '../../../lib/jdl/core/built-in-options/index.ts';
+import type { FieldType } from '../../../lib/jhipster/field-types.ts';
+import { databaseTypes, fieldTypes, searchEngineTypes } from '../../../lib/jhipster/index.ts';
+import type { EntityAll, FieldAll } from '../../../lib/types/application-all.d.ts';
+import { getMicroserviceAppName, mutateData, stringHashCode } from '../../../lib/utils/index.ts';
+import { parseChangelog } from '../../base/support/timestamp.ts';
+import type CoreGenerator from '../../base-core/generator.ts';
+import { getTypescriptKeyType } from '../../client/support/index.ts';
+import type { Application as ClientApplication } from '../../client/types.ts';
+import type { DatabaseProperty } from '../../liquibase/types.ts';
+import { getDatabaseTypeData, hibernateSnakeCase } from '../../server/support/index.ts';
+import type { Entity as ServerEntity } from '../../server/types.ts';
+import type { Application as SpringBootApplication } from '../../spring-boot/types.ts';
+import type { Application as SpringDataRelationalApplication } from '../../spring-data/generators/relational/types.ts';
+import { mutateEntity } from '../entity.ts';
+import type {
+  Application as BaseApplicationApplication,
+  Entity as BaseApplicationEntity,
+  Field as BaseApplicationField,
+  PrimaryKey,
+} from '../types.ts';
 
-import type { Entity } from '../../../lib/types/application/index.js';
-import type CoreGenerator from '../../base-core/generator.js';
-import type { PrimaryKey } from '../../../lib/types/application/entity.js';
-import type { ApplicationConfiguration } from '../../../lib/types/application/yo-rc.js';
-import type { ApplicationType } from '../../../lib/types/application/application.js';
-import { fieldToReference } from './prepare-field.js';
-import { fieldIsEnum } from './field-utils.js';
+import { createFaker } from './faker.ts';
+import { fieldIsEnum } from './field-utils.ts';
 
 const NO_SEARCH_ENGINE = searchEngineTypes.NO;
-const { MapperTypes } = entityOptions;
-const { GATEWAY, MICROSERVICE } = applicationTypes;
 const { CommonDBTypes } = fieldTypes;
 
 const { BOOLEAN, LONG, STRING, UUID, INTEGER } = CommonDBTypes;
-const { NO: NO_DTO } = MapperTypes;
-const NO_MAPPER = MapperTypes.NO;
 
 const { CASSANDRA, COUCHBASE, NEO4J, SQL, MONGODB } = databaseTypes;
 
@@ -103,33 +102,15 @@ const BASE_TEMPLATE_DATA = {
   },
 };
 
-function _derivedProperties(entityWithConfig: Entity) {
-  const pagination = entityWithConfig.pagination;
-  const dto = entityWithConfig.dto;
-  const service = entityWithConfig.service;
-  mutateData(entityWithConfig, {
-    paginationPagination: pagination === 'pagination',
-    paginationInfiniteScroll: pagination === 'infinite-scroll',
-    paginationNo: pagination === 'no',
-    dtoMapstruct: dto === 'mapstruct' || dto === 'any',
-    dtoAny: dto && dto !== 'no',
-    serviceClass: service === 'serviceClass',
-    serviceImpl: service === 'serviceImpl',
-    serviceNo: service === 'no',
-  });
-}
-
 export const entityDefaultConfig = {
   pagination: binaryOptions.DefaultValues[binaryOptions.Options.PAGINATION],
-  anyPropertyHasValidation: false,
+  anyPropertyHasValidation: undefined,
   dto: binaryOptions.DefaultValues[binaryOptions.Options.DTO],
   service: binaryOptions.DefaultValues[binaryOptions.Options.SERVICE],
   jpaMetamodelFiltering: false,
   readOnly: false,
   embedded: false,
-  entityAngularJSSuffix: '',
   fluentMethods: true,
-  clientRootFolder: '',
   get fields() {
     return [];
   },
@@ -138,11 +119,8 @@ export const entityDefaultConfig = {
   },
 };
 
-export default function prepareEntity(entityWithConfig: Entity, generator, application: ApplicationType) {
-  const { applicationTypeMicroservice, microfrontend } = application;
-
+export default function prepareEntity(entityWithConfig: BaseApplicationEntity, generator: CoreGenerator) {
   const entityName = upperFirst(entityWithConfig.name);
-  const entitySuffix = entityWithConfig.entitySuffix ?? application.entitySuffix;
   mutateData(entityWithConfig, entityDefaultConfig, BASE_TEMPLATE_DATA);
 
   if (entityWithConfig.changelogDate) {
@@ -153,14 +131,9 @@ export default function prepareEntity(entityWithConfig: Entity, generator, appli
     }
   }
 
-  entityWithConfig.entityAngularJSSuffix = entityWithConfig.angularJSSuffix;
-  if (entityWithConfig.entityAngularJSSuffix && !entityWithConfig.entityAngularJSSuffix.startsWith('-')) {
-    entityWithConfig.entityAngularJSSuffix = `-${entityWithConfig.entityAngularJSSuffix}`;
-  }
-
   entityWithConfig.useMicroserviceJson = entityWithConfig.useMicroserviceJson || entityWithConfig.microserviceName !== undefined;
   entityWithConfig.microserviceAppName = '';
-  if (generator.jhipsterConfig.applicationType === GATEWAY && entityWithConfig.useMicroserviceJson) {
+  if ((generator.jhipsterConfig as any).applicationType === APPLICATION_TYPE_GATEWAY && entityWithConfig.useMicroserviceJson) {
     if (!entityWithConfig.microserviceName) {
       throw new Error('Microservice name for the entity is not found. Entity cannot be generated!');
     }
@@ -168,93 +141,11 @@ export default function prepareEntity(entityWithConfig: Entity, generator, appli
     entityWithConfig.skipServer = true;
   }
 
-  mutateData(entityWithConfig, {
-    entityNameCapitalized: entityName,
-    entityClass: upperFirst(entityName),
-    entityInstance: lowerFirst(entityName),
-    entityTableName: hibernateSnakeCase(entityName),
-    entityNamePlural: pluralize(entityName),
-    entityAuthority: entityWithConfig.adminEntity ? 'ROLE_ADMIN' : undefined,
-  });
-
-  mutateData(entityWithConfig, {
-    persistClass: `${entityWithConfig.entityClass}${entitySuffix ?? ''}`,
-    persistInstance: `${entityWithConfig.entityInstance}${entitySuffix ?? ''}`,
-  });
-
-  const dto = entityWithConfig.dto && entityWithConfig.dto !== NO_DTO;
-  if (dto) {
-    const { dtoSuffix = '' } = application;
-    mutateData(entityWithConfig, {
-      dtoClass: `${entityWithConfig.entityClass}${dtoSuffix}`,
-      dtoInstance: `${entityWithConfig.entityInstance}${dtoSuffix}`,
-      restClass: ({ dtoClass }) => dtoClass!,
-      restInstance: ({ dtoInstance }) => dtoInstance!,
-    });
-  } else {
-    mutateData(entityWithConfig, {
-      restClass: ({ persistClass }) => persistClass!,
-      restInstance: ({ persistInstance }) => persistInstance!,
-    });
-  }
-
-  mutateData(entityWithConfig, {
-    entityNamePluralizedAndSpinalCased: kebabCase(entityWithConfig.entityNamePlural),
-    entityClassPlural: upperFirst(entityWithConfig.entityNamePlural),
-    entityInstancePlural: lowerFirst(entityWithConfig.entityNamePlural),
-  });
-
-  mutateData(entityWithConfig, {
-    // Implement i18n variant ex: 'male', 'female' when applied
-    entityI18nVariant: 'default',
-    entityClassHumanized: startCase(entityWithConfig.entityNameCapitalized),
-    entityClassPluralHumanized: startCase(entityWithConfig.entityClassPlural),
-  });
+  mutateData(entityWithConfig, mutateEntity);
 
   mutateData(entityWithConfig, {
     __override__: false,
-    entityFileName: data => kebabCase(data.entityNameCapitalized + upperFirst(data.entityAngularJSSuffix)),
-    entityAngularName: data => data.entityClass + upperFirstCamelCase(entityWithConfig.entityAngularJSSuffix!),
-    entityAngularNamePlural: data => pluralize(data.entityAngularName),
-    entityApiUrl: data => data.entityNamePluralizedAndSpinalCased,
-  });
-  entityWithConfig.entityFolderName = entityWithConfig.clientRootFolder
-    ? `${entityWithConfig.clientRootFolder}/${entityWithConfig.entityFileName}`
-    : entityWithConfig.entityFileName;
-  entityWithConfig.entityModelFileName = entityWithConfig.entityFolderName;
-  entityWithConfig.entityParentPathAddition = getEntityParentPathAddition(entityWithConfig.clientRootFolder);
-  entityWithConfig.entityPluralFileName = entityWithConfig.entityNamePluralizedAndSpinalCased + entityWithConfig.entityAngularJSSuffix;
-  entityWithConfig.entityServiceFileName = entityWithConfig.entityFileName;
-
-  entityWithConfig.entityReactName = entityWithConfig.entityClass + upperFirstCamelCase(entityWithConfig.entityAngularJSSuffix);
-
-  entityWithConfig.entityStateName = kebabCase(entityWithConfig.entityAngularName);
-  entityWithConfig.entityUrl = entityWithConfig.entityStateName;
-
-  entityWithConfig.entityTranslationKey = entityWithConfig.clientRootFolder
-    ? camelCase(`${entityWithConfig.clientRootFolder}-${entityWithConfig.entityInstance}`)
-    : entityWithConfig.entityInstance;
-  entityWithConfig.entityTranslationKeyMenu = camelCase(
-    entityWithConfig.clientRootFolder
-      ? `${entityWithConfig.clientRootFolder}-${entityWithConfig.entityStateName}`
-      : entityWithConfig.entityStateName,
-  );
-
-  mutateData(entityWithConfig, {
-    __override__: false,
-    i18nKeyPrefix: data => data.i18nKeyPrefix ?? `${application.frontendAppName}.${data.entityTranslationKey}`,
-    i18nAlertHeaderPrefix: data =>
-      (data.i18nAlertHeaderPrefix ?? data.microserviceAppName)
-        ? `${data.microserviceAppName}.${data.entityTranslationKey}`
-        : data.i18nKeyPrefix,
     hasRelationshipWithBuiltInUser: ({ relationships }) => relationships.some(relationship => relationship.otherEntity.builtInUser),
-    saveUserSnapshot: ({ hasRelationshipWithBuiltInUser, dto }) =>
-      applicationTypeMicroservice && application.authenticationTypeOauth2 && hasRelationshipWithBuiltInUser && dto === NO_MAPPER,
-    entityApi: ({ microserviceName }) => (microserviceName ? `services/${microserviceName.toLowerCase()}/` : ''),
-    entityPage: ({ microserviceName, entityFileName }) =>
-      microserviceName && microfrontend && applicationTypeMicroservice
-        ? `${microserviceName.toLowerCase()}/${entityFileName}`
-        : `${entityFileName}`,
   });
 
   entityWithConfig.generateFakeData = type => {
@@ -263,7 +154,7 @@ export default function prepareEntity(entityWithConfig: Entity, generator, appli
     const fieldEntries: [string, any][] = fieldsToGenerate
       .map(field => {
         const fieldData = field.generateFakeData!(type);
-        if (!field.nullable && fieldData === null) return undefined;
+        if (!(field as DatabaseProperty).nullable && fieldData === null) return undefined;
         return [field.fieldName, fieldData];
       })
       .filter(Boolean) as any;
@@ -274,7 +165,6 @@ export default function prepareEntity(entityWithConfig: Entity, generator, appli
     }
     return Object.fromEntries(fieldEntries);
   };
-  _derivedProperties(entityWithConfig);
 
   return entityWithConfig;
 }
@@ -288,13 +178,17 @@ export function derivedPrimaryKeyProperties(primaryKey: PrimaryKey) {
     typeString: primaryKey.type === STRING,
     typeLong: primaryKey.type === LONG,
     typeInteger: primaryKey.type === INTEGER,
-    typeNumeric: !primaryKey.composite && primaryKey.fields[0].fieldTypeNumeric,
-  } as any);
+    typeNumeric: !primaryKey.composite && (primaryKey.fields[0] as any).fieldTypeNumeric,
+  });
 }
 
 export function prepareEntityPrimaryKeyForTemplates(
   this: CoreGenerator | void,
-  { entity: entityWithConfig, enableCompositeId = true, application }: { entity: any; enableCompositeId?: boolean; application?: any },
+  {
+    entity: entityWithConfig,
+    enableCompositeId = true,
+    application,
+  }: { entity: BaseApplicationEntity; enableCompositeId?: boolean; application?: any },
 ) {
   const idFields = entityWithConfig.fields.filter(field => field.id);
   const idRelationships = entityWithConfig.relationships.filter(relationship => relationship.id);
@@ -317,17 +211,17 @@ export function prepareEntityPrimaryKeyForTemplates(
         fieldNameHumanized: 'ID',
         fieldTranslationKey: 'global.field.id',
         autoGenerate: true,
-      };
-      entityWithConfig.fields.unshift(idField);
+      } as FieldAll;
+      entityWithConfig.fields.unshift(idField!);
     }
-    idFields.push(idField);
+    idFields.push(idField!);
     idCount++;
   } else if (idRelationships.length > 0) {
     idRelationships.forEach(relationship => {
       // relationships id data are not available at this point, so calculate it when needed.
       relationship.derivedPrimaryKey = {
         get derivedFields() {
-          return relationship.otherEntity.primaryKey.fields.map(field => ({
+          return relationship.otherEntity.primaryKey!.fields.map(field => ({
             originalField: field,
             ...field,
             derived: true,
@@ -339,7 +233,7 @@ export function prepareEntityPrimaryKeyForTemplates(
             readonly: true,
             get derivedPath() {
               if (field.derivedPath) {
-                if (relationship.otherEntity.primaryKey.derived) {
+                if (relationship.otherEntity.primaryKey!.derived) {
                   return [relationship.relationshipName, ...field.derivedPath.splice(1)];
                 }
                 return [relationship.relationshipName, ...field.derivedPath];
@@ -347,7 +241,7 @@ export function prepareEntityPrimaryKeyForTemplates(
               return [relationship.relationshipName, field.fieldName];
             },
             get path() {
-              return [relationship.relationshipName, ...field.path];
+              return [relationship.relationshipName, ...field.path!];
             },
             get fieldName() {
               return idCount === 1 ? field.fieldName : `${relationship.relationshipName}${field.fieldNameCapitalized}`;
@@ -358,13 +252,9 @@ export function prepareEntityPrimaryKeyForTemplates(
                 : `${relationship.relationshipNameCapitalized}${field.fieldNameCapitalized}`;
             },
             get columnName() {
-              return idCount === 1 ? field.columnName : `${hibernateSnakeCase(relationship.relationshipName)}_${field.columnName}`;
-            },
-            get reference() {
-              return fieldToReference(entityWithConfig, this);
-            },
-            get relationshipsPath() {
-              return [relationship, ...field.relationshipsPath];
+              return idCount === 1
+                ? (field as FieldAll).columnName
+                : `${hibernateSnakeCase(relationship.relationshipName)}_${(field as FieldAll).columnName}`;
             },
           }));
         },
@@ -378,37 +268,37 @@ export function prepareEntityPrimaryKeyForTemplates(
     // Almost every info is taken from the parent, except some info like autoGenerate and derived.
     // calling fieldName as id is for backward compatibility, in the future we may want to prefix it with relationship name.
     entityWithConfig.primaryKey = {
-      fieldName: 'id',
+      // fieldName: 'id',
       derived: true,
       // MapsId copy the id from the relationship.
       autoGenerate: true,
       get fields() {
-        return this.derivedFields;
+        return this.derivedFields!;
       },
       get derivedFields() {
-        return relationshipId.derivedPrimaryKey.derivedFields;
+        return relationshipId.derivedPrimaryKey!.derivedFields;
       },
       get ownFields() {
-        return relationshipId.otherEntity.primaryKey.ownFields;
+        return relationshipId.otherEntity.primaryKey!.ownFields;
       },
       relationships: idRelationships,
       get name() {
-        return relationshipId.otherEntity.primaryKey.name;
+        return relationshipId.otherEntity.primaryKey!.name;
       },
       get hibernateSnakeCaseName() {
-        return hibernateSnakeCase(relationshipId.otherEntity.primaryKey.name);
+        return hibernateSnakeCase(relationshipId.otherEntity.primaryKey!.name);
       },
       get nameCapitalized() {
-        return relationshipId.otherEntity.primaryKey.nameCapitalized;
+        return relationshipId.otherEntity.primaryKey!.nameCapitalized;
       },
       get type() {
-        return relationshipId.otherEntity.primaryKey.type;
+        return relationshipId.otherEntity.primaryKey!.type;
       },
       get tsType() {
-        return relationshipId.otherEntity.primaryKey.tsType;
+        return relationshipId.otherEntity.primaryKey!.tsType;
       },
       get composite() {
-        return relationshipId.otherEntity.primaryKey.composite;
+        return relationshipId.otherEntity.primaryKey!.composite;
       },
       get ids() {
         return this.fields.map(field => fieldToId(field));
@@ -416,14 +306,13 @@ export function prepareEntityPrimaryKeyForTemplates(
     };
   } else {
     const composite = enableCompositeId ? idCount > 1 : false;
-    let primaryKeyName;
-    let primaryKeyType;
+    let primaryKeyName: string;
+    let primaryKeyType: string;
     if (composite) {
       primaryKeyName = 'id';
-      primaryKeyType = `${entityWithConfig.entityClass}Id`;
+      primaryKeyType = `${(entityWithConfig as EntityAll).entityClass}Id`;
     } else {
       const idField = idFields[0];
-      idField.dynamic = false;
       // Allow ids type to be empty and fallback to default type for the database.
       if (!idField.fieldType) {
         idField.fieldType = application?.pkType ?? getDatabaseTypeData(entityWithConfig.databaseType).defaultPrimaryKeyType;
@@ -437,22 +326,22 @@ export function prepareEntityPrimaryKeyForTemplates(
       name: primaryKeyName,
       hibernateSnakeCaseName: hibernateSnakeCase(primaryKeyName),
       nameCapitalized: upperFirst(primaryKeyName),
-      type: primaryKeyType,
-      tsType: getTypescriptKeyType(primaryKeyType),
+      type: primaryKeyType as FieldType,
+      tsType: getTypescriptKeyType(primaryKeyType as FieldType),
       composite,
       relationships: idRelationships,
       // Fields declared in this entity
       ownFields: idFields,
       // Fields declared and inherited
       get fields() {
-        return [...this.ownFields, ...this.derivedFields];
+        return [...this.ownFields!, ...this.derivedFields!];
       },
       get autoGenerate() {
         return this.composite ? false : this.fields[0].autoGenerate;
       },
       // Fields inherited from id relationships.
       get derivedFields() {
-        return this.relationships.map(rel => rel.derivedPrimaryKey.derivedFields).flat();
+        return this.relationships.map(rel => rel.derivedPrimaryKey!.derivedFields).flat();
       },
       get ids() {
         return this.fields.map(field => fieldToId(field));
@@ -462,7 +351,7 @@ export function prepareEntityPrimaryKeyForTemplates(
   return entityWithConfig;
 }
 
-function fieldToId(field) {
+function fieldToId(field: BaseApplicationField): any {
   return {
     field,
     get name() {
@@ -486,9 +375,6 @@ function fieldToId(field) {
     get autoGenerate() {
       return !!field.autoGenerate;
     },
-    get relationshipsPath() {
-      return field.relationshipsPath;
-    },
   };
 }
 
@@ -496,37 +382,33 @@ function fieldToId(field) {
  * Copy required application config into entity.
  * Some entity features are related to the backend instead of the current app.
  * This allows to entities files based on the backend features.
- *
- * @param {Object} entity - entity to copy the config into.
- * @param {Object} config - config object.
- * @returns {Object} the entity parameter for chaining.
  */
-export function loadRequiredConfigIntoEntity<E extends Partial<Entity>>(
-  this: BaseGenerator | void,
+export function loadRequiredConfigIntoEntity<const E extends Partial<ServerEntity>>(
+  this: CoreGenerator | void,
   entity: E,
-  config: ApplicationConfiguration,
+  config: BaseApplicationApplication<BaseApplicationEntity>,
 ): E {
-  mutateData(entity, {
+  mutateData(entity as Partial<ServerEntity>, {
     __override__: false,
-    applicationType: config.applicationType,
-    baseName: config.baseName,
-    authenticationType: config.authenticationType,
-    reactive: config.reactive,
-    microfrontend: config.microfrontend,
+    // applicationType: config.applicationType,
+    // baseName: config.baseName,
+    // authenticationType: config.authenticationType,
+    reactive: (config as SpringBootApplication).reactive,
+    microfrontend: (config as ClientApplication).microfrontend,
     // Workaround different paths
-    clientFramework: config.clientFramework,
+    clientFramework: (config as ClientApplication).clientFramework,
 
-    databaseType: config.databaseType,
-    prodDatabaseType: config.prodDatabaseType,
+    databaseType: (config as SpringBootApplication).databaseType,
+    prodDatabaseType: (config as SpringDataRelationalApplication).prodDatabaseType,
 
-    searchEngine: config.searchEngine,
+    searchEngine: (config as SpringBootApplication).searchEngine,
 
-    jhiPrefix: config.jhiPrefix,
-    entitySuffix: config.entitySuffix,
-    dtoSuffix: config.dtoSuffix,
-    packageName: config.packageName,
-    microserviceName: ({ builtIn }) => (!builtIn && config.applicationType === MICROSERVICE ? config.baseName : undefined),
-  } as any);
+    // jhiPrefix: config.jhiPrefix,
+    // entitySuffix: config.entitySuffix,
+    // dtoSuffix: config.dtoSuffix,
+    // packageName: config.packageName,
+    microserviceName: ({ builtIn }) => (!builtIn && config.applicationType === APPLICATION_TYPE_MICROSERVICE ? config.baseName : undefined),
+  });
   if ((entity as any).searchEngine === true && (!entity.microserviceName || entity.microserviceName === config.baseName)) {
     // If the entity belongs to this application and searchEngine is true.
     if (config.searchEngine && config.searchEngine !== NO_SEARCH_ENGINE) {
@@ -540,7 +422,7 @@ export function loadRequiredConfigIntoEntity<E extends Partial<Entity>>(
   return entity;
 }
 
-export function preparePostEntityCommonDerivedProperties(entity: Entity) {
+export function preparePostEntityCommonDerivedProperties(entity: BaseApplicationEntity) {
   const { fields } = entity;
   const fieldsType = sortedUniq(fields.map(({ fieldType }) => fieldType).filter(fieldType => !fieldIsEnum(fieldType)));
 
@@ -560,17 +442,17 @@ export function preparePostEntityCommonDerivedProperties(entity: Entity) {
 
   entity.anyFieldIsBlobDerived = intersection(fieldsType, [BYTES, BYTE_BUFFER]).length > 0;
   if (entity.anyFieldIsBlobDerived) {
-    const blobFields = fields.filter(({ fieldType }) => [BYTES, BYTE_BUFFER].includes(fieldType));
+    const blobFields = fields.filter(({ fieldType }) => ([BYTES, BYTE_BUFFER] as string[]).includes(fieldType));
     const blobFieldsContentType = sortedUniq(blobFields.map(({ fieldTypeBlobContent }) => fieldTypeBlobContent));
     entity.anyFieldHasImageContentType = blobFieldsContentType.includes(IMAGE);
     entity.anyFieldHasFileBasedContentType = blobFieldsContentType.some(fieldTypeBlobContent => fieldTypeBlobContent !== TEXT);
     entity.anyFieldHasTextContentType = blobFieldsContentType.includes(TEXT);
   }
 
-  preparePostEntityCommonDerivedPropertiesNotTyped(entity);
+  preparePostEntityCommonDerivedPropertiesNotTyped(entity as EntityAll);
 }
 
-function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
+function preparePostEntityCommonDerivedPropertiesNotTyped(entity: EntityAll) {
   const { relationships, fields } = entity;
   const oneToOneRelationships = relationships.filter(({ relationshipType }) => relationshipType === 'one-to-one');
   entity.fieldsContainNoOwnerOneToOne = oneToOneRelationships.some(({ ownerSide }) => !ownerSide);
@@ -578,29 +460,24 @@ function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
   entity.anyPropertyHasValidation =
     entity.anyPropertyHasValidation || relationships.some(({ relationshipValidate }) => relationshipValidate);
 
-  const relationshipsByOtherEntity: Record<string, any> = relationships
-    .map(relationship => [relationship.otherEntity.entityNameCapitalized, relationship])
-    .reduce((relationshipsByOtherEntity: any, [type, relationship]) => {
-      if (!relationshipsByOtherEntity[type]) {
-        relationshipsByOtherEntity[type] = [relationship];
-      } else {
-        relationshipsByOtherEntity[type].push(relationship);
-      }
-      return relationshipsByOtherEntity;
-    }, {});
+  const relationshipsByOtherEntity = relationships
+    .map(relationship => [relationship.otherEntity.entityNameCapitalized, relationship] as const)
+    .reduce(
+      (relationshipsByOtherEntity, [type, relationship]) => {
+        if (!relationshipsByOtherEntity[type]) {
+          relationshipsByOtherEntity[type] = [relationship];
+        } else {
+          relationshipsByOtherEntity[type].push(relationship);
+        }
+        return relationshipsByOtherEntity;
+      },
+      {} as Record<string, typeof relationships>,
+    );
 
   entity.relationshipsByOtherEntity = relationshipsByOtherEntity;
   entity.differentRelationships = relationshipsByOtherEntity;
-  entity.persistableOtherEntities = Object.values(relationshipsByOtherEntity).filter(relationships =>
-    relationships.some(({ persistableRelationship, otherEntity }) => persistableRelationship && otherEntity !== entity),
-  );
 
   entity.anyPropertyHasValidation = entity.anyPropertyHasValidation || fields.some(({ fieldValidate }) => fieldValidate);
-
-  entity.allReferences = [
-    ...entity.fields.map(field => field.reference),
-    ...entity.relationships.map(relationship => relationship.reference),
-  ];
 
   entity.otherEntities = uniq(entity.relationships.map(rel => rel.otherEntity));
 
@@ -611,19 +488,7 @@ function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
     entity.fields.some(field => !field.id && !field.transient) ||
     entity.relationships.some(relationship => !relationship.id && relationship.persistableRelationship);
 
-  entity.allReferences
-    .filter(reference => reference.relationship?.relatedField)
-    .forEach(reference => {
-      reference.relatedReference = reference.relationship.relatedField.reference;
-    });
-
-  entity.relationships.forEach(relationship => {
-    relationship.relationshipCollection = ['one-to-many', 'many-to-many'].includes(relationship.relationshipType);
-    relationship.relationshipReferenceField = relationship.relationshipCollection
-      ? relationship.relationshipFieldNamePlural
-      : relationship.relationshipFieldName;
-  });
-  entity.entityContainsCollectionField = entity.relationships.some(relationship => relationship.relationshipCollection);
+  entity.entityContainsCollectionField = entity.relationships.some(relationship => relationship.collection);
 
   if (entity.primaryKey) {
     derivedPrimaryKeyProperties(entity.primaryKey);
@@ -633,7 +498,7 @@ function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
 
   const types = entity.relationships
     .filter(rel => rel.otherEntity.primaryKey)
-    .map(rel => rel.otherEntity.primaryKey.fields.map(f => f.fieldType))
+    .map(rel => rel.otherEntity.primaryKey!.fields.map(f => f.fieldType))
     .flat();
   entity.otherEntityPrimaryKeyTypes = Array.from(new Set(types));
   entity.otherEntityPrimaryKeyTypesIncludesUUID = types.includes(UUID);
@@ -652,15 +517,15 @@ function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
         (bagRelationship ||
           entity.eagerLoad ||
           // Fetch relationships if otherEntityField differs otherwise the id is enough
-          (ownerSide && otherEntity.primaryKey.name !== otherEntityField)),
-    } as any);
+          (ownerSide && otherEntity.primaryKey!.name !== otherEntityField)),
+    });
   });
   entity.relationshipsContainEagerLoad = entity.relationships.some(relationship => relationship.relationshipEagerLoad);
   entity.containsBagRelationships = entity.relationships.some(relationship => relationship.bagRelationship);
   entity.implementsEagerLoadApis = // Cassandra doesn't provides *WithEagerRelationships apis
-    ![CASSANDRA, COUCHBASE, NEO4J].includes(entity.databaseType) &&
+    !([CASSANDRA, COUCHBASE, NEO4J] as string[]).includes(entity.databaseType) &&
     // Only sql and mongodb provides *WithEagerRelationships apis for imperative implementation
-    (entity.reactive || [SQL, MONGODB].includes(entity.databaseType)) &&
+    (entity.reactive || ([SQL, MONGODB] as string[]).includes(entity.databaseType)) &&
     entity.relationshipsContainEagerLoad;
   entity.eagerRelations = entity.relationships.filter(rel => rel.relationshipEagerLoad);
   entity.regularEagerRelations = entity.eagerRelations.filter(rel => rel.id !== true);
@@ -671,32 +536,9 @@ function preparePostEntityCommonDerivedPropertiesNotTyped(entity: any) {
   entity.reactiveRegularEagerRelations = entity.reactiveEagerRelations.filter(rel => rel.id !== true);
 }
 
-export function preparePostEntitiesCommonDerivedProperties(entities) {
-  for (const entity of entities.filter(entity => !entity.dtoReferences)) {
-    entity.dtoReferences = [
-      ...entity.fields.map(field => field.reference),
-      ...entity.relationships
-        .map(relationship => relationship.reference)
-        .filter(reference => reference.owned || reference.relationship.otherEntity.embedded),
-    ];
-    entity.restProperties = [
-      ...entity.fields,
-      ...entity.relationships.filter(
-        relationship => relationship.persistableRelationship || relationship.relationshipEagerLoad || relationship.otherEntity.embedded,
-      ),
-    ];
-    entity.otherReferences = entity.otherRelationships.map(relationship => relationship.reference);
-  }
-
-  for (const entity of entities.filter(entity => !entity.otherDtoReferences)) {
-    // Get all required back references for dto.
-    entity.otherDtoReferences = entity.otherReferences.filter(reference => reference.entity.dtoReferences.includes(reference));
-  }
-}
-
-export async function addFakerToEntity(entityWithConfig: any, nativeLanguage = 'en') {
+export async function addFakerToEntity(entityWithConfig: BaseApplicationEntity, nativeLanguage = 'en') {
   entityWithConfig.faker = entityWithConfig.faker || (await createFaker(nativeLanguage));
   entityWithConfig.resetFakerSeed = (suffix = '') =>
-    entityWithConfig.faker.seed(stringHashCode(entityWithConfig.name.toLowerCase() + suffix));
+    entityWithConfig.faker!.seed(stringHashCode(entityWithConfig.name.toLowerCase() + suffix));
   entityWithConfig.resetFakerSeed();
 }

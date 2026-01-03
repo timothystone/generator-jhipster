@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import createTokenFromConfig from './token-creator.js';
-import MinMaxTokens from './minmax-tokens.js';
+import MinMaxTokens from './minmax-tokens.ts';
+import createTokenFromConfig from './token-creator.ts';
 
 const validationTokens = [
   { name: 'REQUIRED', pattern: 'required' },

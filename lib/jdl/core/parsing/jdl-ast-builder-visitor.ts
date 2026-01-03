@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,16 +16,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import deduplicate from '../utils/array-utils.js';
+import type { CstNode, ICstVisitor, IToken } from 'chevrotain';
 
-import { relationshipOptions, validations } from '../built-in-options/index.js';
-import logger from '../utils/objects/logger.js';
-import type { JDLRuntime } from '../types/runtime.js';
+import { relationshipOptions, validations } from '../built-in-options/index.ts';
+import type {
+  ParsedJDLAnnotation,
+  ParsedJDLApplications,
+  ParsedJDLBinaryOption,
+  ParsedJDLEntityField,
+  ParsedJDLOption,
+  ParsedJDLOptionConfig,
+  ParsedJDLValidation,
+} from '../types/parsed.ts';
+import type { JDLRuntime } from '../types/runtime.ts';
+import deduplicate from '../utils/array-utils.ts';
+import logger from '../utils/objects/logger.ts';
 
 const { BUILT_IN_ENTITY } = relationshipOptions;
 const {
   Validations: { PATTERN, REQUIRED, UNIQUE },
 } = validations;
+
+type VisitorContext = {
+  applicationDeclaration?: CstNode[];
+  entityDeclaration?: CstNode[];
+  constantDeclaration?: CstNode[];
+  deploymentDeclaration?: CstNode[];
+  relationDeclaration?: CstNode[];
+  enumDeclaration?: CstNode[];
+  unaryOptionDeclaration?: CstNode[];
+  binaryOptionDeclaration?: CstNode[];
+  useOptionDeclaration?: CstNode[];
+  // filterDef?: CstNode[];
+  // exclusion?: CstNode[];
+  // comment?: CstNode[];
+  // applicationSubDeclaration?: CstNode[];
+};
 
 export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
   const BaseJDLCSTVisitor = runtime.parser.getBaseCstVisitorConstructor();
@@ -36,8 +62,8 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       this.validateVisitor();
     }
 
-    prog(context) {
-      const ast = {
+    prog(context: VisitorContext) {
+      const ast: ParsedJDLApplications = {
         applications: [],
         deployments: [],
         constants: {},
@@ -76,7 +102,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       }
 
       if (context.unaryOptionDeclaration) {
-        context.unaryOptionDeclaration.map(this.visit, this).forEach(option => {
+        context.unaryOptionDeclaration.map(this.visit, this).forEach((option: ParsedJDLOption) => {
           if (!ast.options[option.optionName]) {
             ast.options[option.optionName] = {};
           }
@@ -89,7 +115,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       }
 
       if (context.binaryOptionDeclaration) {
-        context.binaryOptionDeclaration.map(this.visit, this).forEach(option => {
+        context.binaryOptionDeclaration.map(this.visit, this).forEach((option: ParsedJDLBinaryOption) => {
           if (option.optionName === 'paginate') {
             // TODO drop for v9
             logger.warn('The paginate option is deprecated, please use pagination instead.');
@@ -99,11 +125,11 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
           if (newOption) {
             ast.options[option.optionName] = {};
           }
-          const newOptionValue = !ast.options[option.optionName][option.optionValue];
-          if (newOptionValue) {
-            ast.options[option.optionName][option.optionValue] = {};
+          const optionValuesMap = ast.options[option.optionName] as Record<string, ParsedJDLOptionConfig>;
+          if (!optionValuesMap[option.optionValue]) {
+            optionValuesMap[option.optionValue] = { list: [], excluded: [] };
           }
-          const astResult = ast.options[option.optionName][option.optionValue];
+          const astResult = optionValuesMap[option.optionValue];
 
           const { entityList, excludedEntityList } = getOptionEntityAndExcludedEntityLists(astResult, option);
           astResult.list = entityList;
@@ -118,34 +144,37 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return ast;
     }
 
-    constantDeclaration(context) {
+    constantDeclaration(context: Record<'INTEGER' | 'NAME' | 'DECIMAL', IToken[]>) {
       return {
         name: context.NAME[0].image,
-        value: context.INTEGER ? context.INTEGER[0].image : context.DECIMAL[0].image,
+        value: context.INTEGER ? context.INTEGER[0].image : context.DECIMAL?.[0].image,
       };
     }
 
-    entityDeclaration(context) {
-      const annotations: any[] = [];
+    entityDeclaration(
+      context: Record<'ENTITY' | 'NAME' | 'JAVADOC', IToken[]> &
+        Record<'annotationDeclaration' | 'entityTableNameDeclaration' | 'entityBody', CstNode[]>,
+    ) {
+      const annotations: ParsedJDLAnnotation[] = [];
       if (context.annotationDeclaration) {
         context.annotationDeclaration.forEach(contextObject => {
           annotations.push(this.visit(contextObject));
         });
       }
 
-      let documentation = null;
+      let documentation: string | null = null;
       if (context.JAVADOC) {
         documentation = trimComment(context.JAVADOC[0].image);
       }
 
       const name = context.NAME[0].image;
 
-      let tableName;
+      let tableName: string | undefined;
       if (context.entityTableNameDeclaration) {
         tableName = this.visit(context.entityTableNameDeclaration);
       }
 
-      let body = [];
+      let body: ParsedJDLEntityField[] = [];
       if (context.entityBody) {
         body = this.visit(context.entityBody);
       }
@@ -159,19 +188,20 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       };
     }
 
-    annotationDeclaration(context) {
+    annotationDeclaration(context: Record<'AT' | 'value' | 'option', IToken[]>) {
       const optionName = context.option[0].image;
       if (!context.value) {
         return { optionName, type: 'UNARY' };
       }
-      let { image: optionValue } = context.value[0];
+      const { image: valueImage } = context.value[0];
       const { tokenType } = context.value[0];
+      let optionValue: unknown;
       switch (tokenType.name) {
         case 'INTEGER':
-          optionValue = parseInt(optionValue, 10);
+          optionValue = parseInt(valueImage, 10);
           break;
         case 'DECIMAL':
-          optionValue = parseFloat(optionValue);
+          optionValue = parseFloat(valueImage);
           break;
         case 'TRUE':
           optionValue = true;
@@ -180,23 +210,23 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
           optionValue = false;
           break;
         default:
-          optionValue = optionValue.replace(/"/g, '');
+          optionValue = valueImage.replace(/"/g, '');
       }
       return { optionName, optionValue, type: 'BINARY' };
     }
 
-    entityTableNameDeclaration(context) {
+    entityTableNameDeclaration(context: Record<'NAME', IToken[]>) {
       return context.NAME[0].image;
     }
 
-    entityBody(context) {
+    entityBody(context: Record<'fieldDeclaration', CstNode[]>) {
       if (!context.fieldDeclaration) {
         return [];
       }
       return context.fieldDeclaration.map(element => this.visit(element));
     }
 
-    fieldDeclaration(context) {
+    fieldDeclaration(context: Record<'JAVADOC' | 'NAME', IToken[]> & Record<'annotationDeclaration' | 'validation' | 'type', CstNode[]>) {
       const annotations: any[] = [];
       if (context.annotationDeclaration) {
         context.annotationDeclaration.forEach(contextObject => {
@@ -207,7 +237,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       // filter actual comment as the comment rule may be empty
       const comment = context.JAVADOC ? trimComment(context.JAVADOC[0].image) : null;
 
-      let validations = [];
+      let validations: ParsedJDLValidation[] = [];
       if (context.validation) {
         validations = context.validation.map(element => this.visit(element));
       }
@@ -224,11 +254,11 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       };
     }
 
-    type(context) {
+    type(context: Record<'NAME', IToken[]>) {
       return context.NAME[0].image;
     }
 
-    validation(context) {
+    validation(context: Record<'REQUIRED' | 'UNIQUE', IToken[]> & Record<'minMaxValidation' | 'pattern', CstNode[]>) {
       // only one of these alternatives can exist at the same time.
       if (context.REQUIRED) {
         return {
@@ -248,7 +278,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return this.visit(context.pattern);
     }
 
-    minMaxValidation(context) {
+    minMaxValidation(context: Record<'NAME' | 'MIN_MAX_KEYWORD' | 'INTEGER' | 'DECIMAL', IToken[]>) {
       if (context.NAME) {
         return {
           key: context.MIN_MAX_KEYWORD[0].image,
@@ -263,7 +293,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       };
     }
 
-    pattern(context) {
+    pattern(context: Record<'REGEX', IToken[]>) {
       const patternImage = context.REGEX[0].image;
 
       return {
@@ -272,7 +302,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       };
     }
 
-    relationDeclaration(context) {
+    relationDeclaration(context: Record<'relationshipType' | 'relationshipBody', CstNode[]>) {
       const cardinality = this.visit(context.relationshipType);
       const relationshipBodies = context.relationshipBody.map(this.visit, this);
 
@@ -283,11 +313,13 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return relationshipBodies;
     }
 
-    relationshipType(context) {
+    relationshipType(context: Record<'RELATIONSHIP_TYPE', IToken[]>) {
       return context.RELATIONSHIP_TYPE[0].image;
     }
 
-    relationshipBody(context) {
+    relationshipBody(
+      context: Record<'from' | 'to' | 'annotationOnSourceSide' | 'annotationOnDestinationSide' | 'relationshipOptions', CstNode[]>,
+    ) {
       const optionsForTheSourceSide = context.annotationOnSourceSide ? context.annotationOnSourceSide.map(this.visit, this) : [];
       const optionsForTheDestinationSide = context.annotationOnDestinationSide
         ? context.annotationOnDestinationSide.map(this.visit, this)
@@ -296,9 +328,9 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       const from = this.visit(context.from);
       const to = this.visit(context.to);
 
-      const relationshipOptions: any[] = [];
+      const relationshipOptions: ParsedJDLOption[] = [];
       if (context.relationshipOptions) {
-        this.visit(context.relationshipOptions).forEach(option => relationshipOptions.push(option));
+        this.visit(context.relationshipOptions).forEach((option: ParsedJDLOption) => relationshipOptions.push(option));
       }
 
       return {
@@ -312,7 +344,9 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       };
     }
 
-    relationshipSide(context) {
+    relationshipSide(
+      context: Record<'NAME' | 'injectedField' | 'injectedFieldParam' | 'REQUIRED', IToken[]> & Record<'comment', CstNode[]>,
+    ) {
       const documentation = this.visit(context.comment);
       const name = context.NAME[0].image;
 
@@ -340,11 +374,11 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return ast;
     }
 
-    relationshipOptions(context) {
+    relationshipOptions(context: Record<'relationshipOption', CstNode[]>) {
       return context.relationshipOption.map(this.visit, this).reduce((final, current) => [...final, current], []);
     }
 
-    relationshipOption(context) {
+    relationshipOption(context: Record<'BUILT_IN_ENTITY', IToken[]>) {
       if (context.BUILT_IN_ENTITY) {
         return { optionName: BUILT_IN_ENTITY, type: 'UNARY' };
       }
@@ -353,10 +387,10 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       throw new Error(`No valid relationship option found, expected '${context.BUILT_IN_ENTITY}'.`);
     }
 
-    enumDeclaration(context) {
+    enumDeclaration(context: Record<'NAME' | 'JAVADOC', IToken[]> & Record<'enumPropList', CstNode[]>) {
       const name = context.NAME[0].image;
       const values = this.visit(context.enumPropList);
-      let documentation = null;
+      let documentation: string | null = null;
       if (context.JAVADOC) {
         documentation = trimComment(context.JAVADOC[0].image);
       }
@@ -364,11 +398,11 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return { name, values, documentation };
     }
 
-    enumPropList(context) {
+    enumPropList(context: Record<'enumProp', CstNode[]>) {
       return context.enumProp.map(this.visit, this);
     }
 
-    enumProp(context) {
+    enumProp(context: Record<'enumPropKey' | 'enumPropValue' | 'enumPropValueWithQuotes' | 'JAVADOC', IToken[]>) {
       const prop: any = {
         key: context.enumPropKey[0].image,
       };
@@ -385,8 +419,8 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return prop;
     }
 
-    entityList(context) {
-      let entityList: any[] = [];
+    entityList(context: Record<'NAME' | 'STAR' | 'method' | 'methodPath', IToken[]>) {
+      let entityList: string[] = [];
       if (context.NAME) {
         entityList = context.NAME.map(nameToken => nameToken.image);
       }
@@ -407,23 +441,23 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return deduplicate(entityList);
     }
 
-    exclusion(context) {
+    exclusion(context: Record<'NAME', IToken[]>) {
       return context.NAME.map(nameToken => nameToken.image, this);
     }
 
-    unaryOptionDeclaration(context) {
+    unaryOptionDeclaration(context: Record<'UNARY_OPTION', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>) {
       return getUnaryOptionFromContext(context, this);
     }
 
-    binaryOptionDeclaration(context) {
+    binaryOptionDeclaration(context: Record<'BINARY_OPTION', IToken[]> & Record<'entityList' | 'exclusion', CstNode[]>) {
       return getBinaryOptionFromContext(context, this);
     }
 
-    useOptionDeclaration(context) {
+    useOptionDeclaration(context: Record<'NAME', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>) {
       return getSpecialUnaryOptionDeclaration(context, this);
     }
 
-    filterDef(context) {
+    filterDef(context: Record<'NAME' | 'STAR', IToken[]>) {
       let entityList: any[] = [];
       if (context.NAME) {
         entityList = context.NAME.map(nameToken => nameToken.image, this);
@@ -438,7 +472,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return deduplicate(entityList);
     }
 
-    comment(context) {
+    comment(context: Record<'JAVADOC', IToken[]>) {
       if (context.JAVADOC) {
         return trimComment(context.JAVADOC[0].image);
       }
@@ -446,11 +480,11 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return null;
     }
 
-    deploymentDeclaration(context) {
-      const config = {};
+    deploymentDeclaration(context: Record<'deploymentConfigDeclaration', CstNode[]>) {
+      const config: Record<string, string | boolean> = {};
 
       if (context.deploymentConfigDeclaration) {
-        const configProps = context.deploymentConfigDeclaration.map(this.visit, this);
+        const configProps: { key: string; value: string | boolean }[] = context.deploymentConfigDeclaration.map(this.visit, this);
         configProps.forEach(configProp => {
           config[configProp.key] = configProp.value;
         });
@@ -459,35 +493,38 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return config;
     }
 
-    deploymentConfigDeclaration(context) {
+    deploymentConfigDeclaration(context: Record<'DEPLOYMENT_KEY', IToken[]> & Record<'deploymentConfigValue', CstNode[]>) {
       const key = context.DEPLOYMENT_KEY[0].image;
       const value = this.visit(context.deploymentConfigValue);
 
       return { key, value };
     }
 
-    deploymentConfigValue(context) {
+    deploymentConfigValue(
+      context: Record<'INTEGER' | 'STRING' | 'BOOLEAN', IToken[]> & Record<'qualifiedName' | 'list' | 'quotedList', CstNode[]>,
+    ) {
       return this.configValue(context);
     }
 
-    applicationDeclaration(context) {
+    applicationDeclaration(context: Record<'applicationSubDeclaration', CstNode[]>) {
       return this.visit(context.applicationSubDeclaration);
     }
 
-    applicationSubDeclaration(context) {
-      const applicationSubDeclaration: {
-        config: any;
-        namespaceConfigs: Record<string, Record<string, any>>;
-        entities: {
-          entityList: any[];
-          excluded: any[];
-        };
-        options: any;
-        useOptions: any[];
-      } = {
-        config: {},
+    applicationSubDeclaration(
+      context: Record<
+        | 'applicationSubConfig'
+        | 'applicationSubNamespaceConfig'
+        | 'applicationSubEntities'
+        | 'unaryOptionDeclaration'
+        | 'binaryOptionDeclaration'
+        | 'useOptionDeclaration',
+        CstNode[]
+      >,
+    ) {
+      const applicationSubDeclaration: ParsedJDLApplications['applications'][number] = {
+        config: {} as any,
         namespaceConfigs: {},
-        entities: { entityList: [], excluded: [] },
+        entitiesOptions: { entityList: [], excluded: [] },
         options: {},
         useOptions: [],
       };
@@ -498,20 +535,20 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       }
       if (context.applicationSubNamespaceConfig) {
         const { namespace, config } = this.visit(context.applicationSubNamespaceConfig[context.applicationSubNamespaceConfig.length - 1]);
-        applicationSubDeclaration.namespaceConfigs[namespace] = config;
+        applicationSubDeclaration.namespaceConfigs![namespace] = config;
       }
 
       if (context.applicationSubEntities) {
         // Apparently the pegjs grammar only returned the last entities
-        applicationSubDeclaration.entities = this.visit(context.applicationSubEntities[context.applicationSubEntities.length - 1]);
+        applicationSubDeclaration.entitiesOptions = this.visit(context.applicationSubEntities[context.applicationSubEntities.length - 1]);
       }
 
       if (context.unaryOptionDeclaration) {
         context.unaryOptionDeclaration.map(this.visit, this).forEach(option => {
-          if (!applicationSubDeclaration.options[option.optionName]) {
-            applicationSubDeclaration.options[option.optionName] = {};
+          if (!applicationSubDeclaration.options![option.optionName]) {
+            applicationSubDeclaration.options![option.optionName] = {};
           }
-          const astResult = applicationSubDeclaration.options[option.optionName];
+          const astResult = applicationSubDeclaration.options![option.optionName];
 
           const { entityList, excludedEntityList } = getOptionEntityAndExcludedEntityLists(astResult, option);
           astResult.list = entityList;
@@ -526,15 +563,14 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
             logger.warn('The paginate option is deprecated, please use pagination instead.');
             option.optionName = 'pagination';
           }
-          const newOption = !applicationSubDeclaration.options[option.optionName];
-          if (newOption) {
-            applicationSubDeclaration.options[option.optionName] = {};
+          if (!applicationSubDeclaration.options![option.optionName]) {
+            applicationSubDeclaration.options![option.optionName] = {};
           }
-          const newOptionValue = !applicationSubDeclaration.options[option.optionName][option.optionValue];
-          if (newOptionValue) {
-            applicationSubDeclaration.options[option.optionName][option.optionValue] = {};
+          const optionValuesMap = applicationSubDeclaration.options![option.optionName] as Record<string, ParsedJDLOptionConfig>;
+          if (!optionValuesMap[option.optionValue]) {
+            optionValuesMap[option.optionValue] = { list: [], excluded: [] };
           }
-          const astResult = applicationSubDeclaration.options[option.optionName][option.optionValue];
+          const astResult = optionValuesMap[option.optionValue];
 
           const { entityList, excludedEntityList } = getOptionEntityAndExcludedEntityLists(astResult, option);
           astResult.list = entityList;
@@ -544,14 +580,14 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
 
       if (context.useOptionDeclaration) {
         context.useOptionDeclaration.map(this.visit, this).forEach(option => {
-          applicationSubDeclaration.useOptions.push(option);
+          applicationSubDeclaration.useOptions!.push(option);
         });
       }
 
       return applicationSubDeclaration;
     }
 
-    applicationSubNamespaceConfig(context) {
+    applicationSubNamespaceConfig(context: Record<'namespace', IToken[]> & Record<'applicationNamespaceConfigDeclaration', CstNode[]>) {
       const config: any = {};
 
       const namespace = context.namespace[0].image;
@@ -565,14 +601,16 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return { namespace, config };
     }
 
-    applicationNamespaceConfigDeclaration(context) {
+    applicationNamespaceConfigDeclaration(context: Record<'NAME', IToken[]> & Record<'namespaceConfigValue', CstNode[]>) {
       const key = context.NAME[0].image;
       const value = this.visit(context.namespaceConfigValue);
 
       return { key, value };
     }
 
-    namespaceConfigValue(context) {
+    namespaceConfigValue(
+      context: Record<'INTEGER' | 'STRING' | 'BOOLEAN', IToken[]> & Record<'qualifiedName' | 'list' | 'quotedList', CstNode[]>,
+    ) {
       if (context.qualifiedName) {
         return this.visit(context.qualifiedName);
       }
@@ -597,7 +635,7 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       throw new Error('No valid config value was found, expected a qualified name, a list, an integer, a string or a boolean.');
     }
 
-    applicationSubConfig(context) {
+    applicationSubConfig(context: Record<'applicationConfigDeclaration', CstNode[]>) {
       const config: any = {};
 
       if (context.applicationConfigDeclaration) {
@@ -610,18 +648,18 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       return config;
     }
 
-    applicationSubEntities(context) {
+    applicationSubEntities(context: Record<'UNARY_OPTION', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>) {
       return getEntityListFromContext(context, this);
     }
 
-    applicationConfigDeclaration(context) {
+    applicationConfigDeclaration(context: Record<'CONFIG_KEY', IToken[]> & Record<'configValue', CstNode[]>) {
       const key = context.CONFIG_KEY[0].image;
       const value = this.visit(context.configValue);
 
       return { key, value };
     }
 
-    configValue(context) {
+    configValue(context: Record<'INTEGER' | 'STRING' | 'BOOLEAN', IToken[]> & Record<'qualifiedName' | 'list' | 'quotedList', CstNode[]>) {
       if (context.qualifiedName) {
         return this.visit(context.qualifiedName);
       }
@@ -646,18 +684,18 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
       throw new Error('No valid config value was found, expected a qualified name, a list, an integer, a string or a boolean.');
     }
 
-    qualifiedName(context) {
+    qualifiedName(context: Record<'NAME', IToken[]>) {
       return context.NAME.map(namePart => namePart.image, this).join('.');
     }
 
-    list(context) {
+    list(context: Record<'NAME', IToken[]>) {
       if (!context.NAME) {
         return [];
       }
       return context.NAME.map(namePart => namePart.image, this);
     }
 
-    quotedList(context) {
+    quotedList(context: Record<'STRING', IToken[]>) {
       if (!context.STRING) {
         return [];
       }
@@ -668,18 +706,25 @@ export const buildJDLAstBuilderVisitor = (runtime: JDLRuntime) => {
   return new JDLAstBuilderVisitor();
 };
 
-function getOptionEntityAndExcludedEntityLists(astResult, option) {
-  let entityList = astResult.list || [];
+function getOptionEntityAndExcludedEntityLists(
+  astResult: ParsedJDLOptionConfig | Record<string, ParsedJDLOptionConfig>,
+  option: ParsedJDLOption,
+) {
+  const { list, excluded } = astResult;
+  let entityList = Array.isArray(list) ? list : [];
   entityList = deduplicate(entityList.concat(option.list));
 
-  let excludedEntityList = astResult.excluded || [];
+  let excludedEntityList = Array.isArray(excluded) ? excluded : [];
   if (option.excluded) {
     excludedEntityList = deduplicate(excludedEntityList.concat(option.excluded));
   }
   return { entityList, excludedEntityList };
 }
 
-function getEntityListFromContext(context, visitor) {
+function getEntityListFromContext(
+  context: Record<'UNARY_OPTION', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>,
+  visitor: ICstVisitor<any, any>,
+) {
   const entityList = visitor.visit(context.filterDef);
 
   let excluded = [];
@@ -694,7 +739,10 @@ function getEntityListFromContext(context, visitor) {
   return result;
 }
 
-function getUnaryOptionFromContext(context, visitor) {
+function getUnaryOptionFromContext(
+  context: Record<'UNARY_OPTION', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>,
+  visitor: ICstVisitor<any, any>,
+) {
   const entityList = visitor.visit(context.filterDef);
 
   let excluded = [];
@@ -705,8 +753,11 @@ function getUnaryOptionFromContext(context, visitor) {
   return { optionName: context.UNARY_OPTION[0].image, list: entityList, excluded };
 }
 
-function getBinaryOptionFromContext(context, visitor) {
-  const entityListWithOptionValue = visitor.visit(context.entityList);
+function getBinaryOptionFromContext(
+  context: Record<'BINARY_OPTION', IToken[]> & Record<'entityList' | 'exclusion', CstNode[]>,
+  visitor: ICstVisitor<any, any>,
+) {
+  const entityListWithOptionValue: string[] = visitor.visit(context.entityList);
   const optionValue = entityListWithOptionValue[entityListWithOptionValue.length - 1];
   const list = entityListWithOptionValue.slice(0, entityListWithOptionValue.length - 1);
 
@@ -723,7 +774,10 @@ function getBinaryOptionFromContext(context, visitor) {
   };
 }
 
-function getSpecialUnaryOptionDeclaration(context, visitor) {
+function getSpecialUnaryOptionDeclaration(
+  context: Record<'NAME', IToken[]> & Record<'filterDef' | 'exclusion', CstNode[]>,
+  visitor: ICstVisitor<any, any>,
+) {
   const optionValues = context.NAME.map(name => name.image);
   const list = visitor.visit(context.filterDef);
 
@@ -739,6 +793,6 @@ function getSpecialUnaryOptionDeclaration(context, visitor) {
   };
 }
 
-function trimComment(comment) {
+function trimComment(comment: string): string {
   return comment.replace(/^\/[*]+[ ]*/, '').replace(/[ ]*[*]+\/$/, '');
 }

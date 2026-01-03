@@ -34,7 +34,7 @@ updates:
     ignore:
       # Should match supported node major version.
       - dependency-name: '@types/node'
-        versions: ['>=19']
+        versions: ['>=21']
     groups:
       eslint:
         patterns:
@@ -69,7 +69,7 @@ updates:
     ignore:
       # Should match generated project node major version.
       - dependency-name: '@types/node'
-        versions: ['>=19']
+        versions: ['>=21']
     groups:
       angular:
         patterns:
@@ -121,7 +121,7 @@ updates:
       - 'skip-changelog'
 
   - package-ecosystem: 'npm'
-    directory: '/generators/javascript/resources/'
+    directory: '/generators/javascript-simple-application/resources/'
     rebase-strategy: 'auto'
     schedule:
       interval: 'daily'
@@ -147,7 +147,7 @@ updates:
     ignore:
       # Should match generated project node major version.
       - dependency-name: '@types/node'
-        versions: ['>=19']
+        versions: ['>=21']
       # https://github.com/jhipster/generator-jhipster/issues/27464#issuecomment-2400505558, https://github.com/twbs/bootstrap/issues/40849
       - dependency-name: 'sass'
         versions: ['*']
@@ -158,8 +158,7 @@ updates:
           - 'eslint'
       fortawesome:
         patterns:
-          - '@fortawesome/fontawesome-svg-core'
-          - '@fortawesome/free-solid-svg-icons'
+          - '@fortawesome/*'
       react:
         patterns:
           - '@reduxjs/*'
@@ -188,7 +187,7 @@ updates:
         versions: ['*']
       # Should match generated project node major version.
       - dependency-name: '@types/node'
-        versions: ['>=19']
+        versions: ['>=21']
     groups:
       eslint:
         patterns:
@@ -196,8 +195,7 @@ updates:
           - 'eslint'
       fortawesome:
         patterns:
-          - '@fortawesome/fontawesome-svg-core'
-          - '@fortawesome/free-solid-svg-icons'
+          - '@fortawesome/*'
 
   - package-ecosystem: 'docker'
     directory: '/generators/server/resources/'
@@ -211,7 +209,7 @@ updates:
       - 'skip-changelog'
 
   - package-ecosystem: 'docker'
-    directory: '/test-integration/sonar-pr/'
+    directory: '/.github/actions/sonar/'
     schedule:
       interval: 'daily'
       time: '00:30'
@@ -245,7 +243,18 @@ updates:
       - 'skip-changelog'
 
   - package-ecosystem: 'gradle'
-    directory: '/generators/spring-cache/resources/'
+    directory: '/generators/spring-cloud/resources/'
+    schedule:
+      interval: 'daily'
+      time: '08:00'
+    open-pull-requests-limit: 5
+    labels:
+      - 'theme: dependencies'
+      - 'theme: java'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'gradle'
+    directory: '/generators/spring-boot/generators/cache/resources/'
     schedule:
       interval: 'daily'
       time: '08:30'
@@ -266,8 +275,63 @@ updates:
       - 'theme: CI builds'
       - 'skip-changelog'
 
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/build-cache/'
+    schedule:
+      interval: 'weekly'
+      time: '00:30'
+    open-pull-requests-limit: 10
+    labels:
+      - 'theme: github_actions'
+      - 'theme: CI builds'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/cache-java-dependencies/'
+    schedule:
+      interval: 'weekly'
+      time: '00:30'
+    open-pull-requests-limit: 10
+    labels:
+      - 'theme: github_actions'
+      - 'theme: CI builds'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/setup-default-node-java/'
+    schedule:
+      interval: 'weekly'
+      time: '00:30'
+    open-pull-requests-limit: 10
+    labels:
+      - 'theme: github_actions'
+      - 'theme: CI builds'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/.github/actions/sonar/'
+    schedule:
+      interval: 'weekly'
+      time: '00:30'
+    open-pull-requests-limit: 10
+    labels:
+      - 'theme: github_actions'
+      - 'theme: CI builds'
+      - 'skip-changelog'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/generators/ci-cd/generators/bootstrap/resources/dependabot/'
+    schedule:
+      interval: 'weekly'
+      time: '00:30'
+    open-pull-requests-limit: 10
+    labels:
+      - 'theme: github_actions'
+      - 'theme: CI builds'
+      - 'skip-changelog'
+
   - package-ecosystem: 'gradle'
-    directory: '/generators/java/generators/graalvm/resources/'
+    directory: '/generators/java-simple-application/generators/graalvm/resources/'
     schedule:
       interval: 'daily'
       time: '08:30'

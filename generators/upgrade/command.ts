@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,30 +16,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
-import { GENERATOR_APP } from '../generator-list.js';
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
 
-const command: JHipsterCommandDefinition = {
-  options: {
+const command = {
+  configs: {
     silent: {
       description: 'Hides output of the generation process',
-      type: Boolean,
-      default: false,
+      cli: {
+        type: Boolean,
+        default: false,
+      },
       scope: 'generator',
     },
     applyConfig: {
       description: 'Apply configuration changes',
-      type: Boolean,
-      default: false,
+      cli: {
+        type: Boolean,
+        default: false,
+      },
       scope: 'generator',
     },
     executable: {
       description: 'Executable command',
-      type: String,
+      cli: {
+        type: String,
+      },
       scope: 'generator',
     },
   },
-  import: [GENERATOR_APP],
-};
+  import: ['app'],
+} as const satisfies JHipsterCommandDefinition;
 
 export default command;

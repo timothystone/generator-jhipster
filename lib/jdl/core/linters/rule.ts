@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-import { merge } from '../utils/object-utils.js';
-import type { RuleLevel } from './rule-levels.js';
-import { INFO } from './rule-levels.js';
+import { merge } from '../utils/object-utils.ts';
+
+import type { RuleLevel } from './rule-levels.ts';
+import { INFO } from './rule-levels.ts';
 
 /**
  * Represents a rule for the linters.

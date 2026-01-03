@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,27 +20,21 @@
 import chalk from 'chalk';
 import { camelCase } from 'lodash-es';
 
-import BaseApplicationGenerator from '../base-application/index.js';
-import { GENERATOR_CLIENT, GENERATOR_COMMON, GENERATOR_SERVER } from '../generator-list.js';
-import { getDefaultAppName } from '../project-name/support/index.js';
-import { packageJson } from '../../lib/index.js';
+import BaseApplicationGenerator from '../base-application/index.ts';
+import type { Application as CommonApplication, Config as CommonConfig, Entity as CommonEntity } from '../common/types.ts';
+import { getDefaultAppName } from '../project-name/support/index.ts';
 
-import { applicationTypes } from '../../lib/jhipster/index.js';
-import cleanupOldFilesTask from './cleanup.js';
-import { checkNode, loadStoredAppOptions } from './support/index.js';
+import cleanupOldFilesTask from './cleanup.ts';
+import { checkNode } from './support/index.ts';
 
-const { MICROSERVICE } = applicationTypes;
-
-export default class JHipsterAppGenerator extends BaseApplicationGenerator {
+export default class AppGenerator extends BaseApplicationGenerator<CommonEntity, CommonApplication, CommonConfig> {
   async beforeQueue() {
-    loadStoredAppOptions.call(this);
-
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplicationBase();
+      await this.dependsOnBootstrap('app');
     }
   }
 
@@ -73,15 +67,6 @@ export default class JHipsterAppGenerator extends BaseApplicationGenerator {
 
   get configuring() {
     return this.asConfiguringTaskGroup({
-      setup() {
-        if (!this.options.reproducibleTests) {
-          this.jhipsterConfig.jhipsterVersion = packageJson.version;
-        }
-
-        if (this.jhipsterConfig.applicationType === MICROSERVICE) {
-          this.jhipsterConfig.skipUserManagement = true;
-        }
-      },
       fixConfig() {
         if (this.jhipsterConfig.jhiPrefix) {
           this.jhipsterConfig.jhiPrefix = camelCase(this.jhipsterConfig.jhiPrefix);
@@ -90,7 +75,7 @@ export default class JHipsterAppGenerator extends BaseApplicationGenerator {
       defaults() {
         if (!this.options.reproducible) {
           this.config.defaults({
-            baseName: getDefaultAppName(this),
+            baseName: getDefaultAppName({ cwd: this.destinationPath() }),
             creationTimestamp: new Date().getTime(),
           });
         }
@@ -123,16 +108,16 @@ export default class JHipsterAppGenerator extends BaseApplicationGenerator {
        * This behaviour allows a more consistent blueprint support.
        */
       async composeCommon() {
-        await this.composeWithJHipster(GENERATOR_COMMON);
+        await this.composeWithJHipster('common');
       },
       async composeServer() {
         if (!this.jhipsterConfigWithDefaults.skipServer) {
-          await this.composeWithJHipster(GENERATOR_SERVER);
+          await this.composeWithJHipster('server');
         }
       },
       async composeClient() {
         if (!this.jhipsterConfigWithDefaults.skipClient) {
-          await this.composeWithJHipster(GENERATOR_CLIENT);
+          await this.composeWithJHipster('client');
         }
       },
     });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,26 +18,30 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
 
-import { applicationTypes, binaryOptions, databaseTypes, fieldTypes, validations } from '../../core/built-in-options/index.js';
-import JDLObject from '../../core/models/jdl-object.js';
-import { createJDLApplication } from '../../core/models/jdl-application-factory.js';
-import JDLBinaryOption from '../../core/models/jdl-binary-option.js';
-import { JDLEntity } from '../../core/models/index.js';
-import JDLField from '../../core/models/jdl-field.js';
-import JDLRelationship from '../../core/models/jdl-relationship.js';
-import JDLValidation from '../../core/models/jdl-validation.js';
-import createValidator from '../validators/jdl-with-application-validator.js';
-import { relationshipTypes } from '../../core/basic-types/index.js';
-import { getDefaultRuntime } from '../../core/runtime.js';
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../../core/application-types.ts';
+import databaseTypes from '../../../jhipster/database-types.ts';
+import fieldTypes from '../../../jhipster/field-types.ts';
+import { relationshipTypes } from '../../core/basic-types/index.ts';
+import { binaryOptions, validations } from '../../core/built-in-options/index.ts';
+import { JDLEntity } from '../../core/models/index.ts';
+import { createJDLApplication } from '../../core/models/jdl-application-factory.ts';
+import JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import JDLField from '../../core/models/jdl-field.ts';
+import JDLObject from '../../core/models/jdl-object.ts';
+import JDLRelationship from '../../core/models/jdl-relationship.ts';
+import JDLValidation from '../../core/models/jdl-validation.ts';
+import { createRuntime } from '../../core/runtime.ts';
 
-const { GATEWAY, MICROSERVICE, MONOLITH } = applicationTypes;
+import createValidator from './jdl-with-application-validator.ts';
+
 const {
   Validations: { MIN },
 } = validations;
 
-const runtime = getDefaultRuntime();
+const runtime = createRuntime();
 
 describe('jdl - JDLWithApplicationValidator', () => {
   describe('createValidator', () => {
@@ -49,46 +53,17 @@ describe('jdl - JDLWithApplicationValidator', () => {
     });
   });
   describe('checkForErrors', () => {
-    describe('when having an entity with a reserved name', () => {
-      let validator;
-
-      before(() => {
-        const jdlObject = new JDLObject();
-        const application = createJDLApplication(
-          {
-            applicationType: MONOLITH,
-            databaseType: databaseTypes.SQL,
-          },
-          undefined,
-          runtime,
-        );
-        const entity = new JDLEntity({
-          name: 'Continue',
-        });
-        application.addEntityName(entity.name);
-        jdlObject.addApplication(application);
-        jdlObject.addEntity(entity);
-        validator = createValidator(jdlObject);
-      });
-
-      it('should fail', () => {
-        expect(() => {
-          validator.checkForErrors();
-        }).to.throw(/^The name 'Continue' is a reserved keyword and can not be used as an entity class name.$/);
-      });
-    });
     describe('when passing gateway as application type', () => {
       describe('with incompatible database type and field type', () => {
-        let validator;
+        let validator: ReturnType<typeof createValidator>;
 
         before(() => {
           const jdlObject = new JDLObject();
           const application = createJDLApplication(
             {
-              applicationType: GATEWAY,
+              applicationType: APPLICATION_TYPE_GATEWAY,
               databaseType: databaseTypes.SQL,
             },
-            undefined,
             runtime,
           );
           const validEntity = new JDLEntity({
@@ -113,16 +88,15 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when passing an unsupported validation for a field', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         const entity = new JDLEntity({
@@ -152,7 +126,7 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when the source entity of a relationship is missing', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const otherEntity = new JDLEntity({
@@ -167,10 +141,9 @@ describe('jdl - JDLWithApplicationValidator', () => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         jdlObject.addEntity(otherEntity);
@@ -190,7 +163,7 @@ describe('jdl - JDLWithApplicationValidator', () => {
     });
     describe('when the destination entity of a relationship is missing', () => {
       describe('if it has builtInEntity annotation', () => {
-        let validator;
+        let validator: ReturnType<typeof createValidator>;
 
         before(() => {
           const sourceEntity = new JDLEntity({
@@ -212,10 +185,9 @@ describe('jdl - JDLWithApplicationValidator', () => {
           const jdlObject = new JDLObject();
           const application = createJDLApplication(
             {
-              applicationType: MONOLITH,
+              applicationType: APPLICATION_TYPE_MONOLITH,
               databaseType: databaseTypes.SQL,
             },
-            undefined,
             runtime,
           );
           jdlObject.addEntity(sourceEntity);
@@ -232,7 +204,7 @@ describe('jdl - JDLWithApplicationValidator', () => {
         });
       });
       describe('if it is not the User entity', () => {
-        let checker;
+        let checker: ReturnType<typeof createValidator>;
 
         before(() => {
           const sourceEntity = new JDLEntity({
@@ -247,10 +219,9 @@ describe('jdl - JDLWithApplicationValidator', () => {
           const jdlObject = new JDLObject();
           const application = createJDLApplication(
             {
-              applicationType: MONOLITH,
+              applicationType: APPLICATION_TYPE_MONOLITH,
               databaseType: databaseTypes.SQL,
             },
-            undefined,
             runtime,
           );
           jdlObject.addEntity(sourceEntity);
@@ -270,34 +241,31 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('with relationships between multiple applications', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const jdlObject = new JDLObject();
         const application1 = createJDLApplication(
           {
-            applicationType: MICROSERVICE,
+            applicationType: APPLICATION_TYPE_MICROSERVICE,
             baseName: 'app1',
           },
-          undefined,
           runtime,
         );
         application1.addEntityNames(['A', 'B']);
         const application2 = createJDLApplication(
           {
-            applicationType: MICROSERVICE,
+            applicationType: APPLICATION_TYPE_MICROSERVICE,
             baseName: 'app2',
           },
-          undefined,
           runtime,
         );
         application2.addEntityNames(['B', 'C']);
         const application3 = createJDLApplication(
           {
-            applicationType: MICROSERVICE,
+            applicationType: APPLICATION_TYPE_MICROSERVICE,
             baseName: 'app3',
           },
-          undefined,
           runtime,
         );
         application3.addEntityNames(['A', 'B', 'C']);
@@ -355,16 +323,15 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when having DTOs without services', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         jdlObject.addApplication(application);
@@ -392,16 +359,15 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when having DTOs with services', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         jdlObject.addEntity(
@@ -446,7 +412,7 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when having a relationship with the User entity as source', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const sourceEntity = new JDLEntity({
@@ -464,10 +430,9 @@ describe('jdl - JDLWithApplicationValidator', () => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         jdlObject.addEntity(sourceEntity);
@@ -484,7 +449,7 @@ describe('jdl - JDLWithApplicationValidator', () => {
       });
     });
     describe('when having a relationship with the User entity as destination', () => {
-      let validator;
+      let validator: ReturnType<typeof createValidator>;
 
       before(() => {
         const sourceEntity = new JDLEntity({
@@ -502,10 +467,9 @@ describe('jdl - JDLWithApplicationValidator', () => {
         const jdlObject = new JDLObject();
         const application = createJDLApplication(
           {
-            applicationType: MONOLITH,
+            applicationType: APPLICATION_TYPE_MONOLITH,
             databaseType: databaseTypes.SQL,
           },
-          undefined,
           runtime,
         );
         jdlObject.addEntity(sourceEntity);
@@ -519,34 +483,6 @@ describe('jdl - JDLWithApplicationValidator', () => {
 
       it('should not fail', () => {
         expect(() => validator.checkForErrors()).not.to.throw();
-      });
-    });
-    describe('when blueprints is used', () => {
-      let parameter;
-
-      before(() => {
-        const jdlObject = new JDLObject();
-        const application = createJDLApplication(
-          {
-            applicationType: MONOLITH,
-            databaseType: databaseTypes.SQL,
-            blueprints: ['generator-jhipster-nodejs', 'generator-jhipster-dotnetcore'],
-          },
-          undefined,
-          runtime,
-        );
-        jdlObject.addApplication(application);
-        const logger = {
-          warn: callParameter => {
-            parameter = callParameter;
-          },
-        };
-        const validator = createValidator(jdlObject, logger);
-        validator.checkForErrors();
-      });
-
-      it('should warn about not performing jdl validation', () => {
-        expect(parameter).to.equal('Blueprints are being used, the JDL validation phase is skipped.');
       });
     });
   });

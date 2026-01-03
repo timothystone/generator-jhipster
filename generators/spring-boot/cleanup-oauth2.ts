@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { asWritingTask } from '../base-application/support/index.js';
+import { asWritingTask } from '../base-application/support/index.ts';
 
 /**
  * Removes server files that where generated in previous JHipster versions and therefore
  * need to be removed.
  */
-export default asWritingTask(function cleanupOldServerFilesTask(this, { application }) {
-  if (this.isJhipsterVersionLessThan('6.0.0')) {
+export default asWritingTask(function cleanupOldServerFilesTask({ application, control }) {
+  if (control.isJhipsterVersionLessThan('6.0.0')) {
     this.removeFile(`${application.javaPackageSrcDir}config/OAuth2Configuration.java`);
     this.removeFile(`${application.javaPackageSrcDir}security/OAuth2AuthenticationSuccessHandler.java`);
   }
-  if (this.isJhipsterVersionLessThan('7.6.1')) {
+  if (control.isJhipsterVersionLessThan('7.6.1')) {
     if (!application.databaseTypeNo) {
       this.removeFile(`${application.javaPackageSrcDir}web/rest/UserResource.java`);
     }

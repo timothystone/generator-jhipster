@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,12 +18,14 @@
  */
 import chalk from 'chalk';
 import { intersection, kebabCase } from 'lodash-es';
-import type { JHipsterCommandDefinition } from '../../lib/command/index.js';
 
-const includesValue = (prop, values) => answers => answers[prop] && intersection(answers[prop], values).length > 0;
+import type { JHipsterCommandDefinition } from '../../lib/command/index.ts';
+import buildToolCommand from '../java-simple-application/generators/build-tool/command.ts';
 
-const command: JHipsterCommandDefinition = {
-  options: {},
+const { buildTool } = buildToolCommand.configs;
+const includesValue = (prop: string, values: string[]) => (answers: any) => answers[prop] && intersection(answers[prop], values).length > 0;
+
+const command = {
   configs: {
     ciCd: {
       argument: {
@@ -41,6 +43,9 @@ const command: JHipsterCommandDefinition = {
         { name: 'Travis CI', value: 'travis' },
         { name: 'CircleCI', value: 'circle' },
       ],
+      internal: {
+        type: Array,
+      },
       scope: 'context',
     },
     ciCdIntegrations: {
@@ -78,6 +83,9 @@ const command: JHipsterCommandDefinition = {
           value: 'cypressDashboard',
         },
       ],
+      internal: {
+        type: Array,
+      },
       scope: 'context',
     },
     insideDocker: {
@@ -86,6 +94,9 @@ const command: JHipsterCommandDefinition = {
         type: 'confirm',
         message: 'Would you like to perform the build in a Docker container ?',
         default: false,
+      },
+      internal: {
+        type: Boolean,
       },
       scope: 'context',
     },
@@ -96,6 +107,9 @@ const command: JHipsterCommandDefinition = {
         message: 'Would you like to send build status to GitLab ?',
         default: false,
       },
+      internal: {
+        type: Boolean,
+      },
       scope: 'context',
     },
     artifactorySnapshotsId: {
@@ -105,6 +119,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Artifactory*')}: what is the ID of distributionManagement for snapshots ?`,
       },
       default: 'snapshots',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     artifactorySnapshotsUrl: {
@@ -114,6 +131,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Artifactory*')}: what is the URL of distributionManagement for snapshots ?`,
       },
       default: 'http://artifactory:8081/artifactory/libs-snapshot',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     artifactoryReleasesId: {
@@ -123,6 +143,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Artifactory*')}: what is the ID of distributionManagement for releases ?`,
       },
       default: 'releases',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     artifactoryReleasesUrl: {
@@ -132,6 +155,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Artifactory*')}: what is the URL of distributionManagement for releases ?`,
       },
       default: 'http://artifactory:8081/artifactory/libs-release',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     sonarName: {
@@ -141,6 +167,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Sonar*')}: what is the name of the Sonar server ?`,
       },
       default: 'sonar',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     sonarUrl: {
@@ -152,6 +181,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Sonar*')}: what is the URL of the Sonar server ?`,
       },
       default: 'https://sonarcloud.io',
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     sonarOrga: {
@@ -162,6 +194,9 @@ const command: JHipsterCommandDefinition = {
         type: 'input',
         message: `${chalk.yellow('*Sonar*')}: what is the Organization of the Sonar server ?`,
       },
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     dockerImage: {
@@ -171,6 +206,9 @@ const command: JHipsterCommandDefinition = {
         message: `${chalk.yellow('*Docker*')}: what is the name of the image ?`,
         default: () => `jhipster/${config.dasherizedBaseName}`,
       }),
+      internal: {
+        type: String,
+      },
       scope: 'context',
     },
     herokuAppName: {
@@ -179,12 +217,23 @@ const command: JHipsterCommandDefinition = {
         type: 'input',
         message: `${chalk.yellow('*Heroku*')}: name of your Heroku Application ?`,
       },
+      internal: {
+        type: String,
+      },
       scope: 'context',
       default() {
         return kebabCase(this.jhipsterConfigWithDefaults.baseName);
       },
     },
+    buildTool: {
+      ...buildTool,
+      cli: {
+        ...buildTool.cli,
+        hide: true,
+      },
+      prompt: undefined,
+    },
   },
-};
+} as const satisfies JHipsterCommandDefinition<any>;
 
 export default command;

@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -22,7 +22,7 @@ import { NavDropdown } from './menu-components';
 import { locales, languages } from 'app/config/translation';
 
 export const LocaleMenu = ({ currentLocale, onClick }: { currentLocale: string; onClick: (event: any) => void }) =>
-  Object.keys(languages).length > 1 ? (
+  Object.keys(languages).length > 1 && (
     <NavDropdown icon="flag" name={currentLocale ? languages[currentLocale].name : undefined}>
       {locales.map(locale => (
         <DropdownItem key={locale} value={locale} onClick={onClick}>
@@ -30,4 +30,4 @@ export const LocaleMenu = ({ currentLocale, onClick }: { currentLocale: string; 
         </DropdownItem>
       ))}
     </NavDropdown>
-  ) : null;
+  );

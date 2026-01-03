@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -19,12 +19,12 @@
 import { passthrough } from '@yeoman/transform';
 import { Minimatch } from 'minimatch';
 
-export function convertVueTranslations(body) {
+export function convertVueTranslations(body: string) {
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, '{ $1 }').replace(/([@|||$])/g, "{'$1'}");
 }
 
-const convertTranslationsSupport = ({ clientSrcDir }) => {
-  const minimatch = new Minimatch(`**/${clientSrcDir}i18n/**/*.json`);
+const convertTranslationsSupport = ({ clientI18nDir }: { clientI18nDir: string }) => {
+  const minimatch = new Minimatch(`**/${clientI18nDir}**/*.json`);
   const isTranslationFile = (file: { path: string }) => minimatch.match(file.path);
   const transform = passthrough(file => {
     if (isTranslationFile(file)) {

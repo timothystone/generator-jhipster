@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from '../../../lib/utils/derived-property.js';
-export * from '../../../lib/utils/logger.js';
-export * from '../../../lib/utils/object.js';
-export * from '../../../lib/utils/string.js';
-export * from './basename.js';
-export * from './configuration-helpers/options.js';
-export * from './contents.js';
-export * from './faker.js';
-export { default as getHipster } from './hipster.js';
-export * from './jhipster7-context.js';
-export * from './namespace.js';
-export * from './needles.js';
-export * from './path.js';
-export { default as httpsGet } from './remote.js';
-export * from './secret.js';
-export * from './timestamp.js';
-export * from './write-files.js';
+export * from './constants.ts';
+export * from './timestamp.ts';

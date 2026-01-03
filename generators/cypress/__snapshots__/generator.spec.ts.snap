@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`generator - cypress jwt-cypressAudit(false)-angular-withAdminUi(false)-cypressCoverage(false)-clientRoot/ should match generated files snapshot 1`] = `
 {
@@ -6,6 +6,9 @@ exports[`generator - cypress jwt-cypressAudit(false)-angular-withAdminUi(false)-
     "stateCleared": "modified",
   },
   ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "clientRoot/angular.json": {
     "stateCleared": "modified",
   },
   "clientRoot/cypress.config.ts": {
@@ -154,6 +157,9 @@ exports[`generator - cypress oauth2-cypressAudit(false)-angular-withAdminUi(fals
     "stateCleared": "modified",
   },
   ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "angular.json": {
     "stateCleared": "modified",
   },
   "cypress.config.ts": {
@@ -340,6 +346,9 @@ exports[`generator - cypress session-cypressAudit(false)-angular-withAdminUi(fal
     "stateCleared": "modified",
   },
   ".yo-rc.json": {
+    "stateCleared": "modified",
+  },
+  "angular.json": {
     "stateCleared": "modified",
   },
   "cypress.config.ts": {

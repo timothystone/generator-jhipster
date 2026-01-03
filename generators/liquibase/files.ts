@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,11 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { WriteFileSection } from '../base/api.js';
-import { SERVER_MAIN_RES_DIR, SERVER_MAIN_SRC_DIR } from '../generator-constants.js';
-import { moveToJavaPackageSrcDir } from '../server/support/index.js';
+import { asWriteFilesSection } from '../base-application/support/task-type-inference.ts';
+import { SERVER_MAIN_RES_DIR, SERVER_MAIN_SRC_DIR } from '../generator-constants.ts';
+import { moveToJavaPackageSrcDir } from '../java/support/index.ts';
 
-export const liquibaseFiles: WriteFileSection = {
+export const liquibaseFiles = asWriteFilesSection({
   liquibase: [
     {
       condition: ctx => ctx.backendTypeSpringBoot,
@@ -69,4 +69,4 @@ export const liquibaseFiles: WriteFileSection = {
       templates: ['META-INF/native-image/liquibase/reflect-config.json'],
     },
   ],
-};
+});

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,36 +17,61 @@
  * limitations under the License.
  */
 import { inspect } from 'node:util';
-import { defaultsDeep, get, merge, template } from 'lodash-es';
+
 import { transform } from '@yeoman/transform';
+import { defaultsDeep, get, merge, template } from 'lodash-es';
+import type { MemFsEditorFile } from 'mem-fs-editor';
 import { Minimatch } from 'minimatch';
 
-export const createTranslationsFilter = ({ clientSrcDir, nativeLanguage, fallbackLanguage }) => {
+import type CoreGenerator from '../base-core/generator.ts';
+
+export const createTranslationsFilter = ({
+  clientI18nDir,
+  nativeLanguage,
+  fallbackLanguage,
+}: {
+  clientI18nDir: string;
+  nativeLanguage: string;
+  fallbackLanguage?: string;
+}) => {
   const pattern =
     !fallbackLanguage || nativeLanguage === fallbackLanguage
-      ? `**/${clientSrcDir}i18n/${nativeLanguage}/*.json`
-      : `**/${clientSrcDir}i18n/{${nativeLanguage},${fallbackLanguage}}/*.json`;
+      ? `**/${clientI18nDir}${nativeLanguage}/*.json`
+      : `**/${clientI18nDir}{${nativeLanguage},${fallbackLanguage}}/*.json`;
   const minimatch = new Minimatch(pattern);
-  return filePath => minimatch.match(filePath);
+  return (filePath: string): boolean => minimatch.match(filePath);
 };
 
-export const createTranslationsFileFilter = opts => {
+export const createTranslationsFileFilter = (opts: Parameters<typeof createTranslationsFilter>[0]) => {
   const filter = createTranslationsFilter(opts);
-  return file => filter(file.path);
+  return (file: MemFsEditorFile): boolean => filter(file.path);
 };
 
 export default class TranslationData {
-  translations;
-  generator;
+  translations: Record<string, any>;
+  generator: CoreGenerator;
 
-  constructor({ generator, translations }) {
+  constructor({ generator, translations }: { generator: CoreGenerator; translations: Record<string, any> }) {
+    if (!generator) {
+      throw new Error('Generator is required');
+    }
     this.generator = generator;
     this.translations = translations;
   }
 
-  loadFromStreamTransform({ enableTranslation, clientSrcDir, nativeLanguage, fallbackLanguage = 'en' }) {
-    const filter = createTranslationsFileFilter({ clientSrcDir, nativeLanguage, fallbackLanguage });
-    const minimatchNative = new Minimatch(`**/${clientSrcDir}i18n/${nativeLanguage}/*.json`);
+  loadFromStreamTransform({
+    enableTranslation,
+    clientI18nDir,
+    nativeLanguage,
+    fallbackLanguage = 'en',
+  }: {
+    enableTranslation: boolean;
+    clientI18nDir: string;
+    nativeLanguage: string;
+    fallbackLanguage?: string;
+  }) {
+    const filter = createTranslationsFileFilter({ clientI18nDir, nativeLanguage, fallbackLanguage });
+    const minimatchNative = new Minimatch(`**/${clientI18nDir}${nativeLanguage}/*.json`);
     return transform(file => {
       if (filter(file) && file.contents) {
         const contents = JSON.parse(file.contents.toString());
@@ -59,7 +84,7 @@ export default class TranslationData {
     });
   }
 
-  mergeTranslation(translation, fallback) {
+  mergeTranslation(translation: Record<string, any>, fallback: boolean) {
     if (fallback) {
       defaultsDeep(this.translations, translation);
     } else {
@@ -69,11 +94,8 @@ export default class TranslationData {
 
   /**
    * Get translation value for a key.
-   *
-   * @param translationKey {string} - key to be translated
-   * @param [data] {object} - template data in case translated value is a template
    */
-  getClientTranslation(translationKey, data) {
+  getClientTranslation(translationKey: string, data?: Record<string, any>) {
     let translatedValue = get(this.translations, translationKey);
     if (translatedValue === undefined) {
       const [last, second, third, ...others] = translationKey.split('.').reverse();

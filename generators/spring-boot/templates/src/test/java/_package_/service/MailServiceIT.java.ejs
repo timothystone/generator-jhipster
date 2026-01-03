@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -24,8 +24,10 @@ import <%= user.entityAbsoluteClass %>;
 import tech.jhipster.config.JHipsterProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -53,10 +55,12 @@ import static org.mockito.Mockito.*;
 /**
  * Integration tests for {@link MailService}.
  */
+@ExtendWith(MockitoExtension.class)
 @IntegrationTest
 class MailServiceIT {
 
     private static final String[] languages = {
+        // jhipster-needle-i18n-language-constant-start
         // jhipster-needle-i18n-language-constant - JHipster will add/remove languages in this array
     };
     private static final Pattern PATTERN_LOCALE_3 = Pattern.compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})");
@@ -75,7 +79,7 @@ class MailServiceIT {
     private MailService mailService;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         doNothing().when(javaMailSender).send(any(MimeMessage.class));
         when(javaMailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
     }

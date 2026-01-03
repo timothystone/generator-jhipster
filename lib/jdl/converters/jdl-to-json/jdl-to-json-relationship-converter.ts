@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,19 +17,20 @@
  * limitations under the License.
  */
 
-import { kebabCase } from 'lodash-es';
-import { relationshipOptions, validations } from '../../core/built-in-options/index.js';
-import { camelCase, lowerFirst } from '../../core/utils/string-utils.js';
-import type JDLRelationship from '../../core/models/jdl-relationship.js';
-import type { JSONRelationship } from '../../core/types/json-config.js';
-import type { RelationshipType } from '../../core/basic-types/relationships.js';
+import { kebabCase, lowerFirst } from 'lodash-es';
+
+import { customCamelCase } from '../../../utils/string-utils.ts';
+import type { RelationshipType } from '../../core/basic-types/relationships.ts';
+import { relationshipOptions, validations } from '../../core/built-in-options/index.ts';
+import type JDLRelationship from '../../core/models/jdl-relationship.ts';
+import type { JSONRelationship } from '../../core/types/json-config.ts';
 
 const {
   Validations: { REQUIRED },
 } = validations;
 const { BUILT_IN_ENTITY } = relationshipOptions;
 
-let convertedRelationships;
+let convertedRelationships: Map<string, any[]>;
 
 export default { convert };
 
@@ -86,7 +87,7 @@ function setRelationshipsFromEntity(relatedRelationships: RelationshipsRelatedTo
     const convertedRelationship: Partial<JSONRelationship> = {
       relationshipSide: 'left',
       relationshipType: kebabCase(relationshipToConvert.type) as RelationshipType,
-      otherEntityName: camelCase(relationshipToConvert.to),
+      otherEntityName: customCamelCase(relationshipToConvert.to),
     };
     if (otherSplitField.relationshipName) {
       convertedRelationship.otherEntityRelationshipName = lowerFirst(otherSplitField.relationshipName);
@@ -98,17 +99,17 @@ function setRelationshipsFromEntity(relatedRelationships: RelationshipsRelatedTo
       convertedRelationship.documentation = relationshipToConvert.commentInFrom;
     }
     const splitField: any = extractField(relationshipToConvert.injectedFieldInFrom);
-    convertedRelationship.relationshipName = camelCase(splitField.relationshipName || relationshipToConvert.to);
+    convertedRelationship.relationshipName = customCamelCase(splitField.relationshipName || relationshipToConvert.to);
     if (splitField.otherEntityField) {
       convertedRelationship.otherEntityField = lowerFirst(splitField.otherEntityField);
     }
     setOptionsForRelationshipSourceSide(relationshipToConvert, convertedRelationship);
-    const convertedEntityRelationships = convertedRelationships.get(entityName);
+    const convertedEntityRelationships = convertedRelationships.get(entityName)!;
     convertedEntityRelationships.push(convertedRelationship);
   });
 }
 
-export const otherRelationshipType = relationshipType => relationshipType.split('-').reverse().join('-');
+export const otherRelationshipType = (relationshipType: string) => relationshipType.split('-').reverse().join('-');
 
 function setRelationshipsToEntity(relatedRelationships: RelationshipsRelatedToEntity, entityName: string): void {
   relatedRelationships.to.forEach(relationshipToConvert => {
@@ -116,11 +117,11 @@ function setRelationshipsToEntity(relatedRelationships: RelationshipsRelatedToEn
     const convertedRelationship: any = {
       relationshipSide: 'right',
       relationshipType: otherRelationshipType(kebabCase(relationshipToConvert.type)),
-      otherEntityName: camelCase(relationshipToConvert.from),
+      otherEntityName: customCamelCase(relationshipToConvert.from),
     };
     if (otherSplitField.relationshipName) {
       convertedRelationship.otherEntityRelationshipName =
-        lowerFirst(otherSplitField.relationshipName) || camelCase(relationshipToConvert.to);
+        lowerFirst(otherSplitField.relationshipName) || customCamelCase(relationshipToConvert.to);
     }
     if (relationshipToConvert.isInjectedFieldInToRequired) {
       convertedRelationship.relationshipValidateRules = REQUIRED;
@@ -129,14 +130,14 @@ function setRelationshipsToEntity(relatedRelationships: RelationshipsRelatedToEn
       convertedRelationship.documentation = relationshipToConvert.commentInTo;
     }
     const splitField: any = extractField(relationshipToConvert.injectedFieldInTo);
-    convertedRelationship.relationshipName = camelCase(splitField.relationshipName || relationshipToConvert.from);
+    convertedRelationship.relationshipName = customCamelCase(splitField.relationshipName || relationshipToConvert.from);
     if (splitField.otherEntityField) {
       convertedRelationship.otherEntityField = lowerFirst(splitField.otherEntityField);
     }
     relationshipToConvert.injectedFieldInTo = relationshipToConvert.injectedFieldInTo ?? lowerFirst(relationshipToConvert.from);
 
     setOptionsForRelationshipDestinationSide(relationshipToConvert, convertedRelationship);
-    const convertedEntityRelationships = convertedRelationships.get(entityName);
+    const convertedEntityRelationships = convertedRelationships.get(entityName)!;
     convertedEntityRelationships.push(convertedRelationship);
   });
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,7 +18,10 @@
  */
 
 import { before, describe, expect, it } from 'esmocha';
-import { convertRelationships } from './relationship-converter.js';
+
+import type JDLRelationship from '../../core/models/jdl-relationship.ts';
+
+import { convertRelationships } from './relationship-converter.ts';
 
 describe('jdl - RelationshipConverter', () => {
   describe('convertRelationships', () => {
@@ -30,7 +33,7 @@ describe('jdl - RelationshipConverter', () => {
     });
     describe('when passing relationships', () => {
       describe('with all the fields', () => {
-        let convertedRelationships;
+        let convertedRelationships: JDLRelationship[];
 
         before(() => {
           convertedRelationships = convertRelationships(
@@ -93,7 +96,7 @@ describe('jdl - RelationshipConverter', () => {
         });
       });
       describe('when there is no injected field in both sides', () => {
-        let convertedRelationships;
+        let convertedRelationships: JDLRelationship[];
 
         before(() => {
           convertedRelationships = convertRelationships(

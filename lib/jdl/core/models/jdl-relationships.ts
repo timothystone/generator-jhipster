@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-import type { JDLRelationshipType } from '../basic-types/relationships.js';
-import { relationshipTypes } from '../basic-types/index.js';
-import { relationshipTypeExists } from '../basic-types/relationship-types.js';
-import type JDLRelationship from './jdl-relationship.js';
+import { relationshipTypes } from '../basic-types/index.ts';
+import { relationshipTypeExists } from '../basic-types/relationship-types.ts';
+import type { JDLRelationshipType } from '../basic-types/relationships.ts';
+
+import type JDLRelationship from './jdl-relationship.ts';
 
 export default class JDLRelationships {
   relationships: Record<JDLRelationshipType, Map<string, JDLRelationship>>;
@@ -99,7 +100,7 @@ export default class JDLRelationships {
   toArray(): JDLRelationship[] {
     const relationships: any[] = [];
     Object.keys(this.relationships).forEach(type => {
-      this.relationships[type].forEach(relationship => {
+      this.relationships[type as JDLRelationshipType].forEach(relationship => {
         relationships.push(relationship);
       });
     });

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,44 +16,79 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from 'fs';
-import path from 'path';
-import chalk from 'chalk';
-import semver from 'semver';
+import assert from 'node:assert';
+import fs, { existsSync, readFileSync, statSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import path, { join, relative } from 'node:path';
 
-import type { ComposeOptions } from 'yeoman-generator';
+import chalk from 'chalk';
+import { execaCommandSync } from 'execa';
 import { union } from 'lodash-es';
-import { packageJson } from '../../lib/index.js';
-import CoreGenerator from '../base-core/index.js';
-import { loadStoredAppOptions } from '../app/support/index.js';
-import type { TaskTypes as BaseTaskTypes, GenericTaskGroup } from '../../lib/types/base/tasks.js';
-import { packageNameToNamespace } from './support/index.js';
-import { loadBlueprintsFromConfiguration, mergeBlueprints, normalizeBlueprintName, parseBluePrints } from './internal/index.js';
-import { PRIORITY_NAMES } from './priorities.js';
-import type { JHipsterGeneratorFeatures, JHipsterGeneratorOptions } from './api.js';
-import { LOCAL_BLUEPRINT_PACKAGE_NAMESPACE } from './support/constants.js';
+import semver, { lt as semverLessThan } from 'semver';
+import type { PackageJson } from 'type-fest';
+
+import type { ExportGeneratorOptionsFromCommand, ExportStoragePropertiesFromCommand, ParsableCommand } from '../../lib/command/types.ts';
+import { packageJson } from '../../lib/index.ts';
+import { packageNameToNamespace } from '../../lib/utils/index.ts';
+import CoreGenerator from '../base-core/index.ts';
+import { PRIORITY_NAMES } from '../base-core/priorities.ts';
+import type { GenericTask } from '../base-core/types.ts';
+import { GENERATOR_JHIPSTER } from '../generator-constants.ts';
+
+import { mergeBlueprints, normalizeBlueprintName, parseBlueprints } from './internal/index.ts';
+import {
+  CONTEXT_DATA_BLUEPRINTS_TO_COMPOSE,
+  CONTEXT_DATA_EXISTING_PROJECT,
+  CONTEXT_DATA_REPRODUCIBLE_TIMESTAMP,
+  LOCAL_BLUEPRINT_PACKAGE_NAMESPACE,
+  formatDateForChangelog,
+} from './support/index.ts';
+import type { TaskTypes as BaseTasks } from './tasks.ts';
+import type {
+  CleanupArgumentType,
+  Config as BaseConfig,
+  Control,
+  Features as BaseFeatures,
+  Options as BaseOptions,
+  Source as BaseSource,
+} from './types.ts';
+
+const { WRITING } = PRIORITY_NAMES;
 
 /**
  * Base class that contains blueprints support.
+ * Provides built-in state support with control object.
  */
-export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTypes = BaseTaskTypes> extends CoreGenerator {
+export default class BaseGenerator<
+  Config extends BaseConfig = BaseConfig,
+  Options extends BaseOptions = BaseOptions,
+  Source extends BaseSource = BaseSource,
+  Features extends BaseFeatures = BaseFeatures,
+  Tasks extends BaseTasks<Source> = BaseTasks<Source>,
+> extends CoreGenerator<Config, Options, Features> {
   fromBlueprint!: boolean;
   sbsBlueprint?: boolean;
-  delegateToBlueprint?: boolean;
+  delegateToBlueprint = false;
   blueprintConfig?: Record<string, any>;
-  jhipsterContext?: any;
+  jhipsterContext?: BaseGenerator;
 
-  constructor(args: string | string[], options: JHipsterGeneratorOptions, features: JHipsterGeneratorFeatures) {
+  constructor(args?: string[], options?: Options, features?: Features) {
     const { jhipsterContext, ...opts } = options ?? {};
-    super(args, opts, features);
+    super(args, opts as Options, { blueprintSupport: true, ...features } as Features);
 
     if (this.options.help) {
       return;
     }
 
-    loadStoredAppOptions.call(this);
+    const {
+      sbsBlueprint = false,
+      checkBlueprint,
+      jhipsterBootstrap = this._namespace !== 'jhipster:project-name' &&
+        !this._namespace.split(':')[1]?.startsWith('bootstrap') &&
+        !this._namespace.endsWith(':bootstrap'),
+    } = this.features;
 
-    this.sbsBlueprint = this.features.sbsBlueprint ?? false;
+    this.sbsBlueprint = sbsBlueprint;
     this.fromBlueprint = this.rootGeneratorName() !== 'generator-jhipster';
 
     if (this.fromBlueprint) {
@@ -63,7 +98,7 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
       // jhipsterContext is the original generator
       this.jhipsterContext = jhipsterContext;
 
-      if (this.getFeatures().checkBlueprint) {
+      if (checkBlueprint) {
         if (!this.jhipsterContext) {
           throw new Error(
             `This is a JHipster blueprint and should be used only like ${chalk.yellow(
@@ -83,13 +118,39 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
         this.log.warn('Error adding current blueprint templates as alternative for JHipster templates.');
         this.log.log(error);
       }
-    } else if (this.features.queueCommandTasks === undefined) {
-      this.on('before:queueOwnTasks', () => {
-        if (!this.delegateToBlueprint) {
-          this.queueCurrentJHipsterCommandTasks();
-        }
+    }
+
+    if (jhipsterBootstrap) {
+      // jhipster:bootstrap is always required. Run it once the environment starts.
+      this.env.queueTask('environment:run', async () => this.composeWithJHipster('bootstrap').then(), {
+        once: 'queueJhipsterBootstrap',
+        startQueue: false,
       });
     }
+
+    this.on('before:queueOwnTasks', () => {
+      const { storeBlueprintVersion, storeJHipsterVersion, queueCommandTasks = true } = this.features;
+      if (this.fromBlueprint) {
+        if (storeBlueprintVersion && !this.options.reproducibleTests) {
+          try {
+            const blueprintPackageJson = JSON.parse(readFileSync(this._meta!.packagePath!, 'utf8'));
+            this.blueprintConfig!.blueprintVersion = blueprintPackageJson.version;
+          } catch {
+            this.log(`Could not retrieve version of blueprint '${this.options.namespace}'`);
+          }
+        }
+      }
+      if (!this.fromBlueprint && !this.delegateToBlueprint) {
+        if (storeJHipsterVersion && !this.options.reproducibleTests) {
+          this.jhipsterConfig.jhipsterVersion = packageJson.version;
+        }
+      }
+      if (this.fromBlueprint || !this.delegateToBlueprint) {
+        if (queueCommandTasks) {
+          this._queueCurrentJHipsterCommandTasks();
+        }
+      }
+    });
   }
 
   /**
@@ -99,11 +160,186 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
     return this.delegateToBlueprint ? ({} as TaskGroupType) : tasksGetter();
   }
 
+  get #control(): Control {
+    const generator = this;
+    return this.getContextData<Control>('jhipster:control', {
+      factory: () => {
+        let jhipsterOldVersion: string | null;
+        let environmentHasDockerCompose: undefined | boolean;
+        const customizeRemoveFiles: ((file: string) => string | undefined)[] = [];
+        return {
+          get existingProject(): boolean {
+            try {
+              return generator.getContextData<boolean>(CONTEXT_DATA_EXISTING_PROJECT);
+            } catch {
+              return false;
+            }
+          },
+          get jhipsterOldVersion(): string | null {
+            if (jhipsterOldVersion === undefined) {
+              jhipsterOldVersion = existsSync(generator.config.path)
+                ? (JSON.parse(readFileSync(generator.config.path, 'utf-8').toString())[GENERATOR_JHIPSTER]?.jhipsterVersion ?? null)
+                : null;
+            }
+            return jhipsterOldVersion;
+          },
+          get environmentHasDockerCompose(): boolean {
+            if (environmentHasDockerCompose === undefined) {
+              const commandReturn = execaCommandSync('docker compose version', { reject: false, stdio: 'pipe' });
+              environmentHasDockerCompose = !commandReturn || !commandReturn.failed; // TODO looks to be a bug on ARM MaCs and execaCommandSync, does not return anything, assuming mac users are smart and install docker.
+            }
+            return environmentHasDockerCompose;
+          },
+          customizeRemoveFiles,
+          isJhipsterVersionLessThan(version: string): boolean {
+            const jhipsterOldVersion = this.jhipsterOldVersion;
+            return jhipsterOldVersion ? semverLessThan(jhipsterOldVersion, version) : false;
+          },
+          async removeFiles(assertions: { oldVersion?: string; removedInVersion?: string } | string, ...files: string[]) {
+            const versions = typeof assertions === 'string' ? { removedInVersion: undefined, oldVersion: undefined } : assertions;
+            if (typeof assertions === 'string') {
+              files = [assertions, ...files];
+            }
+
+            for (const customize of this.customizeRemoveFiles) {
+              files = files.map(customize).filter(file => file) as string[];
+            }
+
+            const { removedInVersion, oldVersion = this.jhipsterOldVersion } = versions;
+            if (removedInVersion && oldVersion && !semverLessThan(oldVersion, removedInVersion)) {
+              return;
+            }
+
+            const absolutePaths = files.map(file => generator.destinationPath(file));
+            // Delete from memory fs to keep updated.
+            generator.fs.delete(absolutePaths);
+            await Promise.all(
+              absolutePaths.map(async file => {
+                const relativePath = relative(generator.env.logCwd, file);
+                try {
+                  if (statSync(file).isFile()) {
+                    generator.log.info(`Removing legacy file ${relativePath}`);
+                    await rm(file, { force: true });
+                  }
+                } catch {
+                  generator.log.info(`Could not remove legacy file ${relativePath}`);
+                }
+              }),
+            );
+          },
+          async cleanupFiles(oldVersionOrCleanup: string | CleanupArgumentType, cleanup?: CleanupArgumentType) {
+            if (!jhipsterOldVersion) return;
+            let oldVersion: string;
+            if (typeof oldVersionOrCleanup === 'string') {
+              oldVersion = oldVersionOrCleanup;
+              assert(cleanup, 'cleanupFiles requires cleanup object');
+            } else {
+              cleanup = oldVersionOrCleanup;
+              oldVersion = jhipsterOldVersion;
+            }
+            await Promise.all(
+              Object.entries(cleanup).map(async ([version, files]) => {
+                const stringFiles: string[] = [];
+                for (const file of files) {
+                  if (Array.isArray(file)) {
+                    const [condition, ...fileParts] = file;
+                    if (condition) {
+                      stringFiles.push(join(...fileParts));
+                    }
+                  } else {
+                    stringFiles.push(file);
+                  }
+                }
+                await this.removeFiles({ oldVersion, removedInVersion: version }, ...stringFiles);
+              }),
+            );
+          },
+        };
+      },
+    });
+  }
+
   /**
-   * Utility method to get typed objects for autocomplete.
+   * Generate a timestamp to be used by Liquibase changelogs.
    */
-  asAnyTaskGroup<const K extends string>(taskGroup: GenericTaskGroup<this, any, K>): GenericTaskGroup<any, any, K> {
-    return taskGroup;
+  nextTimestamp(): string {
+    const reproducible = Boolean(this.options.reproducible);
+    // Use started counter or use stored creationTimestamp if creationTimestamp option is passed
+    const creationTimestamp = this.options.creationTimestamp ? this.config.get('creationTimestamp') : undefined;
+    let now = new Date();
+    // Milliseconds is ignored for changelogDate.
+    now.setMilliseconds(0);
+    // Run reproducible timestamp when regenerating the project with reproducible option or a specific timestamp.
+    if (reproducible || creationTimestamp) {
+      now = this.getContextData(CONTEXT_DATA_REPRODUCIBLE_TIMESTAMP, {
+        factory: () => {
+          const newCreationTimestamp: string | number | undefined = creationTimestamp ?? this.config.get('creationTimestamp');
+          const newDate = newCreationTimestamp ? new Date(newCreationTimestamp) : now;
+          newDate.setMilliseconds(0);
+          return newDate;
+        },
+      });
+      now.setMinutes(now.getMinutes() + 1);
+      this.getContextData(CONTEXT_DATA_REPRODUCIBLE_TIMESTAMP, { replacement: now });
+
+      // Reproducible build can create future timestamp, save it.
+      const lastLiquibaseTimestamp = this.jhipsterConfig.lastLiquibaseTimestamp;
+      if (!lastLiquibaseTimestamp || now.getTime() > lastLiquibaseTimestamp) {
+        this.config.set('lastLiquibaseTimestamp', now.getTime());
+      }
+    } else {
+      // Get and store lastLiquibaseTimestamp, a future timestamp can be used
+      const lastLiquibaseTimestamp = this.jhipsterConfig.lastLiquibaseTimestamp;
+      if (lastLiquibaseTimestamp) {
+        const lastTimestampDate = new Date(lastLiquibaseTimestamp);
+        if (lastTimestampDate >= now) {
+          now = lastTimestampDate;
+          now.setSeconds(now.getSeconds() + 1);
+          now.setMilliseconds(0);
+        }
+      }
+      this.jhipsterConfig.lastLiquibaseTimestamp = now.getTime();
+    }
+    return formatDateForChangelog(now);
+  }
+
+  /**
+   * Get arguments for the priority
+   */
+  override getArgsForPriority(priorityName: string) {
+    const [fistArg] = super.getArgsForPriority(priorityName);
+    const control = this.#control;
+    if (priorityName === WRITING) {
+      if (existsSync(this.config.path)) {
+        try {
+          const oldConfig = JSON.parse(readFileSync(this.config.path).toString())[GENERATOR_JHIPSTER];
+          const newConfig: any = this.config.getAll();
+          const keys = [...new Set([...Object.keys(oldConfig), ...Object.keys(newConfig)])];
+          const configChanges = Object.fromEntries(
+            keys
+              .filter(key =>
+                Array.isArray(newConfig[key])
+                  ? newConfig[key].length === oldConfig[key].length &&
+                    newConfig[key].find((element, index) => element !== oldConfig[key][index])
+                  : newConfig[key] !== oldConfig[key],
+              )
+              .map(key => [key, { newValue: newConfig[key], oldValue: oldConfig[key] }]),
+          );
+          return [{ ...fistArg, control, configChanges }];
+        } catch {
+          // Fail to parse
+        }
+      }
+    }
+    return [{ ...fistArg, control }];
+  }
+
+  /**
+   * Check if the generator should ask for prompts.
+   */
+  override shouldAskForPrompts({ control }: { control: Control }): boolean {
+    if (!control) throw new Error(`Control object not found in ${this.options.namespace}`);
+    return !control.existingProject || this.options.askAnswered === true;
   }
 
   /**
@@ -112,23 +348,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Initializing priority is used to show logo and tasks related to preparing for prompts, like loading constants.
    */
   get initializing() {
-    return this.asInitializingTaskGroup(this._initializing());
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _initializing() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asInitializingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['InitializingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['InitializingTaskParam'], K> {
+  asInitializingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['InitializingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['InitializingTaskParam']>> {
     return taskGroup;
   }
 
@@ -138,23 +366,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Prompting priority is used to prompt users for configuration values.
    */
   get prompting() {
-    return this._prompting();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _prompting() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asPromptingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['PromptingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['PromptingTaskParam'], K> {
+  asPromptingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PromptingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PromptingTaskParam']>> {
     return taskGroup;
   }
 
@@ -164,23 +384,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Configuring priority is used to customize and validate the configuration.
    */
   get configuring() {
-    return this._configuring();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _configuring() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asConfiguringTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['ConfiguringTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['ConfiguringTaskParam'], K> {
+  asConfiguringTaskGroup<const T extends Record<string, GenericTask<this, Tasks['ConfiguringTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['ConfiguringTaskParam']>> {
     return taskGroup;
   }
 
@@ -190,23 +402,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Composing should be used to compose with others generators.
    */
   get composing() {
-    return this._composing();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _composing() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asComposingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['ComposingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['ComposingTaskParam'], K> {
+  asComposingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['ComposingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['ComposingTaskParam']>> {
     return taskGroup;
   }
 
@@ -215,16 +419,16 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    *
    * ComposingComponent priority should be used to handle component configuration order.
    */
-  get composingComponent(): any {
+  get composingComponent() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asComposingComponentTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['ComposingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['ComposingTaskParam'], K> {
+  asComposingComponentTaskGroup<const T extends Record<string, GenericTask<this, Tasks['ComposingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['ComposingTaskParam']>> {
     return taskGroup;
   }
 
@@ -234,24 +438,16 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Loading should be used to load application configuration from jhipster configuration.
    * Before this priority the configuration should be considered dirty, while each generator configures itself at configuring priority, another generator composed at composing priority can still change it.
    */
-  get loading(): any {
-    return this.asLoadingTaskGroup(this._loading());
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _loading() {
+  get loading() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asLoadingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['LoadingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['LoadingTaskParam'], K> {
+  asLoadingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['LoadingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['LoadingTaskParam']>> {
     return taskGroup;
   }
 
@@ -261,23 +457,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Preparing should be used to generate derived properties.
    */
   get preparing() {
-    return this._preparing();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _preparing() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asPreparingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['PreparingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['PreparingTaskParam'], K> {
+  asPreparingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PreparingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PreparingTaskParam']>> {
     return taskGroup;
   }
 
@@ -293,9 +481,9 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asPostPreparingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['PostPreparingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['PostPreparingTaskParam'], K> {
+  asPostPreparingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PostPreparingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PostPreparingTaskParam']>> {
     return taskGroup;
   }
 
@@ -305,23 +493,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Default priority should used as misc customizations.
    */
   get default() {
-    return this._default();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _default() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asDefaultTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['DefaultTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['DefaultTaskParam'], K> {
+  asDefaultTaskGroup<const T extends Record<string, GenericTask<this, Tasks['DefaultTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['DefaultTaskParam']>> {
     return taskGroup;
   }
 
@@ -331,23 +511,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Writing priority should used to write files.
    */
   get writing() {
-    return this._writing();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _writing() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asWritingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['WritingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['WritingTaskParam'], K> {
+  asWritingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['WritingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['WritingTaskParam']>> {
     return taskGroup;
   }
 
@@ -357,23 +529,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * PostWriting priority should used to customize files.
    */
   get postWriting() {
-    return this._postWriting();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _postWriting() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asPostWritingTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['PostWritingTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['PostWritingTaskParam'], K> {
+  asPostWritingTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PostWritingTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PostWritingTaskParam']>> {
     return taskGroup;
   }
 
@@ -383,23 +547,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Install priority should used to prepare the project.
    */
   get install() {
-    return this._install();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _install() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asInstallTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['InstallTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['InstallTaskParam'], K> {
+  asInstallTaskGroup<const T extends Record<string, GenericTask<this, Tasks['InstallTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['InstallTaskParam']>> {
     return taskGroup;
   }
 
@@ -409,23 +565,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * PostWriting priority should used to customize files.
    */
   get postInstall() {
-    return this._postInstall();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _postInstall() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asPostInstallTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['PostInstallTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['PostInstallTaskParam'], K> {
+  asPostInstallTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PostInstallTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PostInstallTaskParam']>> {
     return taskGroup;
   }
 
@@ -435,23 +583,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * End priority should used to say good bye and print instructions.
    */
   get end() {
-    return this._end();
-  }
-
-  /**
-   * @deprecated
-   * Public API method used by the getter and also by Blueprints
-   */
-  _end() {
     return {};
   }
 
   /**
    * Utility method to get typed objects for autocomplete.
    */
-  asEndTaskGroup<const K extends string>(
-    taskGroup: GenericTaskGroup<this, TaskTypes['EndTaskParam'], K>,
-  ): GenericTaskGroup<any, TaskTypes['EndTaskParam'], K> {
+  asEndTaskGroup<const T extends Record<string, GenericTask<this, Tasks['EndTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['EndTaskParam']>> {
     return taskGroup;
   }
 
@@ -459,51 +599,47 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * @protected
    * Composes with blueprint generators, if any.
    */
-  protected async composeWithBlueprints(subGen?: string, options?: ComposeOptions) {
-    if (subGen === undefined) {
-      const { namespace } = this.options;
-      if (!namespace?.startsWith('jhipster:')) {
-        throw new Error(`Generator is not blueprintable ${namespace}`);
-      }
-      subGen = namespace.substring('jhipster:'.length);
+  protected async composeWithBlueprints() {
+    if (this.fromBlueprint) {
+      throw new Error('Only the main generator can compose with blueprints');
     }
+    const namespace = this._namespace;
+    if (!namespace?.startsWith('jhipster:')) {
+      throw new Error(`Generator is not blueprintable ${namespace}`);
+    }
+    const subGen = namespace.substring('jhipster:'.length);
+
     this.delegateToBlueprint = false;
 
     if (this.options.disableBlueprints) {
       return [];
     }
 
-    const control = this.sharedData.getControl();
-    if (!control.blueprintConfigured) {
-      control.blueprintConfigured = true;
-      await this._configureBlueprints();
-    }
-
-    let blueprints = this.jhipsterConfig.blueprints || [];
+    let blueprints = await this.#configureBlueprints();
     if (this.options.composeWithLocalBlueprint) {
-      blueprints = blueprints.concat({ name: '@jhipster/local' });
+      blueprints = blueprints.concat('@jhipster/local');
     }
     const composedBlueprints: any[] = [];
-    for (const blueprint of blueprints) {
-      const blueprintGenerator = await this._composeBlueprint(blueprint.name, subGen, options);
+    for (const blueprintName of blueprints) {
+      const blueprintGenerator = await this.#composeBlueprint(blueprintName, subGen);
       let blueprintCommand;
       if (blueprintGenerator) {
         composedBlueprints.push(blueprintGenerator);
-        if ((blueprintGenerator as any).sbsBlueprint) {
+        if (blueprintGenerator.sbsBlueprint) {
           // If sbsBlueprint, add templatePath to the original generator templatesFolder.
           this.jhipsterTemplatesFolders.unshift(blueprintGenerator.templatePath());
         } else {
           // If the blueprints does not sets sbsBlueprint property, ignore normal workflow.
           this.delegateToBlueprint = true;
-          this.checkBlueprintImplementsPriorities(blueprintGenerator);
+          this.#checkBlueprintImplementsPriorities(blueprintGenerator);
         }
-        const blueprintModule = (await blueprintGenerator._meta?.importModule?.()) as any;
+        const blueprintModule: any = await blueprintGenerator._meta?.importModule?.();
         blueprintCommand = blueprintModule?.command;
       } else {
-        const generatorName = packageNameToNamespace(normalizeBlueprintName(blueprint.name));
+        const generatorName = packageNameToNamespace(normalizeBlueprintName(blueprintName));
         const generatorNamespace = `${generatorName}:${subGen}`;
-        const blueprintMeta = await this.env.findMeta(generatorNamespace);
-        const blueprintModule = (await blueprintMeta?.importModule?.()) as any;
+        const blueprintMeta = this.env.findMeta(generatorNamespace);
+        const blueprintModule: any = await blueprintMeta?.importModule?.();
         blueprintCommand = blueprintModule?.command;
         if (blueprintCommand?.compose) {
           this.generatorsToCompose.push(...blueprintCommand.compose);
@@ -524,7 +660,7 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * Check if the blueprint implements every priority implemented by the parent generator
    * @param {BaseGenerator} blueprintGenerator
    */
-  private checkBlueprintImplementsPriorities(blueprintGenerator) {
+  #checkBlueprintImplementsPriorities(blueprintGenerator: BaseGenerator) {
     const { taskPrefix: baseGeneratorTaskPrefix = '' } = this.features;
     const { taskPrefix: blueprintTaskPrefix = '' } = blueprintGenerator.features;
     // v8 remove deprecated priorities
@@ -544,7 +680,12 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * @private
    * Configure blueprints.
    */
-  private async _configureBlueprints() {
+  async #configureBlueprints(): Promise<string[]> {
+    try {
+      return this.getContextData(CONTEXT_DATA_BLUEPRINTS_TO_COMPOSE);
+    } catch {
+      // Ignore
+    }
     let argvBlueprints = this.options.blueprints || '';
     // check for old single blueprint declaration
     let { blueprint } = this.options;
@@ -555,7 +696,7 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
       this.log.warn('--blueprint option is deprecated. Please use --blueprints instead');
       argvBlueprints = union(blueprint, argvBlueprints.split(',')).join(',');
     }
-    const blueprints = mergeBlueprints(parseBluePrints(argvBlueprints), loadBlueprintsFromConfiguration(this.config));
+    const blueprints = mergeBlueprints(parseBlueprints(argvBlueprints), this.jhipsterConfig.blueprints ?? []);
 
     // EnvironmentBuilder already looks for blueprint when running from cli, this is required for tests.
     // Can be removed once the tests uses EnvironmentBuilder.
@@ -563,42 +704,42 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
       .filter(blueprint => !this.env.isPackageRegistered(packageNameToNamespace(blueprint.name)))
       .map(blueprint => blueprint.name);
     if (missingBlueprints.length > 0) {
-      await this.env.lookup({ filterPaths: true, packagePatterns: missingBlueprints } as any);
+      await this.env.lookup({ filterPaths: true, packagePatterns: missingBlueprints });
     }
 
     if (blueprints && blueprints.length > 0) {
       blueprints.forEach(blueprint => {
-        blueprint.version = this._findBlueprintVersion(blueprint.name) || blueprint.version;
+        blueprint.version = this.#findBlueprintVersion(blueprint.name) ?? blueprint.version;
       });
       this.jhipsterConfig.blueprints = blueprints;
     }
 
     if (!this.skipChecks) {
       const namespaces = blueprints.map(blueprint => packageNameToNamespace(blueprint.name));
-      // Verify if the blueprints hava been registered.
+      // Verify if the blueprints have been registered.
       const missing = namespaces.filter(namespace => !this.env.isPackageRegistered(namespace));
       if (missing && missing.length > 0) {
         throw new Error(`Some blueprints were not found ${missing}, you should install them manually`);
       }
+      blueprints.forEach(blueprint => {
+        this.#checkJHipsterBlueprintVersion(blueprint.name);
+      });
     }
+    const blueprintNames = blueprints.map(blueprint => blueprint.name);
+    this.getContextData(CONTEXT_DATA_BLUEPRINTS_TO_COMPOSE, {
+      replacement: blueprintNames,
+    });
+
+    return blueprintNames;
   }
 
   /**
-   * @private
    * Compose external blueprint module
-   * @param {string} blueprint - name of the blueprint
-   * @param {string} subGen - sub generator
-   * @param {any} [extraOptions] - options to pass to blueprint generator
-   * @return {Generator|undefined}
    */
-  private async _composeBlueprint<G extends CoreGenerator = CoreGenerator>(
-    blueprint,
-    subGen,
-    extraOptions: ComposeOptions = {},
-  ): Promise<G | undefined> {
+  async #composeBlueprint(blueprint: string, subGen: string) {
     blueprint = normalizeBlueprintName(blueprint);
     if (!this.skipChecks && blueprint !== LOCAL_BLUEPRINT_PACKAGE_NAMESPACE) {
-      this._checkBlueprint(blueprint);
+      this.#checkBlueprint(blueprint);
     }
 
     const generatorName = packageNameToNamespace(blueprint);
@@ -615,22 +756,18 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
       `Found blueprint ${chalk.yellow(blueprint)} and ${chalk.yellow(subGen)} with namespace ${chalk.yellow(generatorNamespace)}`,
     );
 
-    const finalOptions: ComposeOptions = {
+    const blueprintGenerator = await this.composeWith<BaseGenerator>(generatorNamespace, {
       forwardOptions: true,
-      schedule: generator => (generator as any).sbsBlueprint,
+      schedule: generator => generator.sbsBlueprint!,
       generatorArgs: this._args,
-      ...extraOptions,
       generatorOptions: {
         jhipsterContext: this,
-        ...extraOptions?.generatorOptions,
-      } as any,
-    };
-
-    const blueprintGenerator = await this.composeWith<G>(generatorNamespace, finalOptions as any);
+      },
+    });
     if (blueprintGenerator instanceof Error) {
       throw blueprintGenerator;
     }
-    (this as any)._debug(`Using blueprint ${chalk.yellow(blueprint)} for ${chalk.yellow(subGen)} subgenerator`);
+    this._debug(`Using blueprint ${chalk.yellow(blueprint)} for ${chalk.yellow(subGen)} subgenerator`);
     return blueprintGenerator;
   }
 
@@ -640,7 +777,7 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * @param {string} blueprintPkgName - generator name
    * @return {object} packageJson - retrieved package.json as an object or undefined if not found
    */
-  private _findBlueprintPackageJson(blueprintPkgName) {
+  #findBlueprintPackageJson(blueprintPkgName: string): PackageJson | undefined {
     const blueprintGeneratorName = packageNameToNamespace(blueprintPkgName);
     const blueprintPackagePath = this.env.getPackagePath(blueprintGeneratorName);
     if (!blueprintPackagePath) {
@@ -660,8 +797,8 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
    * @param {string} blueprintPkgName - generator name
    * @return {string} version - retrieved version or empty string if not found
    */
-  private _findBlueprintVersion(blueprintPkgName) {
-    const blueprintPackageJson = this._findBlueprintPackageJson(blueprintPkgName);
+  #findBlueprintVersion(blueprintPkgName: string): string | undefined {
+    const blueprintPackageJson = this.#findBlueprintPackageJson(blueprintPkgName);
     if (!blueprintPackageJson?.version) {
       this.log.warn(`Could not retrieve version of blueprint '${blueprintPkgName}'`);
       return undefined;
@@ -670,24 +807,19 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
   }
 
   /**
-   * @private
    * Check if the generator specified as blueprint is installed.
-   * @param {string} blueprint - generator name
    */
-  protected _checkBlueprint(blueprint) {
+  #checkBlueprint(blueprint: string) {
     if (blueprint === 'generator-jhipster') {
       throw new Error(`You cannot use ${chalk.yellow(blueprint)} as the blueprint.`);
     }
-    this._findBlueprintPackageJson(blueprint);
   }
 
   /**
-   * @private
    * Check if the generator specified as blueprint has a version compatible with current JHipster.
-   * @param {string} blueprintPkgName - generator name
    */
-  protected _checkJHipsterBlueprintVersion(blueprintPkgName) {
-    const blueprintPackageJson = this._findBlueprintPackageJson(blueprintPkgName);
+  #checkJHipsterBlueprintVersion(blueprintPkgName: string) {
+    const blueprintPackageJson = this.#findBlueprintPackageJson(blueprintPkgName);
     if (!blueprintPackageJson) {
       this.log.warn(`Could not retrieve version of JHipster declared by blueprint '${blueprintPkgName}'`);
       return;
@@ -714,3 +846,15 @@ export default class JHipsterBaseBlueprintGenerator<TaskTypes extends BaseTaskTy
     this.log.warn(`Could not retrieve version of JHipster declared by blueprint '${blueprintPkgName}'`);
   }
 }
+
+export class CommandBaseGenerator<
+  Command extends ParsableCommand,
+  AdditionalOptions = unknown,
+  AdditionalFeatures = unknown,
+> extends BaseGenerator<
+  BaseConfig & ExportStoragePropertiesFromCommand<Command>,
+  BaseOptions & ExportGeneratorOptionsFromCommand<Command> & AdditionalOptions,
+  BaseSource,
+  BaseFeatures & AdditionalFeatures,
+  BaseTasks
+> {}

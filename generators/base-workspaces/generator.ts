@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,19 +17,35 @@
  * limitations under the License.
  */
 
-import { readdir } from 'fs/promises';
-import { existsSync } from 'fs';
-import chalk from 'chalk';
+import { join } from 'node:path';
 
-import BaseGenerator from '../base/index.js';
-import { YO_RC_FILE } from '../generator-constants.js';
-import { GENERATOR_BOOTSTRAP_APPLICATION } from '../generator-list.js';
-import { normalizePathEnd } from '../base/support/path.js';
-import type { TaskTypes } from '../../lib/types/base/tasks.js';
-import type { Entity } from '../../lib/types/application/entity.js';
-import type { ApplicationType } from '../../lib/types/application/application.js';
-import { CUSTOM_PRIORITIES, PRIORITY_NAMES } from './priorities.js';
-import command from './command.js';
+import { defaults } from 'lodash-es';
+
+import type { ExportGeneratorOptionsFromCommand, ExportStoragePropertiesFromCommand, ParsableCommand } from '../../lib/command/types.ts';
+import { deploymentOptions } from '../../lib/jhipster/index.ts';
+import { removeFieldsWithNullishValues } from '../../lib/utils/object.ts';
+import BaseGenerator from '../base/index.ts';
+import type { GenericTask } from '../base-core/types.ts';
+import { CONTEXT_DATA_APPLICATION_KEY } from '../base-simple-application/support/index.ts';
+import type { Application as SimpleApplication } from '../base-simple-application/types.d.ts';
+
+import { CUSTOM_PRIORITIES, PRIORITY_NAMES } from './priorities.ts';
+import {
+  CONTEXT_DATA_DEPLOYMENT_KEY,
+  CONTEXT_DATA_WORKSPACES_APPLICATIONS_KEY,
+  CONTEXT_DATA_WORKSPACES_ROOT_KEY,
+} from './support/index.ts';
+import type { Tasks as WorkspacesTasks } from './tasks.ts';
+import type {
+  Config as BaseWorkspacesConfig,
+  Deployment as BaseDeployment,
+  Features as BaseWorkspacesFeatures,
+  Options as BaseWorkspacesOptions,
+  Source as BaseWorkspacesSource,
+  WorkspacesApplication,
+} from './types.ts';
+
+const { Options: DeploymentOptions } = deploymentOptions;
 
 const {
   PROMPTING_WORKSPACES,
@@ -44,22 +60,18 @@ const {
   END,
 } = PRIORITY_NAMES;
 
-type WorkspacesTypes<E extends Entity = Entity, A extends ApplicationType<E> = ApplicationType<E>> = TaskTypes & {
-  LoadingTaskParam: TaskTypes['LoadingTaskParam'] & { applications: A[] };
-  PreparingTaskParam: TaskTypes['PreparingTaskParam'] & { applications: A[] };
-  PostPreparingTaskParam: TaskTypes['PostPreparingTaskParam'] & { applications: A[] };
-  DefaultTaskParam: TaskTypes['DefaultTaskParam'] & { applications: A[] };
-  WritingTaskParam: TaskTypes['WritingTaskParam'] & { applications: A[] };
-  PostWritingTaskParam: TaskTypes['PostWritingTaskParam'] & { applications: A[] };
-  InstallTaskParam: TaskTypes['InstallTaskParam'] & { applications: A[] };
-  PostInstallTaskParam: TaskTypes['PostInstallTaskParam'] & { applications: A[] };
-  EndTaskParam: TaskTypes['EndTaskParam'] & { applications: A[] };
-};
-
 /**
  * This is the base class for a generator that generates entities.
  */
-export default abstract class BaseWorkspacesGenerator extends BaseGenerator<WorkspacesTypes> {
+export default abstract class BaseWorkspacesGenerator<
+  Deployment extends BaseDeployment = BaseDeployment,
+  Application extends SimpleApplication = WorkspacesApplication,
+  Config extends BaseWorkspacesConfig = BaseWorkspacesConfig,
+  Options extends BaseWorkspacesOptions = BaseWorkspacesOptions,
+  Source extends BaseWorkspacesSource = BaseWorkspacesSource,
+  Features extends BaseWorkspacesFeatures = BaseWorkspacesFeatures,
+  Tasks extends WorkspacesTasks<Deployment, Source, Application> = WorkspacesTasks<Deployment, Source, Application>,
+> extends BaseGenerator<Config, Options, Source, Features, Tasks> {
   static PROMPTING_WORKSPACES = BaseGenerator.asPriority(PROMPTING_WORKSPACES);
 
   static CONFIGURING_WORKSPACES = BaseGenerator.asPriority(CONFIGURING_WORKSPACES);
@@ -68,134 +80,167 @@ export default abstract class BaseWorkspacesGenerator extends BaseGenerator<Work
 
   static PREPARING_WORKSPACES = BaseGenerator.asPriority(PREPARING_WORKSPACES);
 
-  appsFolders?: string[];
-  directoryPath!: string;
-
-  constructor(args, options, features) {
+  constructor(args?: string[], options?: Options, features?: Features) {
     super(args, options, features);
 
-    if (!this.options.help) {
-      this.registerPriorities(CUSTOM_PRIORITIES);
-
-      this.parseJHipsterOptions(command.options);
+    if (this.options.help) {
+      return;
     }
+
+    this.registerPriorities(CUSTOM_PRIORITIES);
   }
 
-  protected loadWorkspacesConfig(opts?) {
-    const { context = this } = opts ?? {};
-    context.appsFolders = this.jhipsterConfig.appsFolders;
-    context.directoryPath = this.jhipsterConfig.directoryPath ?? './';
-  }
-
-  protected configureWorkspacesConfig() {
-    this.jhipsterConfig.directoryPath = normalizePathEnd(this.jhipsterConfig.directoryPath ?? './');
-  }
-
-  protected async askForWorkspacesConfig() {
-    let appsFolders;
-    await this.prompt(
-      [
-        {
-          type: 'input',
-          name: 'directoryPath',
-          message: 'Enter the root directory where your applications are located',
-          default: '../',
-          validate: async input => {
-            const path = this.destinationPath(input);
-            if (existsSync(path)) {
-              const applications = await this.findApplicationFolders(path);
-              return applications.length === 0 ? `No application found in ${path}` : true;
-            }
-            return `${path} is not a directory or doesn't exist`;
-          },
-        },
-        {
-          type: 'checkbox',
-          name: 'appsFolders',
-          when: async answers => {
-            const directoryPath = answers.directoryPath;
-            appsFolders = (await this.findApplicationFolders(directoryPath)).filter(
-              app => app !== 'jhipster-registry' && app !== 'registry',
-            );
-            this.log.log(chalk.green(`${appsFolders.length} applications found at ${this.destinationPath(directoryPath)}\n`));
-            return true;
-          },
-          message: 'Which applications do you want to include in your configuration?',
-          choices: () => appsFolders,
-          default: () => appsFolders,
-          validate: input => (input.length === 0 ? 'Please choose at least one application' : true),
-        },
-      ],
-      this.config,
+  override get jhipsterConfigWithDefaults() {
+    return defaults(
+      {},
+      removeFieldsWithNullishValues(this.config.getAll()),
+      DeploymentOptions.defaults(this.jhipsterConfig.deploymentType),
     );
   }
 
-  protected async findApplicationFolders(directoryPath = this.directoryPath ?? '.') {
-    return (await readdir(this.destinationPath(directoryPath), { withFileTypes: true }))
-      .filter(dirent => dirent.isDirectory())
-      .map(dirent => dirent.name)
-      .filter(
-        folder =>
-          existsSync(this.destinationPath(directoryPath, folder, 'package.json')) &&
-          existsSync(this.destinationPath(directoryPath, folder, YO_RC_FILE)),
-      );
+  get context() {
+    return this.getContextData(CONTEXT_DATA_DEPLOYMENT_KEY, { factory: () => ({}) });
   }
 
-  private async resolveApplicationFolders({
-    directoryPath = this.directoryPath,
-    appsFolders = this.appsFolders ?? [],
-  }: { directoryPath?: string; appsFolders?: string[] } = {}) {
-    return Object.fromEntries(appsFolders.map(appFolder => [appFolder, this.destinationPath(directoryPath ?? '.', appFolder)]));
+  get appsFolders(): string[] {
+    return this.jhipsterConfigWithDefaults.appsFolders;
+  }
+
+  get directoryPath(): string {
+    return this.jhipsterConfigWithDefaults.directoryPath;
+  }
+
+  get #applications() {
+    return this.getContextData(CONTEXT_DATA_WORKSPACES_APPLICATIONS_KEY, {
+      factory: () =>
+        Object.entries(this.resolveApplicationFolders()).map(([appFolder, resolvedFolder], index) => {
+          const contextMap = this.env.getContextMap(resolvedFolder) as Map<string, WorkspacesApplication>;
+          const application = contextMap.get(CONTEXT_DATA_APPLICATION_KEY);
+          if (!application) {
+            throw new Error(`No application found in ${resolvedFolder}`);
+          }
+          application.appFolder = appFolder;
+          application.composePort = 8080 + index;
+          return application;
+        }),
+    });
+  }
+
+  get workspacesRoot(): string {
+    return this.getContextData(CONTEXT_DATA_WORKSPACES_ROOT_KEY);
+  }
+
+  get promptingWorkspaces() {
+    return {};
+  }
+
+  get configuringWorkspaces() {
+    return {};
+  }
+
+  get loadingWorkspaces() {
+    return {};
+  }
+
+  get preparingWorkspaces() {
+    return {};
+  }
+
+  workspacePath(...dest: string[]): string {
+    return join(this.workspacesRoot, ...dest);
+  }
+
+  private resolveApplicationFolders({ appsFolders = this.appsFolders }: { directoryPath?: string; appsFolders?: string[] } = {}) {
+    return Object.fromEntries(appsFolders.map(appFolder => [appFolder, this.workspacePath(appFolder)]));
+  }
+
+  setWorkspacesRoot(root: string) {
+    const oldValue = this.getContextData(CONTEXT_DATA_WORKSPACES_ROOT_KEY, { replacement: root });
+    if (oldValue) {
+      throw new Error(`Workspaces root is already set to ${oldValue}. Cannot change it to ${root}.`);
+    }
   }
 
   async bootstrapApplications() {
-    const resolvedApplicationFolders = await this.resolveApplicationFolders();
+    const resolvedApplicationFolders = this.resolveApplicationFolders();
     for (const [_appFolder, resolvedFolder] of Object.entries(resolvedApplicationFolders)) {
-      await this.composeWithJHipster(GENERATOR_BOOTSTRAP_APPLICATION, {
+      await this.composeWithJHipster('jhipster:app:bootstrap', {
         generatorOptions: { destinationRoot: resolvedFolder, reproducible: true },
-      } as any);
+      });
     }
-    this.getSharedApplication(this.destinationPath()).workspacesApplications = Object.entries(resolvedApplicationFolders).map(
-      ([appFolder, resolvedFolder], index) => {
-        const application = this.getSharedApplication(resolvedFolder)?.sharedApplication;
-        application.appFolder = appFolder;
-        application.composePort = 8080 + index;
-        return application;
-      },
-    );
   }
 
   getArgsForPriority(priorityName: string): any {
     const args = super.getArgsForPriority(priorityName);
     if (
-      ![
-        PROMPTING_WORKSPACES,
-        CONFIGURING_WORKSPACES,
-        LOADING_WORKSPACES,
-        PREPARING_WORKSPACES,
-        DEFAULT,
-        WRITING,
-        POST_WRITING,
-        PRE_CONFLICTS,
-        INSTALL,
-        END,
-      ].includes(priorityName)
+      !(
+        [
+          PROMPTING_WORKSPACES,
+          CONFIGURING_WORKSPACES,
+          LOADING_WORKSPACES,
+          PREPARING_WORKSPACES,
+          DEFAULT,
+          WRITING,
+          POST_WRITING,
+          PRE_CONFLICTS,
+          INSTALL,
+          END,
+        ] as string[]
+      ).includes(priorityName)
     ) {
       return args;
     }
     const [first, ...others] = args ?? [];
-    const sharedData = this.getSharedApplication(this.destinationPath());
-    const deployment = sharedData.sharedDeployment;
-    const workspaces = sharedData.sharedWorkspaces;
-    const applications = sharedData.workspacesApplications;
     return [
       {
         ...first,
-        workspaces,
-        deployment,
-        applications,
+        deployment: this.context,
+        applications: this.#applications,
       },
       ...others,
     ];
   }
+
+  /**
+   * Utility method to get typed objects for autocomplete.
+   */
+  asPromptingWorkspacesTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PromptingWorkspacesTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PromptingWorkspacesTaskParam']>> {
+    return taskGroup;
+  }
+
+  /**
+   * Utility method to get typed objects for autocomplete.
+   */
+  asConfiguringWorkspacesTaskGroup<const T extends Record<string, GenericTask<this, Tasks['ConfiguringWorkspacesTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['ConfiguringWorkspacesTaskParam']>> {
+    return taskGroup;
+  }
+
+  /**
+   * Utility method to get typed objects for autocomplete.
+   */
+  asLoadingWorkspacesTaskGroup<const T extends Record<string, GenericTask<this, Tasks['LoadingWorkspacesTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['LoadingWorkspacesTaskParam']>> {
+    return taskGroup;
+  }
+
+  /**
+   * Utility method to get typed objects for autocomplete.
+   */
+  asPreparingWorkspacesTaskGroup<const T extends Record<string, GenericTask<this, Tasks['PreparingWorkspacesTaskParam']>>>(
+    taskGroup: T,
+  ): Record<keyof T, GenericTask<any, Tasks['PreparingWorkspacesTaskParam']>> {
+    return taskGroup;
+  }
 }
+
+export class CommandBaseWorkspacesGenerator<Command extends ParsableCommand, AdditionalOptions = unknown> extends BaseWorkspacesGenerator<
+  BaseDeployment,
+  WorkspacesApplication,
+  BaseWorkspacesConfig & ExportStoragePropertiesFromCommand<Command>,
+  BaseWorkspacesOptions & ExportGeneratorOptionsFromCommand<Command> & AdditionalOptions
+> {}

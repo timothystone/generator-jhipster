@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { before, describe, expect, it } from 'esmocha';
+import { basename, resolve } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.js';
-import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = `${basename(resolve(__dirname, '../../'))}:${basename(__dirname)}`;
+const generator = `${basename(resolve(import.meta.dirname, '../../'))}:${basename(import.meta.dirname)}`;
 
 describe(`generator - ${generator}`, () => {
   shouldSupportFeatures(Generator);
@@ -47,12 +44,7 @@ describe(`generator - ${generator}`, () => {
     });
 
     it('should compose with generators', () => {
-      expect(result.getComposedGenerators()).toMatchInlineSnapshot(`
-[
-  "jhipster:bootstrap",
-  "jhipster:project-name",
-]
-`);
+      expect(result.getComposedGenerators()).toMatchInlineSnapshot(`[]`);
     });
   });
 });

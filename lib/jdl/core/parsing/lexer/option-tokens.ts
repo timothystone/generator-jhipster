@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import createTokenFromConfig from './token-creator.js';
-import { BINARY_OPTION, KEYWORD, UNARY_OPTION } from './shared-tokens.js';
+import { BINARY_OPTION, KEYWORD, UNARY_OPTION } from './shared-tokens.ts';
+import createTokenFromConfig from './token-creator.ts';
 
 const tokens = [
   { name: 'WITH', pattern: 'with' },

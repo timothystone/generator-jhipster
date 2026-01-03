@@ -1,45 +1,61 @@
-import { fileURLToPath } from 'url';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { minimatch } from 'minimatch';
 import { simpleGit } from 'simple-git';
 
-export const getGitChanges = async (options: { allTrue?: boolean } = {}) => {
-  let hasPatternChanges: (pattern: string, ignore?: string) => boolean;
+import { testIntegrationRelativeFolder } from '../../constants.ts';
+
+const clientPatterns = (client: 'angular' | 'react' | 'vue') => [
+  `.github/workflows/${client}.yml`,
+  join(testIntegrationRelativeFolder, `workflow-samples/${client}.json`),
+];
+
+const patterns = {
+  angular: ['generators/angular/**'],
+  angularWorkflow: clientPatterns('angular'),
+  base: ['lib/**', 'generators/*', 'generators/{base*,bootstrap*,git,jdl,project-name}/**'],
+  ci: ['.github/{actions,workflows}/**', join(testIntegrationRelativeFolder, '{,jdl}samples/**')],
+  client: ['generators/{client,init,javascript-simple-application}/**'],
+  common: ['generators/{app,common,docker,languages}/**'],
+  devBlueprint: ['.blueprint/**'],
+  devserverWorkflow: ['.github/workflows/devserver.yml'],
+  e2e: ['generators/cypress/**'],
+  generateBlueprint: ['generators/{generate-blueprint,javascript-simple-application,ci-cd/generators/bootstrap}/**'],
+  graalvm: ['generators/java-simple-application/generators/graalvm/**'],
+  java: ['generators/{java,java-simple-application,liquibase,server,spring*}/**'],
+  react: ['generators/react/**'],
+  reactWorkflow: clientPatterns('react'),
+  springBootDefaults: [
+    'generators/spring-boot/*',
+    'generators/spring-boot/{resources,templates,generators/bootstrap,generators/jwt}/**',
+    'generators/spring-data/generators/relational/**',
+    'generators/{java,java-simple-application,liquibase,server}/**',
+  ],
+  sonarPr: ['.github/actions/sonar/**'],
+  workspaces: ['generators/{docker-compose,kubernetes*,workspaces}/**'],
+  vue: ['generators/vue/**'],
+  vueWorkflow: clientPatterns('vue'),
+};
+
+const someFileMatchesSomePattern = (files: string[], patterns: string[], ignore?: string) =>
+  patterns.some(pattern =>
+    files.some(file => minimatch(file, pattern, { dot: true }) && (!ignore || !minimatch(file, ignore, { dot: true }))),
+  );
+
+export const detectChanges = (files: string[]) =>
+  Object.fromEntries(Object.entries(patterns).map(([key, pattern]) => [key, someFileMatchesSomePattern(files, pattern)])) as Record<
+    keyof typeof patterns,
+    boolean
+  >;
+
+export const getGitChanges = async (options: { allTrue?: boolean } = {}): Promise<Record<keyof typeof patterns, boolean>> => {
   if (options.allTrue) {
-    hasPatternChanges = () => true;
-  } else {
-    const git = simpleGit({ baseDir: fileURLToPath(new URL('../../', import.meta.url).href) });
-    const summary = await git.diffSummary({ '@~1': null });
-    const files = summary.files.map(({ file }) => file);
-    hasPatternChanges = (pattern: string, ignore?: string) =>
-      files.some(file => minimatch(file, pattern, { dot: true }) && (!ignore || !minimatch(file, ignore, { dot: true })));
+    return Object.fromEntries(Object.keys(patterns).map(key => [key, true])) as Record<keyof typeof patterns, boolean>;
   }
 
-  const hasClientWorkflowChanges = (client: 'angular' | 'react' | 'vue') =>
-    hasPatternChanges(`.github/workflows/${client}.yml`) || hasPatternChanges(`test-integration/workflow-samples/${client}.json`);
-  return {
-    hasPatternChanges,
-    angular: hasPatternChanges('generators/angular/**'),
-    angularWorkflow: hasClientWorkflowChanges('angular'),
-    base:
-      hasPatternChanges('lib/**') ||
-      hasPatternChanges('generators/*') ||
-      hasPatternChanges('generators/{base*,bootstrap*,git,jdl,project-name}/**'),
-    ci: hasPatternChanges('.github/{actions,workflows}/**') || hasPatternChanges('test-integration/{,jdl}samples/**'),
-    devBlueprint: hasPatternChanges('.blueprint/**'),
-    devserverWorkflow: hasPatternChanges('.github/workflows/devserver.yml'),
-    common: hasPatternChanges('generators/{app,common,docker,languages}/**'),
-    client: hasPatternChanges('generators/{client,init,javascript}/**'),
-    e2e: hasPatternChanges('generators/cypress/**'),
-    java: hasPatternChanges(
-      'generators/{cucumber,feign-client,gatling,gradle,java,liquibase,maven,server,spring*}/**',
-      'generators/java/generators/graalvm/**',
-    ),
-    graalvm: hasPatternChanges('generators/java/generators/graalvm/**'),
-    react: hasPatternChanges('generators/react/**'),
-    reactWorkflow: hasClientWorkflowChanges('react'),
-    workspaces: hasPatternChanges('generators/{docker-compose,kubernetes*,workspaces}/**'),
-    vue: hasPatternChanges('generators/vue/**'),
-    vueWorkflow: hasClientWorkflowChanges('vue'),
-    sonarPr: hasPatternChanges('test-integration/sonar-pr/**'),
-  };
+  const git = simpleGit({ baseDir: fileURLToPath(new URL('../../', import.meta.url).href) });
+  const summary = await git.diffSummary({ '@~1': null });
+  const files = summary.files.map(({ file }) => file);
+  return detectChanges(files);
 };

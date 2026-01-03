@@ -1,15 +1,14 @@
-import { basename, dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 import { before, describe, expect, it } from 'esmocha';
-import { defaultHelpers as helpers, runResult } from '../../lib/testing/index.js';
-import { shouldSupportFeatures } from '../../test/support/index.js';
-import Generator from './generator.js';
-import { workflowChoices } from './command.js';
+import { basename, join } from 'node:path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { defaultHelpers as helpers, resultWithGenerator } from '../../lib/testing/index.ts';
+import { shouldSupportFeatures } from '../../test/support/index.ts';
 
-const generator = basename(__dirname);
+import { workflowChoices } from './command.ts';
+import Generator from './generator.ts';
+
+const runResult = resultWithGenerator<Generator>();
+const generator = basename(import.meta.dirname);
 
 describe(`generator - ${generator}`, () => {
   shouldSupportFeatures(Generator);
@@ -17,14 +16,14 @@ describe(`generator - ${generator}`, () => {
   for (const workflow of workflowChoices) {
     describe(`with ${workflow}`, () => {
       before(async () => {
-        await helpers.runJHipster(join(__dirname, 'index.ts'), { useEnvironmentBuilder: true }).withArguments(workflow);
+        await helpers.runJHipster(join(import.meta.dirname, 'index.ts'), { prepareEnvironment: true }).withArguments(workflow);
       });
 
       it('should set workflow value', () => {
-        expect((runResult.generator as any).workflow).toBe(workflow);
+        expect(runResult.generator.workflow).toBe(workflow);
       });
       it('should match matrix value', () => {
-        expect((runResult.generator as any).matrix).toMatchSnapshot();
+        expect(runResult.generator.matrix).toMatchSnapshot();
       });
     });
   }

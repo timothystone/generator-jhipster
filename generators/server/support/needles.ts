@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,9 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import assert from 'assert';
-import type CoreGenerator from '../../base-core/index.js';
-import { createBaseNeedle } from '../../base/support/needles.js';
+import assert from 'node:assert';
+
+import type { CascatedEditFileCallback } from '../../base-core/api.ts';
+import type CoreGenerator from '../../base-core/index.ts';
+import type { NeedleCallback } from '../../base-core/support/needles.ts';
+import { createBaseNeedle } from '../../base-core/support/needles.ts';
 
 export type ApplicationPropertiesNeedles = {
   property?: string;
@@ -31,7 +34,7 @@ export type ApplicationPropertiesNeedles = {
  * @example
  * insertContentIntoApplicationProperties.call(generator, application, {
  *   property: 'private final bar = new Bar();',
- *   proppertyGetter: `
+ *   propertyGetter: `
  * public getBar() {
  *     return bar;
  * }`,
@@ -56,17 +59,17 @@ export type ApplicationPropertiesNeedles = {
  *   });
  * );
  */
-export function insertContentIntoApplicationProperties(needles: ApplicationPropertiesNeedles);
+export function insertContentIntoApplicationProperties(needles: ApplicationPropertiesNeedles): NeedleCallback;
 export function insertContentIntoApplicationProperties(
   this: CoreGenerator,
   application: { javaPackageSrcDir: string },
   needles: ApplicationPropertiesNeedles,
-);
+): NeedleCallback;
 export function insertContentIntoApplicationProperties(
   this: CoreGenerator | void,
   application: { javaPackageSrcDir: string } | ApplicationPropertiesNeedles,
   needles?: ApplicationPropertiesNeedles,
-) {
+): NeedleCallback | CascatedEditFileCallback {
   if (needles) {
     assert.ok(this, 'Generator context is required');
 

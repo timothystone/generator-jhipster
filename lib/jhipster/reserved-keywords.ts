@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,27 +17,26 @@
  * limitations under the License.
  */
 
-import { angularReservedKeywords } from '../../generators/angular/support/reserved-keywords.js';
-import { mysqlReservedKeywords } from '../../generators/spring-data-relational/support/mysql-reserved-keywords.js';
-import { javaReservedKeywords } from '../../generators/java/support/reserved-keywords.js';
-import { typescriptReservedKeywords } from '../../generators/client/support/typescript.js';
-import { postgresqlReservedKeywords } from '../../generators/spring-data-relational/support/postgresql-reserved-keywords.js';
-import { cassandraReservedKeywords } from '../../generators/spring-data-cassandra/support/reserved-keywords.js';
-import { couchbaseReservedKeywords } from '../../generators/spring-data-couchbase/support/reserved-keywords.js';
-import { oracleReservedKeywords } from '../../generators/spring-data-relational/support/oracle-reserved-keywords.js';
-import { mssqlReservedKeywords } from '../../generators/spring-data-relational/support/mssql-reserved-keywords.js';
-import { neo4jReservedKeywords } from '../../generators/spring-data-neo4j/support/reserved-keywords.js';
-import PagingReservedKeywords from './reserved-keywords/paging.js';
-import JHipsterReservedKeywords from './reserved-keywords/jhipster.js';
-import applicationOptions from './application-options.js';
+import { angularReservedKeywords } from '../../generators/angular/support/reserved-keywords.ts';
+import { javaReservedKeywords } from '../../generators/java/support/reserved-keywords.ts';
+import { typescriptReservedKeywords } from '../../generators/javascript-simple-application/support/reserved-words.ts';
+import { cassandraReservedKeywords } from '../../generators/spring-data/generators/cassandra/support/reserved-keywords.ts';
+import { couchbaseReservedKeywords } from '../../generators/spring-data/generators/couchbase/support/reserved-keywords.ts';
+import { neo4jReservedKeywords } from '../../generators/spring-data/generators/neo4j/support/reserved-keywords.ts';
+import { mssqlReservedKeywords } from '../../generators/spring-data/generators/relational/support/mssql-reserved-keywords.ts';
+import { mysqlReservedKeywords } from '../../generators/spring-data/generators/relational/support/mysql-reserved-keywords.ts';
+import { oracleReservedKeywords } from '../../generators/spring-data/generators/relational/support/oracle-reserved-keywords.ts';
+import { postgresqlReservedKeywords } from '../../generators/spring-data/generators/relational/support/postgresql-reserved-keywords.ts';
+
+import applicationOptions from './application-options.ts';
+import JHipsterReservedKeywords from './reserved-keywords/jhipster.ts';
+import PagingReservedKeywords from './reserved-keywords/paging.ts';
 
 const clientFrameworks = applicationOptions.OptionValues[applicationOptions.OptionNames.CLIENT_FRAMEWORK] as Record<string, string>;
 
 const ReservedWords = {
   JHIPSTER: JHipsterReservedKeywords,
   ANGULAR: angularReservedKeywords,
-  // TODO: Remove react from the object if there are no reserve keywords for react.
-  REACT: [],
   JAVA: javaReservedKeywords,
   TYPESCRIPT: typescriptReservedKeywords,
   MYSQL: mysqlReservedKeywords,
@@ -50,31 +49,32 @@ const ReservedWords = {
   MONGODB: ['DOCUMENT'],
   MSSQL: mssqlReservedKeywords,
   NEO4J: neo4jReservedKeywords,
-};
+} satisfies Record<string, readonly string[]>;
 
-export const keywordsForType = (type: string) => ReservedWords[type.toUpperCase()];
+export const keywordsForType = (type: string): readonly string[] =>
+  (ReservedWords as Record<string, readonly string[]>)[type.toUpperCase()];
 
-export function isReserved(keyword?: any, type?: string) {
+export function isReserved(keyword?: string, type?: string) {
   return !!keyword && !!type && !!keywordsForType(type)?.includes(keyword.toUpperCase());
 }
 
-export function isReservedClassName(keyword) {
+export function isReservedClassName(keyword: string) {
   return (
     isReserved(keyword, 'JHIPSTER') || isReserved(keyword, 'ANGULAR') || isReserved(keyword, 'TYPESCRIPT') || isReserved(keyword, 'JAVA')
   );
 }
 
-export function isReservedTableName(keyword, databaseType) {
+export function isReservedTableName(keyword: string, databaseType: string) {
   return databaseType.toUpperCase() === 'SQL'
     ? isReserved(keyword, 'MYSQL') || isReserved(keyword, 'POSTGRESQL') || isReserved(keyword, 'ORACLE') || isReserved(keyword, 'MSSQL')
     : isReserved(keyword, databaseType);
 }
 
-export function isReservedPaginationWords(keyword) {
+export function isReservedPaginationWords(keyword: string) {
   return isReserved(keyword, 'PAGING');
 }
 
-export function isReservedFieldName(keyword, clientFramework?: any) {
+export function isReservedFieldName(keyword: string, clientFramework?: any) {
   if (clientFramework) {
     if (clientFramework === clientFrameworks.angular) {
       // Angular client framework
@@ -98,7 +98,6 @@ export default {
   isReservedPaginationWords,
   JHIPSTER: ReservedWords.JHIPSTER,
   ANGULAR: ReservedWords.ANGULAR,
-  REACT: ReservedWords.REACT,
   JAVA: ReservedWords.JAVA,
   TYPESCRIPT: ReservedWords.TYPESCRIPT,
   MYSQL: ReservedWords.MYSQL,

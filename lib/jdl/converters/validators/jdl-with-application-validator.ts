@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,33 +17,29 @@
  * limitations under the License.
  */
 
-import { relationshipOptions } from '../../core/built-in-options/index.js';
-import { applicationOptions, fieldTypes } from '../../../jhipster/index.js';
-import type JDLObject from '../../core/models/jdl-object.js';
-import type JDLRelationship from '../../core/models/jdl-relationship.js';
-import type JDLApplication from '../../core/models/jdl-application.js';
-import type JDLField from '../../core/models/jdl-field.js';
-import type JDLApplicationConfigurationOption from '../../core/models/jdl-application-configuration-option.js';
-import EntityValidator from './entity-validator.js';
-import FieldValidator from './field-validator.js';
-import ValidationValidator from './validation-validator.js';
-import RelationshipValidator from './relationship-validator.js';
-import EnumValidator from './enum-validator.js';
-import DeploymentValidator from './deployment-validator.js';
-import UnaryOptionValidator from './unary-option-validator.js';
-import BinaryOptionValidator from './binary-option-validator.js';
-import type { ValidatorOptions } from './validator.js';
+import fieldTypes from '../../../jhipster/field-types.ts';
+import { BASE_NAME_KEY, relationshipOptions } from '../../core/built-in-options/index.ts';
+import type JDLApplicationConfigurationOption from '../../core/models/jdl-application-configuration-option.ts';
+import type JDLApplication from '../../core/models/jdl-application.ts';
+import type JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import type JDLField from '../../core/models/jdl-field.ts';
+import type JDLObject from '../../core/models/jdl-object.ts';
+import type JDLRelationship from '../../core/models/jdl-relationship.ts';
 
-const { OptionNames } = applicationOptions;
+import BinaryOptionValidator from './binary-option-validator.ts';
+import DeploymentValidator from './deployment-validator.ts';
+import EntityValidator from './entity-validator.ts';
+import EnumValidator from './enum-validator.ts';
+import FieldValidator from './field-validator.ts';
+import RelationshipValidator from './relationship-validator.ts';
+import UnaryOptionValidator from './unary-option-validator.ts';
+import ValidationValidator from './validation-validator.ts';
 
 const { BUILT_IN_ENTITY } = relationshipOptions;
-const { BLUEPRINTS, BASE_NAME } = OptionNames;
 /**
  * Constructor taking the jdl object to check against application settings.
- * @param {JDLObject} jdlObject -  the jdl object to check.
- * @param {Object} logger - the logger to use, default to the console.
  */
-export default function createValidator(jdlObject: JDLObject, logger: any = console) {
+export default function createValidator(jdlObject: JDLObject) {
   if (!jdlObject) {
     throw new Error('A JDL object must be passed to check for business errors.');
   }
@@ -51,16 +47,10 @@ export default function createValidator(jdlObject: JDLObject, logger: any = cons
   return {
     checkForErrors: (): void => {
       jdlObject.forEachApplication(jdlApplication => {
-        const blueprints = jdlApplication.getConfigurationOptionValue(BLUEPRINTS);
-        const checkReservedKeywords = (blueprints?.length ?? 0) === 0;
         checkForNamespaceConfigErrors(jdlApplication);
         checkForRelationshipErrors();
-        checkForEntityErrors(jdlApplication, { checkReservedKeywords });
-        checkForEnumErrors({ checkReservedKeywords });
-        if (!checkReservedKeywords) {
-          logger.warn('Blueprints are being used, the JDL validation phase is skipped.');
-          return;
-        }
+        checkForEntityErrors(jdlApplication);
+        checkForEnumErrors();
         checkDeploymentsErrors();
         checkForOptionErrors();
       });
@@ -77,7 +67,7 @@ export default function createValidator(jdlObject: JDLObject, logger: any = cons
     });
   }
 
-  function checkForEntityErrors(jdlApplication: JDLApplication, options: ValidatorOptions): void {
+  function checkForEntityErrors(jdlApplication: JDLApplication): void {
     if (jdlObject.getEntityQuantity() === 0) {
       return;
     }
@@ -86,7 +76,7 @@ export default function createValidator(jdlObject: JDLObject, logger: any = cons
       if (!jdlApplication.hasEntityName(jdlEntity.name)) {
         return;
       }
-      validator.validate(jdlEntity, options);
+      validator.validate(jdlEntity);
       checkForFieldErrors(jdlEntity.name, jdlEntity.fields, jdlApplication);
     });
   }
@@ -126,13 +116,13 @@ export default function createValidator(jdlObject: JDLObject, logger: any = cons
     });
   }
 
-  function checkForEnumErrors(options: ValidatorOptions): void {
+  function checkForEnumErrors(): void {
     if (jdlObject.getEnumQuantity() === 0) {
       return;
     }
     const validator = new EnumValidator();
     jdlObject.forEachEnum(jdlEnum => {
-      validator.validate(jdlEnum, options);
+      validator.validate(jdlEnum);
     });
   }
 
@@ -156,7 +146,7 @@ export default function createValidator(jdlObject: JDLObject, logger: any = cons
       if (option.getType() === 'UNARY') {
         unaryOptionValidator.validate(option);
       } else {
-        binaryOptionValidator.validate(option);
+        binaryOptionValidator.validate(option as JDLBinaryOption);
       }
     });
   }
@@ -177,7 +167,7 @@ function checkForAbsentEntities({
   doesEntityExist,
 }: {
   jdlRelationship: JDLRelationship;
-  doesEntityExist: (string) => boolean;
+  doesEntityExist: (arg: string) => boolean;
 }) {
   const absentEntities: any[] = [];
   if (!doesEntityExist(jdlRelationship.from)) {
@@ -196,15 +186,23 @@ function checkForAbsentEntities({
   }
 }
 
-function checkIfRelationshipIsBetweenApplications({ jdlRelationship, applicationsPerEntityName }) {
+function checkIfRelationshipIsBetweenApplications({
+  jdlRelationship,
+  applicationsPerEntityName,
+}: {
+  jdlRelationship: JDLRelationship;
+  applicationsPerEntityName: Record<string, JDLApplication[]>;
+}): void {
   let applicationsForSourceEntity = applicationsPerEntityName[jdlRelationship.from];
   let applicationsForDestinationEntity = applicationsPerEntityName[jdlRelationship.to];
   if (!applicationsForDestinationEntity || !applicationsForSourceEntity) {
     return;
   }
-  applicationsForSourceEntity = applicationsForSourceEntity.map(jdlApplication => jdlApplication.getConfigurationOptionValue(BASE_NAME));
+  applicationsForSourceEntity = applicationsForSourceEntity.map(jdlApplication =>
+    jdlApplication.getConfigurationOptionValue(BASE_NAME_KEY),
+  );
   applicationsForDestinationEntity = applicationsForDestinationEntity.map(jdlApplication =>
-    jdlApplication.getConfigurationOptionValue(BASE_NAME),
+    jdlApplication.getConfigurationOptionValue(BASE_NAME_KEY),
   );
   const difference = applicationsForSourceEntity.filter(application => !applicationsForDestinationEntity.includes(application));
   if (difference.length !== 0) {
@@ -213,11 +211,11 @@ function checkIfRelationshipIsBetweenApplications({ jdlRelationship, application
     );
   }
 }
-function getApplicationsPerEntityNames(jdlObject: JDLObject) {
-  const applicationsPerEntityName = {};
+function getApplicationsPerEntityNames(jdlObject: JDLObject): Record<string, JDLApplication[]> {
+  const applicationsPerEntityName: Record<string, JDLApplication[]> = {};
   jdlObject.forEachApplication(jdlApplication => {
     jdlApplication.forEachEntityName(entityName => {
-      applicationsPerEntityName[entityName] = applicationsPerEntityName[entityName] || [];
+      applicationsPerEntityName[entityName] ??= [];
       applicationsPerEntityName[entityName].push(jdlApplication);
     });
   });

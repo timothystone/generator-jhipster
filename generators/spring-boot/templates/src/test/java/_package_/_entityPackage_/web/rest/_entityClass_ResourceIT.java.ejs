@@ -1,5 +1,5 @@
 <%#
- Copyright 2013-2025 the original author or authors from the JHipster project.
+ Copyright 2013-2026 the original author or authors from the JHipster project.
 
  This file is part of the JHipster project, see https://www.jhipster.tech/
  for more information.
@@ -23,18 +23,10 @@ import static <%= packageName %>.web.rest.TestUtil.createUpdateProxyForBean;
 <%_
 var filterTestableRelationships = (reactive ? reactiveEagerRelations : relationships).filter(rel => rel.persistableRelationship && !rel.otherEntity.hasCyclicRequiredRelationship);
 const fieldsToTest = fields.filter(field => !field.id && !field.autoGenerate && !field.transient);
-let mapsIdEntity;
-let mapsIdEntityInstance;
-let mapsIdRepoInstance;
-if (isUsingMapsId) {
-  mapsIdEntity = mapsIdAssoc.otherEntityNameCapitalized;
-  mapsIdEntityInstance =  mapsIdEntity.charAt(0).toLowerCase() + mapsIdEntity.slice(1);
-  mapsIdRepoInstance = `${mapsIdEntityInstance}Repository`;
-}
 const hasUserRepository =
   (requiresDeleteAllUsers && hasRelationshipWithBuiltInUser) ||
   filterTestableRelationships.some(rel => rel.otherEntity.builtInUser) ||
-  (isUsingMapsId && (!dtoMapstruct && serviceNo) && mapsIdEntity === 'User');
+  (isUsingMapsId && (!dtoMapstruct && serviceNo) && mapsIdAssoc?.otherEntity?.entityNameCapitalized === 'User');
 
 let callBlock = '';
 let callListBlock = '';
@@ -73,20 +65,19 @@ import <%= entityAbsolutePackage %>.domain.<%= persistClass %>;
 var imported = [];
 for (relationship of relationships) { // import entities in required relationships
   const relationshipValidate = relationship.relationshipValidate;
-  const otherEntityNameCapitalized = relationship.otherEntityNameCapitalized;
   const isUsingMapsIdL1 = relationship.id;
-  if (imported.indexOf(otherEntityNameCapitalized) === -1) {
+  if (!imported.includes(relationship.otherEntity.entityNameCapitalized)) {
     if ((relationshipValidate !== null && relationshipValidate === true) || jpaMetamodelFiltering || (isUsingMapsIdL1 === true)) { _%>
 import <%= entityAbsolutePackage %>.domain.<%= relationship.otherEntity.persistClass %>;
 <%_
-          imported.push(otherEntityNameCapitalized);
+          imported.push(relationship.otherEntity.entityNameCapitalized);
     }
   }
 } _%>
 <%_
 if(jpaMetamodelFiltering && reactive) {
   filterTestableRelationships.forEach(relationship => { _%>
-import <%= entityAbsolutePackage %>.repository.<%= relationship.otherEntityNameCapitalized %>Repository;
+import <%= entityAbsolutePackage %>.repository.<%= relationship.otherEntity.entityNameCapitalized %>Repository;
 <%_ });
  } _%>
 <%_ if (hasUserRepository) { _%>
@@ -97,7 +88,7 @@ import <%= entityAbsolutePackage %>.repository.<%= entityClass %>Repository;
 import <%= packageName %>.repository.EntityManager;
 <%_ } _%>
 <%_ if (isUsingMapsId && (!dtoMapstruct && serviceNo)) { _%>
-import <%= entityAbsolutePackage %>.repository.<%= mapsIdAssoc.otherEntityNameCapitalized %>Repository;
+import <%= entityAbsolutePackage %>.repository.<%= mapsIdAssoc?.otherEntity?.entityNameCapitalized %>Repository;
 <%_ } _%>
 <%_ if (searchEngineElasticsearch) { _%>
 import <%= entityAbsolutePackage %>.repository.search.<%= entityClass %>SearchRepository;
@@ -131,9 +122,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 <%_ } _%>
 import org.springframework.beans.factory.annotation.Autowired;
 <%_ if (reactive) { _%>
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 <%_ } else { _%>
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 <%_ } _%>
 <%_ if (searchEngineElasticsearch && !paginationNo || implementsEagerLoadApis) { _%>
 import org.springframework.data.domain.PageImpl;
@@ -194,6 +185,9 @@ import java.time.temporal.ChronoUnit;
 <%_ } _%>
 <%_ if (anyFieldIsLocalTime) { _%>
 import java.time.LocalTime;
+<%_ } _%>
+<%_ if (fieldsToTest.some(field => field.fieldTypeLocalTime)) { _%>
+import java.time.format.DateTimeFormatter;
 <%_ } _%>
 <%_ if (!reactive && implementsEagerLoadApis) { _%>
 import java.util.ArrayList;
@@ -270,89 +264,92 @@ import <%= entityAbsolutePackage %>.domain.enumeration.<%= field.fieldType %>;
 <%_ } _%>
 @WithMockUser<% if (entityAuthority) { %>(authorities = {"<%- entityAuthority %>"})<% } %>
 class <%= entityClass %>ResourceIT {
-<%_
-for (field of fieldsToTest) {
-const defaultValueName = 'DEFAULT_' + field.fieldNameUnderscored.toUpperCase();
-const updatedValueName = 'UPDATED_' + field.fieldNameUnderscored.toUpperCase();
-const smallerValueName = 'SMALLER_' + field.fieldNameUnderscored.toUpperCase();
-const needsSmallerValueName = jpaMetamodelFiltering && field.filterableField
+<%_ if (fieldsToTest.some(field => field.fieldTypeLocalTime)) { _%>
+
+    private static final DateTimeFormatter LOCAL_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
+<%_ } _%>
+<%_ for (field of fieldsToTest) {
+  const defaultValueName = 'DEFAULT_' + field.fieldNameUnderscored.toUpperCase();
+  const updatedValueName = 'UPDATED_' + field.fieldNameUnderscored.toUpperCase();
+  const smallerValueName = 'SMALLER_' + field.fieldNameUnderscored.toUpperCase();
+  const needsSmallerValueName = jpaMetamodelFiltering && field.filterableField
         && (field.fieldTypeNumeric || field.fieldTypeDuration || field.fieldTypeLocalDate || field.fieldTypeZonedDateTime);
 
-let defaultValue = 1;
-let updatedValue = 2;
+  let defaultValue = 1;
+  let updatedValue = 2;
 
-if (field.fieldValidate === true) {
-  if (field.fieldValidationMax) {
-    defaultValue = field.fieldValidateRulesMax;
-    updatedValue = parseInt(field.fieldValidateRulesMax) - 1;
-  }
-  if (field.fieldValidationMin) {
-    defaultValue = field.fieldValidateRulesMin;
-    updatedValue = parseInt(field.fieldValidateRulesMin) + 1;
-  }
-  if (field.fieldValidationMinBytes) {
-    defaultValue = field.fieldValidateRulesMinbytes;
-    updatedValue = field.fieldValidateRulesMinbytes;
-  }
-  if (field.fieldValidationMaxBytes) {
-    updatedValue = field.fieldValidateRulesMaxbytes;
-  }
-}
-
-const fieldType = field.fieldType;
-const isEnum = field.fieldIsEnum;
-let enumValue1;
-let enumValue2;
-if (isEnum) {
-  const enumValues = field.enumValues;
-  enumValue1 = enumValues[0];
-  if (enumValues.length > 1) {
-    enumValue2 = enumValues[1];
-  } else {
-    enumValue2 = enumValue1;
-  }
-}
-
-if (field.fieldTypeString || field.blobContentTypeText) {
-  // Generate Strings, using the min and max string length if they are configured
-  let sampleTextString = "";
-  let updatedTextString = "";
-  let sampleTextLength = 10;
-  if (field.fieldValidateRulesMinlength > sampleTextLength) {
-    sampleTextLength = field.fieldValidateRulesMinlength;
-  }
-  if (field.fieldValidateRulesMaxlength < sampleTextLength) {
-    sampleTextLength = field.fieldValidateRulesMaxlength;
-  }
-  for (let i = 0; i < sampleTextLength; i++) {
-    sampleTextString += "A";
-    updatedTextString += "B";
-  }
-  if (field.fieldValidateRulesPattern !== undefined) {
-    // Generate Strings, using pattern
-    try {
-      const patternRegExp = new RegExp(field.fieldValidateRulesPattern);
-      // set infinite repetitions max range
-      if (!patternRegExp.test(sampleTextString.replace(/\\"/g, '"').replace(/\\\\/g, '\\'))) {
-        const value = field.generateFakeDataFromPattern();
-        sampleTextString = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      }
-      if (!patternRegExp.test(updatedTextString.replace(/\\"/g, '"').replace(/\\\\/g, '\\'))) {
-        const value = field.generateFakeDataFromPattern();
-        updatedTextString = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      }
-    } catch (error) {
-      this.log.warn('Error generating test value for entity "' + entityClass +
-        '" field "' + field.fieldName + '" with pattern "' + field.fieldValidateRulesPattern +
-        '", generating default values for this field. Detailed error message: "' + error.message + '".');
+  if (field.fieldValidate === true) {
+    if (field.fieldValidationMax) {
+      defaultValue = field.fieldValidateRulesMax;
+      updatedValue = parseInt(field.fieldValidateRulesMax) - 1;
     }
-    if (sampleTextString === updatedTextString) {
-      updatedTextString = updatedTextString + "B";
-      this.log.warn('Randomly generated first and second test values for entity "' + entityClass +
-        '" field "' + field.fieldName + '" with pattern "' + field.fieldValidateRulesPattern +
-        '" in file "' + entityClass + 'ResourceIT" where equal, added symbol "B" to second value.');
+    if (field.fieldValidationMin) {
+      defaultValue = field.fieldValidateRulesMin;
+      updatedValue = parseInt(field.fieldValidateRulesMin) + 1;
     }
-  } _%>
+    if (field.fieldValidationMinBytes) {
+      defaultValue = field.fieldValidateRulesMinbytes;
+      updatedValue = field.fieldValidateRulesMinbytes;
+    }
+    if (field.fieldValidationMaxBytes) {
+      updatedValue = field.fieldValidateRulesMaxbytes;
+    }
+  }
+
+  const fieldType = field.fieldType;
+  const isEnum = field.fieldIsEnum;
+  let enumValue1;
+  let enumValue2;
+  if (isEnum) {
+    const enumValues = field.enumValues;
+    enumValue1 = enumValues[0];
+    if (enumValues.length > 1) {
+      enumValue2 = enumValues[1];
+    } else {
+      enumValue2 = enumValue1;
+    }
+  }
+
+  if (field.fieldTypeString || field.blobContentTypeText) {
+    // Generate Strings, using the min and max string length if they are configured
+    let sampleTextString = "";
+    let updatedTextString = "";
+    let sampleTextLength = 10;
+    if (field.fieldValidateRulesMinlength > sampleTextLength) {
+      sampleTextLength = field.fieldValidateRulesMinlength;
+    }
+    if (field.fieldValidateRulesMaxlength < sampleTextLength) {
+      sampleTextLength = field.fieldValidateRulesMaxlength;
+    }
+    for (let i = 0; i < sampleTextLength; i++) {
+      sampleTextString += "A";
+      updatedTextString += "B";
+    }
+    if (field.fieldValidateRulesPattern !== undefined) {
+      // Generate Strings, using pattern
+      try {
+        const patternRegExp = new RegExp(field.fieldValidateRulesPattern);
+        // set infinite repetitions max range
+        if (!patternRegExp.test(sampleTextString.replace(/\\"/g, '"').replace(/\\\\/g, '\\'))) {
+          const value = field.generateFakeDataFromPattern();
+          sampleTextString = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        }
+        if (!patternRegExp.test(updatedTextString.replace(/\\"/g, '"').replace(/\\\\/g, '\\'))) {
+          const value = field.generateFakeDataFromPattern();
+          updatedTextString = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        }
+      } catch (error) {
+        this.log.warn('Error generating test value for entity "' + entityClass +
+          '" field "' + field.fieldName + '" with pattern "' + field.fieldValidateRulesPattern +
+          '", generating default values for this field. Detailed error message: "' + error.message + '".');
+      }
+      if (sampleTextString === updatedTextString) {
+        updatedTextString = updatedTextString + "B";
+        this.log.warn('Randomly generated first and second test values for entity "' + entityClass +
+          '" field "' + field.fieldName + '" with pattern "' + field.fieldValidateRulesPattern +
+          '" in file "' + entityClass + 'ResourceIT" where equal, added symbol "B" to second value.');
+      }
+    } _%>
 
     private static final String <%= defaultValueName %> = "<%- sampleTextString %>";
     private static final String <%= updatedValueName %> = "<%- updatedTextString %>";
@@ -449,8 +446,8 @@ if (field.fieldTypeString || field.blobContentTypeText) {
 
     private static final <%= fieldType %> <%= defaultValueName %> = <%= fieldType %>.<%= enumValue1.name %>;
     private static final <%= fieldType %> <%= updatedValueName %> = <%= fieldType %>.<%= enumValue2.name %>;
-  <%_ }
-} _%>
+  <%_ } _%>
+<%_ } _%>
 
     private static final String ENTITY_API_URL = "/api/<%= entityApiUrl %>";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{<%= primaryKey.name %>}";
@@ -463,7 +460,7 @@ if (field.fieldTypeString || field.blobContentTypeText) {
     private static Random random = new Random();
   <%_ } _%>
   <%_ if (primaryKey.hasLong && !readOnly && updatableEntity) { _%>
-    private static AtomicLong longCount = new AtomicLong(random.nextInt() + ( 2 * Integer.MAX_VALUE ));
+    private static AtomicLong longCount = new AtomicLong(random.nextInt() + ( 2L * Integer.MAX_VALUE ));
   <%_ } else if (primaryKey.hasInteger) { _%>
     private static AtomicInteger intCount = new AtomicInteger(random.nextInt() + ( 2 * Short.MAX_VALUE ));
   <%_ } _%>
@@ -474,9 +471,9 @@ if (field.fieldTypeString || field.blobContentTypeText) {
 
     @Autowired
     private <%= entityClass %>Repository <%= entityInstance %>Repository;
-<%_ if (isUsingMapsId && (!dtoMapstruct && serviceNo) && mapsIdEntity !== 'User') { _%>
+<%_ if (isUsingMapsId && (!dtoMapstruct && serviceNo) && mapsIdAssoc?.otherEntity?.entityNameCapitalized !== 'User') { _%>
     @Autowired
-    private <%= mapsIdEntity %>Repository <%= mapsIdRepoInstance %>;
+    private <%= mapsIdAssoc?.otherEntity?.entityNameCapitalized %>Repository <%= mapsIdAssoc?.otherEntity?.entityInstance %>Repository;
 <%_ } _%>
 <%_ if (hasUserRepository) { _%>
 
@@ -527,7 +524,7 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
 <%_ });
 }_%>
 <%_ ['DEFAULT_', 'UPDATED_'].forEach((fieldStatus) => { _%>
-<%_   const createInstance = fieldStatus === 'UPDATED_' ? `updated${persistClass}` : persistInstance;  _%>
+<%_  const createInstance = fieldStatus === 'UPDATED_' ? `updated${persistClass}` : persistInstance; _%>
     /**
      * Create an <% if (fieldStatus === 'UPDATED_') { %>updated <% } %>entity for this test.
      *
@@ -551,7 +548,7 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
     <%_ } _%>;
     <%_ if (!anyRelationshipIsRequired) { _%>
     }
-    <%_   return; _%>
+    <%_  return; _%>
     <%_ } _%>
   <%_ } else { _%>
         <%= persistClass %> <%= createInstance %> = new <%= persistClass %>();
@@ -574,7 +571,6 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
     const otherEntity = relationship.otherEntity;
     const relationshipValidate = relationship.relationshipValidate;
     const otherEntityName = relationship.otherEntityName;
-    const otherEntityNameCapitalized = relationship.otherEntityNameCapitalized;
     const relationshipNameCapitalizedPlural = relationship.relationshipNameCapitalizedPlural;
     const relationshipNameCapitalized = relationship.relationshipNameCapitalized;
     const mapsIdUse = relationship.id;
@@ -582,7 +578,7 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
         // Add required entity
       <%_ if (alreadyGeneratedEntities.indexOf(otherEntityName) == -1) { _%>
         <%_ if (relationship.otherEntityUser) { /* TODO or other entity has no unique fields */ _%>
-        <%= relationship.otherEntity.persistClass %> <%= otherEntityName %> = <%= createEntityPrefix %><%= otherEntityNameCapitalized %>ResourceIT.createEntity(<% if (databaseTypeSql && otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
+        <%= relationship.otherEntity.persistClass %> <%= otherEntityName %> = <%= createEntityPrefix %><%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.createEntity(<% if (databaseTypeSql && otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
           <%_ if (databaseTypeSql && !reactive) { _%>
         em.persist(<%= otherEntityName %>);
         em.flush();
@@ -596,7 +592,7 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
             <%_ if (!isUsingMapsId || fieldStatus !== "UPDATED_") { _%>
         if (TestUtil.findAll(em, <%= relationship.otherEntity.persistClass %>.class).isEmpty()) {
             <%_ } _%>
-            <%= otherEntityName %> = <%= createEntityPrefix %><%= otherEntityNameCapitalized %>ResourceIT.create<% if (fieldStatus === 'UPDATED_') { %>Updated<% } %>Entity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
+            <%= otherEntityName %> = <%= createEntityPrefix %><%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.create<% if (fieldStatus === 'UPDATED_') { %>Updated<% } %>Entity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
             em.persist(<%= otherEntityName %>);
             em.flush();
             <%_ if (!isUsingMapsId || fieldStatus !== "UPDATED_") { _%>
@@ -605,7 +601,7 @@ filterTestableRelationships.filter(rel => !rel.otherEntity.builtInUser).forEach(
         }
             <%_ } _%>
           <%_ } else { _%>
-        <%= otherEntityName %> = <%= createEntityPrefix %><%= otherEntityNameCapitalized %>ResourceIT.create<% if (fieldStatus === 'UPDATED_') { %>Updated<% } %>Entity(<% if (databaseType === 'sql' && otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
+        <%= otherEntityName %> = <%= createEntityPrefix %><%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.create<% if (fieldStatus === 'UPDATED_') { %>Updated<% } %>Entity(<% if (databaseType === 'sql' && otherEntity.anyRelationshipIsRequired) { %>em<% } %>)<%= createEntityPostfix %>;
           <%_ } _%>
           <%_ if (databaseTypeMongodb) { _%>
         <%= otherEntityName %>.set<%= primaryKey.nameCapitalized %>("fixed-id-for-tests");
@@ -640,7 +636,7 @@ _%>
         }
   <%_ relationships.forEach(function(rel) {
     if ((rel.relationshipValidate || rel.id) && !alreadyGeneratedDeletionCalls.includes(rel.otherEntityName)) { _%>
-        <%= rel.otherEntityNameCapitalized %>ResourceIT.deleteEntities(em);
+        <%= rel.otherEntity.entityNameCapitalized %>ResourceIT.deleteEntities(em);
     <%_ alreadyGeneratedDeletionCalls.push(rel.otherEntityName);
     }
   }); _%>
@@ -649,18 +645,18 @@ _%>
 <%_ } _%>
 <%_ if (reactive && authenticationUsesCsrf) { _%>
     @BeforeEach
-    public void setupCsrf() {
+    void setupCsrf() {
         webTestClient = webTestClient.mutateWith(csrf());
     }
 
 <%_ } _%>
     @BeforeEach
-    public void initTest() {
+    void initTest() {
         <%= persistInstance %> = createEntity(<% if (databaseTypeSql && anyRelationshipIsRequired) { %>em<% } %>);
     }
 
     @AfterEach
-    public void cleanup() {
+    void cleanup() {
         if (inserted<%= persistClass %> != null) {
             <%= entityInstance %>Repository.delete(inserted<%= persistClass %>)<%= reactorBlock %>;
 <%_ if (searchEngineElasticsearch) { _%>
@@ -668,7 +664,7 @@ _%>
 <%_ } _%>
             inserted<%= persistClass %> = null;
         }
-<%_ if (databaseTypeSql && reactive) {  _%>
+<%_ if (databaseTypeSql && reactive) { _%>
         deleteEntities(em);
 <%_ } _%>
 <%_ if (requiresDeleteAllUsers && hasUserRepository) { _%>
@@ -811,12 +807,11 @@ _%>
     <%_ for (relationship of relationships) {
       const otherEntity = relationship.otherEntity;
       const otherEntityName = relationship.otherEntityName;
-      const otherEntityNameCapitalized = relationship.otherEntityNameCapitalized;
       const mapsIdUse = relationship.id;
       if (mapsIdUse) { _%>
         // Add a new parent entity
         <%_ if (alreadyGeneratedEntities.indexOf(otherEntityName) == -1) { _%>
-        <%= relationship.otherEntity.persistClass %> <%= otherEntityName %> = <%= otherEntityNameCapitalized %>ResourceIT.create<% if (!relationship.otherEntityUser) { _%>Updated<%_ } %>Entity(<% if (databaseTypeSql && otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
+        <%= relationship.otherEntity.persistClass %> <%= otherEntityName %> = <%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.create<% if (!relationship.otherEntityUser) { _%>Updated<%_ } %>Entity(<% if (databaseTypeSql && otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
           <%_ if (databaseTypeSql && !reactive) { _%>
         em.persist(<%= otherEntityName %>);
         em.flush();
@@ -834,8 +829,8 @@ _%>
         em.detach(updated<%= persistClass %>);
     <%_ } _%>
 
-        // Update the <%= mapsIdEntity %> with new association value
-        updated<%= persistClass %>.set<%= mapsIdEntity %>(<%= alreadyGeneratedEntities.pop() %>);
+        // Update the <%= mapsIdAssoc?.otherEntity?.entityNameCapitalized %> with new association value
+        updated<%= persistClass %>.set<%= mapsIdAssoc?.otherEntity?.entityNameCapitalized %>(<%= alreadyGeneratedEntities.pop() %>);
     <%_ if (dtoMapstruct) { _%>
         <%= dtoClass %> updated<%= dtoClass %> = <%= entityInstance %>Mapper.toDto(updated<%= persistClass %>);
         assertThat(updated<%= dtoClass %>).isNotNull();
@@ -865,7 +860,7 @@ _%>
          * Validate the id for MapsId, the ids must be same
          * Uncomment the following line for assertion. However, please note that there is a known issue and uncommenting will fail the test.
          * Please look at https://github.com/jhipster/generator-jhipster/issues/9100. You can modify this test as necessary.
-         * assertThat(test<%= entityClass %>.get<%= primaryKey.nameCapitalized %>()).isEqualTo(test<%= entityClass %>.get<%= mapsIdEntity %>().get<%= primaryKey.nameCapitalized %>());
+         * assertThat(test<%= entityClass %>.get<%= primaryKey.nameCapitalized %>()).isEqualTo(test<%= entityClass %>.get<%= mapsIdAssoc?.otherEntity?.entityNameCapitalized %>().get<%= primaryKey.nameCapitalized %>());
          */
     <%_ if (searchEngineElasticsearch) { _%>
         int searchDatabaseSizeAfter = IterableUtil.sizeOf(<%= entityInstance %>SearchRepository.findAll()<%= callListBlock %>);
@@ -892,7 +887,6 @@ _%>
 
         // Create the <%= entityClass %>, which fails.<% if (dtoMapstruct) { %>
         <%= dtoClass %> <%= dtoInstance %> = <%= entityInstance %>Mapper.toDto(<%= persistInstance %>);<% } %>
-
 
         <%_ if (reactive) { _%>
         webTestClient.post().uri(ENTITY_API_URL)
@@ -1000,6 +994,7 @@ _%>
   if (field.fieldTypeFloat) { %>.doubleValue()<% } else
   if (field.fieldTypeBigDecimal) { %>)<% } else
   if (field.fieldTypeZonedDateTime) { %>)<% } else
+  if (field.fieldTypeLocalTime) { %>.format(LOCAL_DATE_TIME_FORMAT)<% } else
   if (
     !field.fieldTypeString &&
     !field.javaFieldTypeString &&
@@ -1091,6 +1086,7 @@ _%>
   if (field.fieldTypeFloat) { %>.doubleValue()<% } else
   if (field.fieldTypeBigDecimal) { %>)<% } else
   if (field.fieldTypeZonedDateTime) { %>)<% } else
+  if (field.fieldTypeLocalTime) { %>.format(LOCAL_DATE_TIME_FORMAT)<% } else
   if (
     !field.fieldTypeString &&
     !field.javaFieldTypeString &&
@@ -1099,7 +1095,7 @@ _%>
     !field.fieldTypeDouble
   ) { %>.toString()<% } %>))<%_ } _%>;
     }
-<%_ if (jpaMetamodelFiltering) {  %>
+<%_ if (jpaMetamodelFiltering) { %>
 
     @Test<%= transactionalAnnotation %>
     void get<%= entityClassPlural %>ByIdFiltering() <% if (!reactive) { %>throws Exception <% } %>{
@@ -1261,12 +1257,12 @@ _%>
         <%= relationship.otherEntity.persistClass %> <%= relationship.relationshipFieldName %>;
         if (TestUtil.findAll(em, <%= relationship.otherEntity.persistClass %>.class).isEmpty()) {
             <%= entityInstance %>Repository.saveAndFlush(<%= persistInstance %>);
-            <%= relationship.relationshipFieldName %> = <%= createEntityPrefix %><%= relationship.otherEntityNameCapitalized %>ResourceIT.createEntity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
+            <%= relationship.relationshipFieldName %> = <%= createEntityPrefix %><%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.createEntity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
         } else {
             <%= relationship.relationshipFieldName %> = TestUtil.findAll(em, <%= relationship.otherEntity.persistClass %>.class).get(0);
         }
       <%_ } else { _%>
-        <%= relationship.otherEntity.persistClass %> <%= relationship.relationshipFieldName %> = <%= relationship.otherEntityNameCapitalized %>ResourceIT.createEntity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
+        <%= relationship.otherEntity.persistClass %> <%= relationship.relationshipFieldName %> = <%= relationship.otherEntity.entityNameCapitalized %>ResourceIT.createEntity(<% if (relationship.otherEntity.anyRelationshipIsRequired) { %>em<% } %>);
       <%_ } _%>
       <%_ if(reactive) { _%>
         <%= relationship.otherEntity.persistInstance %>Repository.<%= saveMethod %>(<%= relationship.relationshipFieldName %>)<%= callBlock %>;
@@ -1335,6 +1331,7 @@ _%>
       if (field.fieldTypeFloat) { %>.doubleValue()<% } else
       if (field.fieldTypeBigDecimal) { %>)<% } else
       if (field.fieldTypeZonedDateTime) { %>)<% } else
+      if (field.fieldTypeLocalTime) { %>.format(LOCAL_DATE_TIME_FORMAT)<% } else
       if (
         !field.fieldTypeString &&
         !field.javaFieldTypeString &&
@@ -1382,6 +1379,7 @@ _%>
     if (field.fieldTypeFloat) { %>.doubleValue()<% } else
     if (field.fieldTypeBigDecimal) { %>)<% } else
     if (field.fieldTypeZonedDateTime) { %>)<% } else
+    if (field.fieldTypeLocalTime) { %>.format(LOCAL_DATE_TIME_FORMAT)<% } else
     if (
       !field.fieldTypeString &&
       !field.javaFieldTypeString &&
@@ -1442,7 +1440,7 @@ _%>
     }
   <%_ } _%>
 
-<%_  } _%>
+<%_ } _%>
     @Test<%= transactionalAnnotation %>
     void getNonExisting<%= entityClass %>() <% if (!reactive) { %>throws Exception <% } %>{
         // Get the <%= entityInstance %>
@@ -1907,6 +1905,7 @@ _%>
   if (field.fieldTypeFloat) { %>.doubleValue()<% } else
   if (field.fieldTypeBigDecimal) { %>)<% } else
   if (field.fieldTypeZonedDateTime) { %>)<% } else
+  if (field.fieldTypeLocalTime) { %>.format(LOCAL_DATE_TIME_FORMAT)<% } else
   if (
     !field.fieldTypeString &&
     !field.fieldTypeBoolean &&

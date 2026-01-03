@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -18,12 +18,15 @@
  */
 
 import { before, describe, it } from 'esmocha';
+
 import { expect } from 'chai';
-import JDLUnaryOption from '../../core/models/jdl-unary-option.js';
-import UnaryOptionValidator from '../validators/unary-option-validator.js';
+
+import JDLUnaryOption from '../../core/models/jdl-unary-option.ts';
+
+import UnaryOptionValidator from './unary-option-validator.ts';
 
 describe('jdl - UnaryOptionValidator', () => {
-  let validator;
+  let validator: UnaryOptionValidator;
 
   before(() => {
     validator = new UnaryOptionValidator();
@@ -32,6 +35,7 @@ describe('jdl - UnaryOptionValidator', () => {
   describe('validate', () => {
     describe('when not passing anything', () => {
       it('should fail', () => {
+        // @ts-expect-error invalid api test
         expect(() => validator.validate()).to.throw(/^No unary option\.$/);
       });
     });
@@ -43,6 +47,7 @@ describe('jdl - UnaryOptionValidator', () => {
       });
       describe('without any of its required attributes', () => {
         it('should fail', () => {
+          // @ts-expect-error invalid api test
           expect(() => validator.validate({})).to.throw(
             /^The unary option attributes name, entityNames, excludedNames, getType were not found\.$/,
           );

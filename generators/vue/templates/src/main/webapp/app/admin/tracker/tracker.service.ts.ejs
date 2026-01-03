@@ -5,6 +5,9 @@ import { map } from 'rxjs';
 import { RxStomp, RxStompState } from '@stomp/rx-stomp';
 import Cookies from 'js-cookie';
 
+import { CSRF_TOKEN_COOKIE_NAME, CSRF_TOKEN_HEADER_NAME } from '@/shared/jhipster/constants';
+import { encodeCsrfToken } from '@/shared/jhipster/encode-csrf-token';
+ 
 const DESTINATION_TRACKER = '/topic/tracker';
 const DESTINATION_ACTIVITY = '/topic/activity';
 
@@ -37,7 +40,7 @@ export const useTrackerService = ({ stomp, authenticated }: { stomp?: RxStomp; a
 };
 
 export default class TrackerService {
-  public status = ref<'open' | 'connecting' | 'closing' | 'closed'>('closed');
+  status = ref<'open' | 'connecting' | 'closing' | 'closed'>('closed');
   private rxStomp: RxStomp;
 
   constructor({ stomp }: { stomp?: RxStomp }) {
@@ -74,12 +77,12 @@ export default class TrackerService {
     });
   }
 
-  public connect(): void {
+  connect(): void {
     this.updateCredentials();
     this.rxStomp.activate();
   }
 
-  public async disconnect(): Promise<void> {
+  async disconnect(): Promise<void> {
     await this.rxStomp.deactivate();
   }
 <%_ if (authenticationTypeJwt) { _%>
@@ -115,20 +118,20 @@ export default class TrackerService {
       },
 <%_ if (authenticationUsesCsrf) { _%>
       connectHeaders: {
-        ['X-XSRF-TOKEN']: Cookies.get('JSESSIONID') || Cookies.get('XSRF-TOKEN'),
+        [CSRF_TOKEN_HEADER_NAME]: encodeCsrfToken(Cookies.get(CSRF_TOKEN_COOKIE_NAME)),
       },
 <%_ } _%>
     });
   }
 
-  public sendActivity(page: string): void {
+  sendActivity(page: string): void {
     this.rxStomp.publish({
       destination: DESTINATION_ACTIVITY,
       body: JSON.stringify({ page }),
     });
   }
 
-  public subscribe(observer) {
+  subscribe(observer) {
     return this.rxStomp
       .watch(DESTINATION_TRACKER)
       .pipe(map(imessage => JSON.parse(imessage.body)))

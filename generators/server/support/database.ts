@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,12 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
-import { databaseTypes, fieldTypes } from '../../../lib/jhipster/index.js';
-import { databaseData } from '../../spring-data-relational/support/index.js';
-import type { ValidationResult } from '../../base/api.js';
-import { hibernateSnakeCase } from './string.js';
+import { databaseTypes, fieldTypes } from '../../../lib/jhipster/index.ts';
+import type { ValidationResult } from '../../base-core/api.d.ts';
+import databaseData from '../../spring-data/generators/relational/support/database-data.ts';
+
+import { hibernateSnakeCase } from './string.ts';
 
 const dbTypes = fieldTypes;
 const { STRING: TYPE_STRING, LONG: TYPE_LONG, UUID: TYPE_UUID } = dbTypes.CommonDBTypes;
@@ -108,7 +109,7 @@ export const SQL_DB_OPTIONS = [
  * Get DB type from DB value
  * @param {string} db - db
  */
-export function getDBTypeFromDBValue(db) {
+export function getDBTypeFromDBValue(db: string): string {
   if (SQL_DB_OPTIONS.map(db => db.value).includes(db)) {
     return SQL;
   }
@@ -165,7 +166,7 @@ export function calculateDbName(
   { prodDatabaseType, noSnakeCase = false, prefix = '', suffix = '', skipCheckLengthOfIdentifier = false }: ConstraintName = {},
 ): ValidationResult & { value: string } {
   const separator = '__';
-  const convertCase = noSnakeCase ? str => str : hibernateSnakeCase;
+  const convertCase = noSnakeCase ? (str: string) => str : hibernateSnakeCase;
   const constraintName = `${prefix}${convertCase(tableOrEntityName)}${separator}${convertCase(columnOrRelationshipName)}${suffix}`;
   const { name, constraintNameMaxLength } = (prodDatabaseType && databaseData[prodDatabaseType]) || {};
   if (constraintNameMaxLength && constraintName.length > constraintNameMaxLength && !skipCheckLengthOfIdentifier) {
@@ -213,8 +214,8 @@ type JoinTableName = {
  * get a table name for joined tables in JHipster preferred style.
  */
 export function getJoinTableName(
-  entityName,
-  relationshipName,
+  entityName: string,
+  relationshipName: string,
   { prodDatabaseType, skipCheckLengthOfIdentifier }: JoinTableName = {},
 ): ValidationResult & { value: string } {
   const separator = '__';

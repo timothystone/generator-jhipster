@@ -1,22 +1,19 @@
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { getDefaultRuntime } from '../runtime.js';
-import { parseFromContent as originalParseFromContent, parseFromFiles as originalParseFromFiles } from '../readers/jdl-reader.js';
-import { parseFromConfigurationObject as originalParseFromConfigurationObject } from '../../converters/parsed-jdl-to-jdl-object/parsed-jdl-to-jdl-object-converter.js';
+import path from 'node:path';
+
+import { getDefaultJDLApplicationConfig, getDefaultRuntime } from '../../../jdl-config/jhipster-jdl-config.ts';
+import type { JHipsterYoRcContentAndJDLWrapper } from '../../converters/json-to-jdl-application-converter.ts';
+import { convertApplicationsToJDL as originalConvertApplicationsToJDL } from '../../converters/json-to-jdl-application-converter.ts';
+import { convertApplications as originalConvertApplications } from '../../converters/parsed-jdl-to-jdl-object/application-converter.ts';
+import { parseFromConfigurationObject as originalParseFromConfigurationObject } from '../../converters/parsed-jdl-to-jdl-object/parsed-jdl-to-jdl-object-converter.ts';
 import {
   createImporterFromContent as originalCreateImporterFromContent,
   createImporterFromFiles as originalCreateImporterFromFiles,
-} from '../../jdl-importer.js';
-import type { ParsedJDLApplication, ParsedJDLRoot } from '../types/parsed.js';
-import { createJDLLinterFromContent as originalCreateJDLLinterFromContent } from '../linters/jdl-linter.js';
-import { convertApplications as originalConvertApplications } from '../../converters/parsed-jdl-to-jdl-object/application-converter.js';
-import { createJDLApplication as originalCreateJDLApplication } from '../models/jdl-application-factory.js';
-import type { JHipsterYoRcContentAndJDLWrapper } from '../../converters/json-to-jdl-application-converter.js';
-import { convertApplicationsToJDL as originalConvertApplicationsToJDL } from '../../converters/json-to-jdl-application-converter.js';
-import { getDefaultJDLApplicationConfig } from '../../../command/jdl.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+} from '../../jdl-importer.ts';
+import { createJDLLinterFromContent as originalCreateJDLLinterFromContent } from '../linters/jdl-linter.ts';
+import { createJDLApplication as originalCreateJDLApplication } from '../models/jdl-application-factory.ts';
+import { parseFromContent as originalParseFromContent, parseFromFiles as originalParseFromFiles } from '../readers/jdl-reader.ts';
+import type { ParsedJDLApplication, ParsedJDLRoot } from '../types/parsed.ts';
+import type { JDLRuntime } from '../types/runtime.ts';
 
 const runtime = getDefaultRuntime();
 
@@ -32,10 +29,10 @@ export const parseFromContent = (content: string) => originalParseFromContent(co
 export const createJDLLinterFromContent = (content: string) => originalCreateJDLLinterFromContent(content, runtime);
 
 export const convertApplications = (applications: ParsedJDLApplication[]) => originalConvertApplications(applications, runtime);
-export const createJDLApplication = (config: any, namespaceConfigs?: Record<string, Record<string, any>> | undefined) =>
-  originalCreateJDLApplication(config, namespaceConfigs, runtime);
+export const createJDLApplication = (config: any, runtime: JDLRuntime, namespaceConfigs?: Record<string, Record<string, any>>) =>
+  originalCreateJDLApplication(config, runtime, namespaceConfigs);
 
 export const convertApplicationsToJDL = (applications: JHipsterYoRcContentAndJDLWrapper) =>
   originalConvertApplicationsToJDL(applications, runtime);
 
-export const getTestFile = (...args: string[]) => path.join(__dirname, 'files', ...args);
+export const getTestFile = (...args: string[]) => path.join(import.meta.dirname, 'files', ...args);

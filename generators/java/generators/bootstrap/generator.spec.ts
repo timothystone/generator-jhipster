@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,18 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { basename, dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { before, describe, expect, it } from 'esmocha';
+import { basename, resolve } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.js';
-import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.ts';
+import { testBootstrapEntities } from '../../../../test/support/bootstrap-tests.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './generator.ts';
 
-const generator = `${basename(resolve(__dirname, '../../'))}:${basename(__dirname)}`;
+const generator = `${basename(resolve(import.meta.dirname, '../../'))}:${basename(import.meta.dirname)}`;
 
 describe(`generator - ${generator}`, () => {
   shouldSupportFeatures(Generator);
@@ -35,17 +33,23 @@ describe(`generator - ${generator}`, () => {
 
   describe('with default config', () => {
     before(async () => {
-      await helpers.runJHipster(generator).withJHipsterConfig();
+      await helpers.runJHipster(generator).withMockedJHipsterGenerators().withMockedSource().withSharedApplication({}).withJHipsterConfig({
+        skipClient: true,
+      });
     });
 
     it('should match files snapshot', () => {
       expect(result.getStateSnapshot()).toMatchSnapshot();
     });
+
+    it('should call source snapshot', () => {
+      expect(result.sourceCallsArg).toMatchSnapshot();
+    });
+
+    it('should compose with generators', () => {
+      expect(result.composedMockedGenerators).toMatchInlineSnapshot(`[]`);
+    });
   });
 
-  it('packageName with reserved keyword', async () => {
-    await expect(helpers.runJHipster(generator).withJHipsterConfig({ packageName: 'com.public.myapp' })).rejects.toThrow(
-      'The package name "com.public.myapp" contains a reserved Java keyword "public".',
-    );
-  });
+  testBootstrapEntities(generator, { skipClient: true });
 });

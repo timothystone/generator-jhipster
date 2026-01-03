@@ -25,25 +25,25 @@ concurrency:
 on:
   pull_request:
     types: [closed, opened, synchronize, reopened]
-    branches:
-      - '*'
 env:
   FORCE_COLOR: 2
 jobs:
   build-matrix:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: >-
       contains(github.event.pull_request.labels.*.name, 'pr: docker-compose integration')
     outputs:
       matrix: ${{ steps.build.outputs.matrix }}
       empty-matrix: ${{ steps.build.outputs.empty-matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 1
-      - uses: actions/setup-node@v4
+      - run: echo "node-version=$(cat ${{ github.workspace }}/generators/init/resources/.node-version)" >> $GITHUB_OUTPUT
+        id: node-version
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: ${{ steps.node-version.outputs.node-version }}
       - run: npm ci --ignore-scripts
       - id: build
         run: bin/jhipster.cjs github-build-matrix docker-compose-integration --event-name ${{ github.event_name }}
@@ -63,11 +63,11 @@ jobs:
       # Install all tools and check configuration
       #----------------------------------------------------------------------
       - name: 'SETUP: Checkout generator-jhipster'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: generator-jhipster
           fetch-depth: 2
-      - uses: jhipster/actions/setup-runner@v0
+      - uses: jhipster/actions/setup-runner@v1
         with:
           node-version: ${{ matrix.node-version }}
           java-version: ${{ matrix.java-version }}
@@ -77,7 +77,7 @@ jobs:
           binary-dir: ${{ github.workspace }}/generator-jhipster/bin
       - run: npm ci --ignore-scripts
         working-directory: ${{ github.workspace }}/generator-jhipster
-      - uses: jhipster/actions/build-jhipster-bom@v0
+      - uses: jhipster/actions/build-jhipster-bom@v1
         with:
           jhipster-bom-ref: main
       - name: Generate project
@@ -91,7 +91,7 @@ jobs:
       - run: ${{ matrix.cmd-e2e }}
         id: e2e
       - name: Upload cypress screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always() && steps.e2e.outcome == 'failure'
         with:
           name: screenshots-${{ matrix.name }}

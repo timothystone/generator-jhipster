@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,48 +17,41 @@
  * limitations under the License.
  */
 import { lowerFirst } from 'lodash-es';
-import JDLObject from '../../core/models/jdl-object.js';
-import JDLBinaryOption from '../../core/models/jdl-binary-option.js';
-import { binaryOptions } from '../../core/built-in-options/index.js';
 
-import type JDLApplication from '../../core/models/jdl-application.js';
-import type JDLField from '../../core/models/jdl-field.js';
-import type JDLValidation from '../../core/models/jdl-validation.js';
-import type { JDLEntity } from '../../core/models/index.js';
-import type { JDLRuntime } from '../../core/types/runtime.js';
+import { APPLICATION_TYPE_MICROSERVICE } from '../../../core/application-types.ts';
+import { binaryOptions } from '../../core/built-in-options/index.ts';
+import type { JDLEntity } from '../../core/models/index.ts';
+import type JDLApplication from '../../core/models/jdl-application.ts';
+import JDLBinaryOption from '../../core/models/jdl-binary-option.ts';
+import type JDLField from '../../core/models/jdl-field.ts';
+import JDLObject from '../../core/models/jdl-object.ts';
+import type JDLValidation from '../../core/models/jdl-validation.ts';
 import type {
   ParsedJDLAnnotation,
-  ParsedJDLApplication,
   ParsedJDLApplications,
   ParsedJDLEntity,
   ParsedJDLEntityField,
   ParsedJDLRoot,
-} from '../../core/types/parsed.js';
-import { applicationTypes } from '../../../jhipster/index.js';
-import { convertApplications } from './application-converter.js';
-import { convertEntities } from './entity-converter.js';
-import { convertEnums } from './enum-converter.js';
-import { convertField } from './field-converter.js';
-import { convertValidations } from './validation-converter.js';
-import { convertOptions } from './option-converter.js';
-import { convertRelationships } from './relationship-converter.js';
-import { convertDeployments } from './deployment-converter.js';
+} from '../../core/types/parsed.ts';
+import type { JDLRuntime } from '../../core/types/runtime.ts';
+
+import { convertApplications } from './application-converter.ts';
+import { convertDeployments } from './deployment-converter.ts';
+import { convertEntities } from './entity-converter.ts';
+import { convertEnums } from './enum-converter.ts';
+import { convertField } from './field-converter.ts';
+import { convertOptions } from './option-converter.ts';
+import { convertRelationships } from './relationship-converter.ts';
+import { convertValidations } from './validation-converter.ts';
 
 let parsedContent: ParsedJDLApplications;
 let configuration: ParsedJDLRoot;
 let jdlObject: JDLObject;
 let entityNames: string[];
-let applicationsPerEntityName: Map<string, ParsedJDLApplication>;
+let applicationsPerEntityName: Record<string, JDLApplication[]> = {};
 
 /**
  * Converts the intermediate parsedContent to a JDLObject from a configuration object.
- * @param {Object} configurationObject - The configuration object.
- * @param {Object} configurationObject.document - Deprecated set parsedContent instead, the parsed JDL content
- * @param {Object} configurationObject.parsedContent - The parsed JDL content
- * @param {String} configurationObject.applicationType - The application's type
- * @param {String} configurationObject.applicationName - The application's name
- * @param {String} configurationObject.databaseType - The application's database type
- * @return the built JDL object.
  */
 export function parseFromConfigurationObject(configurationObject: ParsedJDLRoot, runtime: JDLRuntime): JDLObject {
   parsedContent = configurationObject.parsedContent || configurationObject.document;
@@ -79,7 +72,7 @@ function init(passedConfiguration: ParsedJDLRoot) {
   configuration = passedConfiguration;
   jdlObject = new JDLObject();
   entityNames = parsedContent.entities.map(entity => entity.name);
-  applicationsPerEntityName = new Map();
+  applicationsPerEntityName = {};
 }
 
 function fillApplications(runtime: JDLRuntime): void {
@@ -94,7 +87,7 @@ function fillApplications(runtime: JDLRuntime): void {
 
 function fillApplicationsPerEntityName(application: JDLApplication): void {
   application.forEachEntityName((entityName: string) => {
-    applicationsPerEntityName[entityName] = applicationsPerEntityName[entityName] || [];
+    applicationsPerEntityName[entityName] ??= [];
     applicationsPerEntityName[entityName].push(application);
   });
 }
@@ -123,8 +116,8 @@ function fillClassesAndFields(): void {
 function getJDLFieldsFromParsedEntity(entity: ParsedJDLEntity): JDLField[] {
   const fields: JDLField[] = [];
   const arr = entity.body || [];
-  for (let i = 0; i < arr.length; i++) {
-    const field = arr[i];
+  for (const item of arr) {
+    const field = item;
     const jdlField = convertField(field);
     jdlField.validations = getValidations(field);
     jdlField.options = convertAnnotationsToOptions(field.annotations || []);
@@ -134,10 +127,13 @@ function getJDLFieldsFromParsedEntity(entity: ParsedJDLEntity): JDLField[] {
 }
 
 function getValidations(field: ParsedJDLEntityField): Record<string, JDLValidation> {
-  return convertValidations(field.validations, getConstantValueFromConstantName).reduce((jdlValidations, jdlValidation) => {
-    jdlValidations[jdlValidation.name] = jdlValidation;
-    return jdlValidations;
-  }, {});
+  return convertValidations(field.validations, getConstantValueFromConstantName).reduce(
+    (jdlValidations, jdlValidation) => {
+      jdlValidations[jdlValidation.name] = jdlValidation;
+      return jdlValidations;
+    },
+    {} as Record<string, JDLValidation>,
+  );
 }
 
 function getConstantValueFromConstantName(constantName: string): string {
@@ -156,10 +152,10 @@ function fillAssociations(): void {
 function convertAnnotationsToOptions(
   annotations: ParsedJDLAnnotation[],
 ): Record<string, boolean | string | number | string[] | boolean[] | number[]> {
-  const result = {};
+  const result: Record<string, boolean | string | number | any[]> = {};
   annotations.forEach(annotation => {
     const annotationName = lowerFirst(annotation.optionName);
-    const value = annotation.optionValue ? annotation.optionValue : true;
+    const value = annotation.optionValue ?? true;
     if (annotationName in result) {
       const previousValue = result[annotationName];
       if (Array.isArray(previousValue)) {
@@ -177,7 +173,7 @@ function convertAnnotationsToOptions(
 }
 
 function fillOptions(): void {
-  if (configuration.applicationType === applicationTypes.MICROSERVICE && !parsedContent.options.microservice) {
+  if (configuration.applicationType === APPLICATION_TYPE_MICROSERVICE && !parsedContent.options.microservice) {
     globallyAddMicroserviceOption(configuration.applicationName!);
   }
   fillUnaryAndBinaryOptions();
@@ -196,7 +192,7 @@ function globallyAddMicroserviceOption(applicationName: string): void {
 
 function fillUnaryAndBinaryOptions(): void {
   // TODO: move it to another file? it may not be the parser's responsibility to do it
-  if (configuration.applicationType === applicationTypes.MICROSERVICE) {
+  if (configuration.applicationType === APPLICATION_TYPE_MICROSERVICE) {
     jdlObject.addOption(
       new JDLBinaryOption({
         name: binaryOptions.Options.CLIENT_ROOT_FOLDER,

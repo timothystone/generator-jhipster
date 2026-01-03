@@ -1,6 +1,5 @@
-// @ts-nocheck
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -20,254 +19,198 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import chalk from 'chalk';
-import { applicationTypes, monitoringTypes, serviceDiscoveryTypes } from '../../../lib/jhipster/index.js';
-import { convertSecretToBase64 } from '../../base/support/index.js';
-import { loadConfigs } from './docker-base.js';
 
-const { MICROSERVICE, MONOLITH, GATEWAY } = applicationTypes;
+import chalk from 'chalk';
+
+import { APPLICATION_TYPE_GATEWAY, APPLICATION_TYPE_MICROSERVICE, APPLICATION_TYPE_MONOLITH } from '../../../lib/core/application-types.ts';
+import { monitoringTypes, serviceDiscoveryTypes } from '../../../lib/jhipster/index.ts';
+import { asPromptingTask } from '../../base-application/support/index.ts';
+import type CoreGenerator from '../../base-core/generator.ts';
+import type { BaseKubernetesGenerator } from '../../kubernetes/generator.ts';
+import { asPromptingWorkspacesTask } from '../support/task-type-inference.ts';
+
 const { PROMETHEUS } = monitoringTypes;
 const monitoring = monitoringTypes;
 
 const NO_MONITORING = monitoring.NO;
 const { CONSUL, EUREKA, NO: NO_SERVICE_DISCOVERY } = serviceDiscoveryTypes;
 
-export default {
-  askForApplicationType,
-  askForGatewayType,
-  askForPath,
-  askForApps,
-  askForClustersMode,
-  askForMonitoring,
-  askForServiceDiscovery,
-  askForAdminPassword,
-  askForDockerRepositoryName,
-  askForDockerPushCommand,
-  loadConfigs,
-};
-
 /**
  * Ask For Application Type
  */
-async function askForApplicationType() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForApplicationType = asPromptingTask(async function askForApplicationType({ control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const prompts = [
-    {
-      type: 'list',
-      name: 'deploymentApplicationType',
-      message: 'Which *type* of application would you like to deploy?',
-      choices: [
-        {
-          value: MONOLITH,
-          name: 'Monolithic application',
-        },
-        {
-          value: MICROSERVICE,
-          name: 'Microservice application',
-        },
-      ],
-      default: MONOLITH,
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.deploymentApplicationType = props.deploymentApplicationType;
-}
-
-/**
- * Ask For Gateway Type
- */
-async function askForGatewayType() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
-  if (this.deploymentApplicationType !== MICROSERVICE) return;
-
-  const prompts = [
-    {
-      type: 'list',
-      name: 'gatewayType',
-      message: 'Which *type* of gateway would you like to use?',
-      choices: [
-        {
-          value: 'SpringCloudGateway',
-          name: 'JHipster gateway based on Spring Cloud Gateway',
-        },
-      ],
-      default: 'SpringCloudGateway',
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.gatewayType = props.gatewayType;
-}
+  await this.prompt(
+    [
+      {
+        type: 'select',
+        name: 'deploymentApplicationType',
+        message: 'Which *type* of application would you like to deploy?',
+        choices: [
+          {
+            value: APPLICATION_TYPE_MONOLITH,
+            name: 'Monolithic application',
+          },
+          {
+            value: APPLICATION_TYPE_MICROSERVICE,
+            name: 'Microservice application',
+          },
+        ],
+        default: APPLICATION_TYPE_MONOLITH,
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Path
  */
-async function askForPath() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForPath = asPromptingTask(async function askForPath(this: BaseKubernetesGenerator, { control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const deploymentApplicationType = this.deploymentApplicationType;
+  const deploymentApplicationType = this.jhipsterConfigWithDefaults.deploymentApplicationType;
   let messageAskForPath;
-  if (deploymentApplicationType === MONOLITH) {
+  if (deploymentApplicationType === APPLICATION_TYPE_MONOLITH) {
     messageAskForPath = 'Enter the root directory where your applications are located';
   } else {
     messageAskForPath = 'Enter the root directory where your gateway(s) and microservices are located';
   }
-  const prompts = [
-    {
-      type: 'input',
-      name: 'directoryPath',
-      message: messageAskForPath,
-      default: this.directoryPath || '../',
-      validate: async input => {
-        const path = this.destinationPath(input);
-        try {
-          if (statSync(path).isDirectory) {
-            const appsFolders = getAppFolders.call(this, path, deploymentApplicationType);
 
-            if (appsFolders.length === 0) {
-              return deploymentApplicationType === MONOLITH
-                ? `No monolith found in ${path}`
-                : `No microservice or gateway found in ${path}`;
+  await this.prompt(
+    [
+      {
+        type: 'input',
+        name: 'directoryPath',
+        message: messageAskForPath,
+        default: '../',
+        validate: async input => {
+          const path = this.destinationPath(input);
+          try {
+            if (statSync(path).isDirectory()) {
+              const appsFolders = getAppFolders.call(this, path, deploymentApplicationType);
+
+              if (appsFolders.length === 0) {
+                return deploymentApplicationType === APPLICATION_TYPE_MONOLITH
+                  ? `No monolith found in ${path}`
+                  : `No microservice or gateway found in ${path}`;
+              }
+              return true;
             }
-            return true;
+          } catch {
+            // Ignore error
           }
-        } catch {
-          // Ignore error
-        }
-        return `${path} is not a directory or doesn't exist`;
+          return `${path} is not a directory or doesn't exist`;
+        },
       },
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.directoryPath = props.directoryPath;
-  // Patch the path if there is no trailing "/"
-  if (!this.directoryPath.endsWith('/')) {
-    this.log.log(chalk.yellow(`The path "${this.directoryPath}" does not end with a trailing "/", adding it anyway.`));
-    this.directoryPath += '/';
-  }
-
-  this.appsFolders = getAppFolders.call(this, this.destinationPath(this.directoryPath), deploymentApplicationType);
-
-  // Removing registry from appsFolders, using reverse for loop
-  for (let i = this.appsFolders.length - 1; i >= 0; i--) {
-    if (this.appsFolders[i] === 'jhipster-registry' || this.appsFolders[i] === 'registry') {
-      this.appsFolders.splice(i, 1);
-    }
-  }
-
-  this.log.log(chalk.green(`${this.appsFolders.length} applications found at ${this.destinationPath(this.directoryPath)}\n`));
-}
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Apps
  */
-async function askForApps() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForApps = asPromptingTask(async function askForApps(this: BaseKubernetesGenerator, { control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
+
+  const workspacesRoot = this.destinationPath(this.jhipsterConfig.directoryPath);
+  const appsFolders = getAppFolders
+    .call(this, workspacesRoot, this.jhipsterConfigWithDefaults.deploymentApplicationType)
+    .filter(appFolder => appFolder !== 'jhipster-registry' && appFolder !== 'registry');
+
+  this.log.log(chalk.green(`${appsFolders.length} applications found at ${workspacesRoot}\n`));
 
   const messageAskForApps = 'Which applications do you want to include in your configuration?';
 
-  const prompts = [
+  const answers = await this.prompt([
     {
       type: 'checkbox',
       name: 'chosenApps',
       message: messageAskForApps,
-      choices: this.appsFolders ?? [],
+      choices: appsFolders ?? [],
       default: this.jhipsterConfig.appsFolders,
       validate: input => (input.length === 0 ? 'Please choose at least one application' : true),
     },
-  ];
-
-  const props = await this.prompt(prompts);
-  this.appsFolders = this.jhipsterConfig.appsFolders = props.chosenApps;
-  await loadConfigs.call(this);
-}
+  ]);
+  this.jhipsterConfig.appsFolders = answers.chosenApps;
+});
 
 /**
  * Ask For Clusters Mode
  */
-async function askForClustersMode() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForClustersMode: any = asPromptingWorkspacesTask(async function askForClustersMode({ control, applications }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const clusteredDbApps = [];
-  this.appConfigs.forEach((appConfig, index) => {
-    if (appConfig.databaseTypeMongodb || appConfig.databaseTypeCouchbase) {
-      clusteredDbApps.push(this.appsFolders[index]);
-    }
-  });
+  const clusteredDbApps = applications.filter(app => app.databaseTypeMongodb || app.databaseTypeCouchbase).map(app => app.appFolder!);
   if (clusteredDbApps.length === 0) return;
 
-  const prompts = [
-    {
-      type: 'checkbox',
-      name: 'clusteredDbApps',
-      message: 'Which applications do you want to use with clustered databases (only available with MongoDB and Couchbase)?',
-      choices: clusteredDbApps,
-      default: this.clusteredDbApps,
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.clusteredDbApps = props.clusteredDbApps;
-}
+  await this.prompt(
+    [
+      {
+        type: 'checkbox',
+        name: 'clusteredDbApps',
+        message: 'Which applications do you want to use with clustered databases (only available with MongoDB and Couchbase)?',
+        choices: clusteredDbApps,
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Monitoring
  */
-async function askForMonitoring() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForMonitoring = asPromptingTask(async function askForMonitoring({ control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const prompts = [
-    {
-      type: 'list',
-      name: 'monitoring',
-      message: 'Do you want to setup monitoring for your applications ?',
-      choices: [
-        {
-          value: NO_MONITORING,
-          name: 'No',
-        },
-        {
-          value: PROMETHEUS,
-          name: 'Yes, for metrics only with Prometheus',
-        },
-      ],
-      default: this.monitoring ? this.monitoring : NO_MONITORING,
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.monitoring = props.monitoring;
-}
+  await this.prompt(
+    [
+      {
+        type: 'select',
+        name: 'monitoring',
+        message: 'Do you want to setup monitoring for your applications ?',
+        choices: [
+          {
+            value: NO_MONITORING,
+            name: 'No',
+          },
+          {
+            value: PROMETHEUS,
+            name: 'Yes, for metrics only with Prometheus',
+          },
+        ],
+        default: NO_MONITORING,
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Service Discovery
  */
-async function askForServiceDiscovery() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForServiceDiscovery: any = asPromptingWorkspacesTask(async function askForServiceDiscovery({ control, applications }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const serviceDiscoveryEnabledApps = [];
-  this.appConfigs.forEach(appConfig => {
-    if (appConfig.serviceDiscoveryAny) {
-      serviceDiscoveryEnabledApps.push({
-        baseName: appConfig.baseName,
-        serviceDiscoveryType: appConfig.serviceDiscoveryType,
-      });
-    }
-  });
+  const serviceDiscoveryEnabledApps = applications
+    .filter(app => app.serviceDiscoveryAny)
+    .map(app => ({
+      baseName: app.baseName,
+      serviceDiscoveryType: app.serviceDiscoveryType,
+    }));
 
   if (serviceDiscoveryEnabledApps.length === 0) {
-    this.serviceDiscoveryType = this.jhipsterConfig.serviceDiscoveryType = NO_SERVICE_DISCOVERY;
+    this.jhipsterConfig.serviceDiscoveryType = NO_SERVICE_DISCOVERY;
     return;
   }
 
   if (serviceDiscoveryEnabledApps.every(app => app.serviceDiscoveryType === CONSUL)) {
-    this.serviceDiscoveryType = this.jhipsterConfig.serviceDiscoveryType = CONSUL;
+    this.jhipsterConfig.serviceDiscoveryType = CONSUL;
     this.log.log(chalk.green('Consul detected as the service discovery and configuration provider used by your apps'));
   } else if (serviceDiscoveryEnabledApps.every(app => app.serviceDiscoveryType === EUREKA)) {
-    this.serviceDiscoveryType = this.jhipsterConfig.serviceDiscoveryType = EUREKA;
+    this.jhipsterConfig.serviceDiscoveryType = EUREKA;
     this.log.log(chalk.green('JHipster registry detected as the service discovery and configuration provider used by your apps'));
   } else {
     this.log.warn(
@@ -278,93 +221,179 @@ async function askForServiceDiscovery() {
       this.log.verboseInfo(` -${app.baseName} (${app.serviceDiscoveryType})`);
     });
 
-    const prompts = [
-      {
-        type: 'list',
-        name: 'serviceDiscoveryType',
-        message: 'Which Service Discovery registry and Configuration server would you like to use ?',
-        choices: [
-          {
-            value: CONSUL,
-            name: 'Consul',
-          },
-          {
-            value: EUREKA,
-            name: 'JHipster Registry',
-          },
-          {
-            value: NO_SERVICE_DISCOVERY,
-            name: 'No Service Discovery and Configuration',
-          },
-        ],
-        default: CONSUL,
-      },
-    ];
-
-    const props = await this.prompt(prompts, this.config);
-    this.serviceDiscoveryType = props.serviceDiscoveryType;
+    await this.prompt(
+      [
+        {
+          type: 'select',
+          name: 'serviceDiscoveryType',
+          message: 'Which Service Discovery registry and Configuration server would you like to use ?',
+          choices: [
+            {
+              value: CONSUL,
+              name: 'Consul',
+            },
+            {
+              value: EUREKA,
+              name: 'JHipster Registry',
+            },
+            {
+              value: NO_SERVICE_DISCOVERY,
+              name: 'No Service Discovery and Configuration',
+            },
+          ],
+          default: CONSUL,
+        },
+      ],
+      this.config,
+    );
   }
-}
+});
+
+export const askForClustersModeWorkspace = asPromptingWorkspacesTask(async function askForClustersMode({ control, applications }) {
+  if (!this.shouldAskForPrompts({ control })) return;
+  const clusteredDbApps = applications.filter(app => app.databaseTypeMongodb || app.databaseTypeCouchbase).map(app => app.appFolder!);
+  if (clusteredDbApps.length === 0) return;
+
+  await this.prompt(
+    [
+      {
+        type: 'checkbox',
+        name: 'clusteredDbApps',
+        message: 'Which applications do you want to use with clustered databases (only available with MongoDB and Couchbase)?',
+        choices: clusteredDbApps,
+        default: clusteredDbApps,
+      },
+    ],
+    this.config,
+  );
+});
+
+export const askForServiceDiscoveryWorkspace = asPromptingWorkspacesTask(async function askForServiceDiscovery({ control, applications }) {
+  if (!this.shouldAskForPrompts({ control })) return;
+  const serviceDiscoveryEnabledApps = applications.filter(app => app.serviceDiscoveryAny);
+  if (serviceDiscoveryEnabledApps.length === 0) {
+    this.jhipsterConfig.serviceDiscoveryType = NO_SERVICE_DISCOVERY;
+    return;
+  }
+
+  if (serviceDiscoveryEnabledApps.every(app => app.serviceDiscoveryConsul)) {
+    this.jhipsterConfig.serviceDiscoveryType = CONSUL;
+    this.log.log(chalk.green('Consul detected as the service discovery and configuration provider used by your apps'));
+  } else if (serviceDiscoveryEnabledApps.every(app => app.serviceDiscoveryTypeEureka)) {
+    this.jhipsterConfig.serviceDiscoveryType = EUREKA;
+    this.log.log(chalk.green('JHipster registry detected as the service discovery and configuration provider used by your apps'));
+  } else {
+    this.log.warn(
+      chalk.yellow('Unable to determine the service discovery and configuration provider to use from your apps configuration.'),
+    );
+    this.log.verboseInfo('Your service discovery enabled apps:');
+    serviceDiscoveryEnabledApps.forEach(app => {
+      this.log.verboseInfo(` -${app.baseName} (${app.serviceDiscoveryType})`);
+    });
+
+    await this.prompt(
+      [
+        {
+          type: 'select',
+          name: 'serviceDiscoveryType',
+          message: 'Which Service Discovery registry and Configuration server would you like to use ?',
+          choices: [
+            {
+              value: CONSUL,
+              name: 'Consul',
+            },
+            {
+              value: EUREKA,
+              name: 'JHipster Registry',
+            },
+            {
+              value: NO_SERVICE_DISCOVERY,
+              name: 'No Service Discovery and Configuration',
+            },
+          ],
+          default: CONSUL,
+        },
+      ],
+      this.config,
+    );
+  }
+  if (this.jhipsterConfig.serviceDiscoveryType === EUREKA) {
+    await this.prompt(
+      [
+        {
+          type: 'input',
+          name: 'adminPassword',
+          message: 'Enter the admin password used to secure the JHipster Registry',
+          default: 'admin',
+          validate: input => (input.length < 5 ? 'The password must have at least 5 characters' : true),
+        },
+      ],
+      this.config,
+    );
+  }
+});
 
 /**
  * Ask For Admin Password
  */
-async function askForAdminPassword() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
-  if (this.serviceDiscoveryType !== EUREKA) return;
+export const askForAdminPassword = asPromptingTask(async function askForAdminPassword(this: BaseKubernetesGenerator, { control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
+  if (this.jhipsterConfigWithDefaults.serviceDiscoveryType !== (EUREKA as string)) return;
 
-  const prompts = [
-    {
-      type: 'input',
-      name: 'adminPassword',
-      message: 'Enter the admin password used to secure the JHipster Registry',
-      default: 'admin',
-      validate: input => (input.length < 5 ? 'The password must have at least 5 characters' : true),
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.adminPassword = props.adminPassword;
-  this.adminPasswordBase64 = convertSecretToBase64(this.adminPassword);
-}
+  await this.prompt(
+    [
+      {
+        type: 'input',
+        name: 'adminPassword',
+        message: 'Enter the admin password used to secure the JHipster Registry',
+        default: 'admin',
+        validate: input => (input.length < 5 ? 'The password must have at least 5 characters' : true),
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Docker Repository Name
  */
-async function askForDockerRepositoryName() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForDockerRepositoryName = asPromptingTask(async function askForDockerRepositoryName(
+  this: BaseKubernetesGenerator,
+  { control },
+) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const prompts = [
-    {
-      type: 'input',
-      name: 'dockerRepositoryName',
-      message: 'What should we use for the base Docker repository name?',
-      default: this.dockerRepositoryName,
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.dockerRepositoryName = props.dockerRepositoryName;
-}
+  await this.prompt(
+    [
+      {
+        type: 'input',
+        name: 'dockerRepositoryName',
+        message: 'What should we use for the base Docker repository name?',
+        default: this.jhipsterConfigWithDefaults.dockerRepositoryName,
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Ask For Docker Push Command
  */
-async function askForDockerPushCommand() {
-  if (!this.options.askAnswered && (this.regenerate || this.config.existed)) return;
+export const askForDockerPushCommand = asPromptingTask(async function askForDockerPushCommand(this: BaseKubernetesGenerator, { control }) {
+  if (!this.shouldAskForPrompts({ control })) return;
 
-  const prompts = [
-    {
-      type: 'input',
-      name: 'dockerPushCommand',
-      message: 'What command should we use for push Docker image to repository?',
-      default: this.dockerPushCommand ? this.dockerPushCommand : 'docker push',
-    },
-  ];
-
-  const props = await this.prompt(prompts, this.config);
-  this.dockerPushCommand = props.dockerPushCommand;
-}
+  await this.prompt(
+    [
+      {
+        type: 'input',
+        name: 'dockerPushCommand',
+        message: 'What command should we use for push Docker image to repository?',
+        default: this.jhipsterConfigWithDefaults.dockerPushCommand,
+      },
+    ],
+    this.config,
+  );
+});
 
 /**
  * Get App Folders
@@ -372,9 +401,9 @@ async function askForDockerPushCommand() {
  * @param deploymentApplicationType type of application being composed
  * @returns {Array} array of string representing app folders
  */
-export function getAppFolders(directory, deploymentApplicationType) {
+export function getAppFolders(this: CoreGenerator, directory: string, deploymentApplicationType?: string): string[] {
   const files = readdirSync(directory);
-  const appsFolders = [];
+  const appsFolders: string[] = [];
 
   files.forEach(file => {
     try {
@@ -386,10 +415,11 @@ export function getAppFolders(directory, deploymentApplicationType) {
             if (
               fileData['generator-jhipster'].baseName !== undefined &&
               (deploymentApplicationType === undefined ||
-                deploymentApplicationType === (fileData['generator-jhipster'].applicationType ?? MONOLITH) ||
-                (deploymentApplicationType === MICROSERVICE && fileData['generator-jhipster'].applicationType === GATEWAY))
+                deploymentApplicationType === (fileData['generator-jhipster'].applicationType ?? APPLICATION_TYPE_MONOLITH) ||
+                (deploymentApplicationType === APPLICATION_TYPE_MICROSERVICE &&
+                  fileData['generator-jhipster'].applicationType === APPLICATION_TYPE_GATEWAY))
             ) {
-              appsFolders.push(/([^/]*)\/*$/.exec(file)[1]);
+              appsFolders.push(/([^/]*)\/*$/.exec(file)![1]);
             }
           } catch (err) {
             this.log.error(chalk.red(`${yoRcFile}: this .yo-rc.json can't be read`));

@@ -1,0 +1,112 @@
+<%#
+ Copyright 2013-2026 the original author or authors from the JHipster project.
+
+ This file is part of the JHipster project, see https://www.jhipster.tech/
+ for more information.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-%>
+package <%= packageName %>.web.rest;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import <%= packageName %>.IntegrationTest;
+import <%= packageName %>.config.EmbeddedKafka;
+<%_ if (authenticationUsesCsrf) { _%>
+
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
+
+import org.junit.jupiter.api.BeforeEach;
+<%_ } _%>
+
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
+import org.springframework.cloud.stream.binder.test.InputDestination;
+import org.springframework.cloud.stream.binder.test.OutputDestination;
+import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
+import org.springframework.http.MediaType;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.support.GenericMessage;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.util.MimeTypeUtils;
+
+@AutoConfigureWebTestClient(timeout = IntegrationTest.DEFAULT_TIMEOUT)
+@WithMockUser
+@EmbeddedKafka
+@IntegrationTest
+@ImportAutoConfiguration(TestChannelBinderConfiguration.class)
+class <%= upperFirstCamelCaseBaseName %>KafkaResourceIT {
+    private static String KAFKA_API = "/api/<%= dasherizedBaseName %>-kafka/{command}";
+
+    @Autowired
+    private WebTestClient client;
+
+    @Autowired
+    private InputDestination input;
+
+    @Autowired
+    private OutputDestination output;
+<%_ if (authenticationUsesCsrf) { _%>
+
+    @BeforeEach
+    void setupCsrf() {
+        client = client.mutateWith(csrf());
+    }
+<%_ } _%>
+
+    @Test
+    void producesMessages() throws InterruptedException {
+        client
+            .post()
+            .uri(uriBuilder -> uriBuilder.path(KAFKA_API).queryParam("message", "value-produce").build("publish"))
+            .exchange()
+            .expectStatus()
+            .isNoContent();
+        assertThat(output.receive(1000, "binding-out-0").getPayload()).isEqualTo("value-produce".getBytes());
+    }
+
+    @Test
+    void producesPooledMessages() throws Exception {
+        assertThat(output.receive(1500, "kafkaProducer-out-0").getPayload()).isEqualTo("kafka_producer".getBytes());
+    }
+
+    @Test
+    void consumesMessages() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.TEXT_PLAIN_VALUE);
+        MessageHeaders headers = new MessageHeaders(map);
+        Message<String> testMessage = new GenericMessage<>("value-consume", headers);
+        input.send(testMessage);
+        String value = client
+            .get()
+            .uri(KAFKA_API, "consume")
+            .accept(MediaType.TEXT_EVENT_STREAM)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)
+            .returnResult(String.class)
+            .getResponseBody()
+            .blockFirst(Duration.ofSeconds(10));
+        assertThat(value).isEqualTo("value-consume");
+    }
+}

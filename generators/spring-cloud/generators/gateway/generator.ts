@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,20 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import BaseApplicationGenerator from '../../../base-application/index.js';
-import { javaMainPackageTemplatesBlock } from '../../../java/support/files.js';
+import BaseApplicationGenerator from '../../../base-application/index.ts';
+import { javaMainPackageTemplatesBlock } from '../../../java/support/files.ts';
+import type {
+  Application as SpringCloudApplication,
+  Config as SpringCloudConfig,
+  Entity as SpringCloudEntity,
+  Options as SpringCloudOptions,
+  Source as SpringCloudSource,
+} from '../../types.ts';
 
 const WAIT_TIMEOUT = 3 * 60000;
 
-export default class GatewayGenerator extends BaseApplicationGenerator {
+export default class GatewayGenerator extends BaseApplicationGenerator<
+  SpringCloudEntity,
+  SpringCloudApplication<SpringCloudEntity>,
+  SpringCloudConfig,
+  SpringCloudOptions,
+  SpringCloudSource
+> {
   async beforeQueue() {
     if (!this.fromBlueprint) {
       await this.composeWithBlueprints();
     }
 
     if (!this.delegateToBlueprint) {
-      await this.dependsOnBootstrapApplication();
-      await this.dependsOnJHipster('jhipster:java:build-tool');
+      await this.dependsOnBootstrap('java');
+      await this.dependsOnJHipster('jhipster:java-simple-application:build-tool');
     }
   }
 
@@ -37,7 +50,7 @@ export default class GatewayGenerator extends BaseApplicationGenerator {
     return this.asConfiguringTaskGroup({
       reactiveByDefault() {
         this.jhipsterConfig.reactive = this.jhipsterConfig.reactive ?? true;
-        if (this.jhipsterConfig.reactive === false) {
+        if (!this.jhipsterConfig.reactive) {
           const message = 'Spring Cloud Gateway MVC support is experimental and not officially supported.';
           if (!this.experimental) {
             throw new Error(`${message} To use it, run the generator with the --experimental flag.`);
@@ -115,9 +128,20 @@ export default class GatewayGenerator extends BaseApplicationGenerator {
     return this.asPostWritingTaskGroup({
       addDependencies({ application, source }) {
         const { reactive } = application;
-        source.addJavaDependencies!([
-          { groupId: 'org.springframework.cloud', artifactId: `spring-cloud-starter-gateway${reactive ? '' : '-mvc'}` },
-        ]);
+        source.addJavaDefinitions!(
+          {
+            dependencies: [
+              {
+                groupId: 'org.springframework.cloud',
+                artifactId: `spring-cloud-starter-gateway-server-${reactive ? 'webflux' : 'webmvc'}`,
+              },
+            ],
+          },
+          {
+            condition: !reactive,
+            dependencies: [{ groupId: 'org.springframework.cloud', artifactId: 'spring-cloud-starter-loadbalancer' }],
+          },
+        );
       },
     });
   }

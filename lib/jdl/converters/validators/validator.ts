@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -17,18 +17,16 @@
  * limitations under the License.
  */
 
-export type ValidatorOptions = { checkReservedKeywords?: boolean };
-
 export default class Validator {
-  objectType: any;
-  fieldsToCheck: any;
+  objectType: string;
+  fieldsToCheck: string[];
 
-  constructor(objectType, fieldsToCheck) {
+  constructor(objectType: string, fieldsToCheck: string[]) {
     this.objectType = objectType;
     this.fieldsToCheck = fieldsToCheck;
   }
 
-  validate(object, _options?: ValidatorOptions) {
+  validate(object: Record<string, any>) {
     if (!object) {
       throw new Error(`No ${this.objectType}.`);
     }
@@ -36,10 +34,10 @@ export default class Validator {
   }
 }
 
-function checkForAbsentAttributes(validator, object) {
-  const absentAttributes: any[] = [];
+function checkForAbsentAttributes(validator: Validator, object: Record<string, any>) {
+  const absentAttributes: string[] = [];
   validator.fieldsToCheck.forEach(attribute => {
-    if (!object[attribute]) {
+    if (object[attribute] === undefined) {
       absentAttributes.push(attribute);
     }
   });

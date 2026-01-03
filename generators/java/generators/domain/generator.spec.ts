@@ -1,15 +1,12 @@
-import { basename, dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 import { before, describe, expect, it } from 'esmocha';
+import { basename, resolve } from 'node:path';
 
-import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.js';
-import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.js';
-import Generator from './index.js';
+import { defaultHelpers as helpers, result } from '../../../../lib/testing/index.ts';
+import { shouldSupportFeatures, testBlueprintSupport } from '../../../../test/support/tests.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import Generator from './index.ts';
 
-const generator = `${basename(resolve(__dirname, '../../'))}:${basename(__dirname)}`;
+const generator = `${basename(resolve(import.meta.dirname, '../../'))}:${basename(import.meta.dirname)}`;
 
 describe(`generator - ${generator}`, () => {
   shouldSupportFeatures(Generator);
@@ -53,7 +50,7 @@ describe(`generator - ${generator}`, () => {
 
     it('should write enum files', () => {
       result.assertFile('src/main/java/com/mycompany/myapp/domain/enumeration/MyEnum.java');
-      expect(Object.keys(result.getStateSnapshot('**/enumeration/**')).length).toBe(2);
+      expect(Object.keys(result.getStateSnapshot('**/enumeration/**')).length).toBe(1);
     });
 
     it('should generate enum javadoc', () => {

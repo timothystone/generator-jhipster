@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2025 the original author or authors from the JHipster project.
+ * Copyright 2013-2026 the original author or authors from the JHipster project.
  *
  * This file is part of the JHipster project, see https://www.jhipster.tech/
  * for more information.
@@ -16,19 +16,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { inspect } from 'node:util';
 import { beforeEach, describe, esmocha, expect, it } from 'esmocha';
-import type { GetWebappTranslationCallback } from '../../../lib/types/base/translation.js';
-import { createTranslationReplacer } from './translate-angular.js';
+import { inspect } from 'node:util';
+
+import type { GetWebappTranslationCallback } from '../../client/translation.ts';
+
+import { createTranslationReplacer } from './translate-angular.ts';
 
 describe('generator - angular - transform', () => {
   describe('replaceAngularTranslations', () => {
-    let replaceAngularTranslations;
-    let enabledAngularTranslations;
+    let replaceAngularTranslations: ReturnType<typeof createTranslationReplacer>;
+    let enabledAngularTranslations: ReturnType<typeof createTranslationReplacer>;
 
     beforeEach(() => {
       let value = 0;
-      const testImpl = (key, data) => (key === 'blank' ? '' : `translated-value-${key}-${data ? `${inspect(data)}-` : ''}${value++}`);
+      const testImpl: GetWebappTranslationCallback = (key, data) =>
+        key === 'blank' ? '' : `translated-value-${key}-${data ? `${inspect(data)}-` : ''}${value++}`;
       replaceAngularTranslations = createTranslationReplacer(esmocha.fn<GetWebappTranslationCallback>().mockImplementation(testImpl), {
         jhiPrefix: 'jhi',
         enableTranslation: false,
@@ -82,7 +85,7 @@ describe('generator - angular - transform', () => {
 `);
         });
 
-        it('should remove neasted [translateValues] attribute', () => {
+        it('should remove nested [translateValues] attribute', () => {
           const body = `
 <h1 [translateValues]="{ max: 50 }"><span [translateValues]="{ max: 50 }">translate-values1</span></h1>
 <h1 [translateValues]="{ max: 50 }"><span [translateValues]="{ max: 50 }">translate-values2</span></h1>
@@ -108,7 +111,7 @@ describe('generator - angular - transform', () => {
 `);
         });
 
-        it('should remove neasted [translateValues] attribute', () => {
+        it('should remove nested [translateValues] attribute', () => {
           const body = `
 <h1 [translateValues]="{ max: 50 }"><span [translateValues]="{ max: 50 }">translate-values1</span></h1>
 <h1 [translateValues]="{ max: 20 }"><span [translateValues]="{ max: 20 }">translate-values2</span></h1>
@@ -237,6 +240,23 @@ translated-value-global.form.currentpassword.title2-0
 
       describe('.route.ts files', () => {
         const extension = '.route.ts';
+
+        it('should translate title fields with translation values', () => {
+          const body = `
+title: 'activate.title1',
+title: 'activate.title2',
+`;
+          expect(replaceAngularTranslations(body, extension)).toMatchInlineSnapshot(`
+"
+title: 'translated-value-activate.title1-0',
+title: 'translated-value-activate.title2-1',
+"
+`);
+        });
+      });
+
+      describe('.routes.ts files', () => {
+        const extension = '.routes.ts';
 
         it('should translate title fields with translation values', () => {
           const body = `
